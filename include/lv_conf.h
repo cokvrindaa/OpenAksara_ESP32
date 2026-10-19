@@ -1,0 +1,34 @@
+#ifndef LV_CONF_H
+#define LV_CONF_H
+
+#include <stdint.h>
+
+/* Gunakan memori sistem ESP32 (heap dinamis) agar tidak kehabisan RAM */
+#define LV_USE_STDLIB_MALLOC LV_STDLIB_CLIB
+#define LV_USE_STDLIB_STRING LV_STDLIB_CLIB
+#define LV_USE_STDLIB_SPRINTF LV_STDLIB_CLIB
+
+#define LV_COLOR_DEPTH 16
+#define LV_COLOR_FORMAT_DEFAULT LV_COLOR_FORMAT_RGB565_SWAPPED
+
+#define LV_DRAW_SW_SUPPORT_RGB565 1
+#define LV_DRAW_SW_SUPPORT_RGB565_SWAPPED 1
+#define LV_DRAW_SW_SUPPORT_RGB565A8 1
+
+#define LV_DEF_REFR_PERIOD 16
+#define LV_DPI_DEF 130
+
+#define LV_FONT_MONTSERRAT_14 1
+#define LV_FONT_MONTSERRAT_20 1
+#define LV_FONT_MONTSERRAT_28 1
+
+#define LV_USE_THEME_DEFAULT 1
+
+#define LV_USE_LOG 0
+#define LV_USE_ASSERT_NULL 0
+#define LV_USE_ASSERT_MALLOC 0
+
+#define LV_BUILD_EXAMPLES 0
+#define LV_BUILD_DEMOS 0
+
+#endif
