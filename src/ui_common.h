@@ -62,9 +62,9 @@ inline lv_obj_t* ui_make_label(lv_obj_t* parent, const char* text,
                                const lv_font_t* font, lv_color_t color) {
   lv_obj_t* l = lv_label_create(parent);
   if (!l) return nullptr;
-  lv_label_set_text(l, text);
-  lv_obj_set_style_text_font(l, font, 0);
+  if (font) lv_obj_set_style_text_font(l, font, 0);
   lv_obj_set_style_text_color(l, color, 0);
+  if (text) lv_label_set_text(l, text);
   return l;
 }
 
@@ -85,11 +85,15 @@ void ui_show_toast(const char* text);
 #ifdef __cplusplus
 extern "C" {
 #endif
-LV_IMAGE_DECLARE(aksarabuddy_mascot_98x120);
+LV_IMAGE_DECLARE(BuddyMaskot);
 LV_IMAGE_DECLARE(Buddy3);
 LV_IMAGE_DECLARE(Buddy4);
 LV_IMAGE_DECLARE(BuddyJawa);
 LV_IMAGE_DECLARE(BuddyBali);
+
+// Font Aksara Daerah Native
+LV_FONT_DECLARE(font_jawa_22);
+LV_FONT_DECLARE(font_bali_22);
 #ifdef __cplusplus
 }
 #endif

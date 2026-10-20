@@ -1,5 +1,6 @@
 #include "ui_bali.h"
 #include "ui_home.h"
+#include "ui_learn.h"
 #include <stdio.h>
 
 static const AppCallbacks* bali_cbs = nullptr;
@@ -39,18 +40,18 @@ struct PathNodeData {
 // 3 Halaman, masing-masing 3 node (total 9 node)
 static const PathNodeData BALI_PAGES[3][3] = {
   {
-    { "Ha", LV_SYMBOL_OK, 0 },
-    { "Na", LV_SYMBOL_OK, 0 },
-    { "Ca", "Ca", 1 }
+    { "Ha", "\xE1\xAC\xB3", 0 },
+    { "Na", "\xE1\xAC\xA6", 0 },
+    { "Ca", "\xE1\xAC\x98", 1 }
   },
   {
     { "Peti", LV_SYMBOL_IMAGE, 2 },
-    { "Ra", "Ra", 3 },
-    { "Ka", "Ka", 3 }
+    { "Ra", "\xE1\xAC\xAD", 3 },
+    { "Ka", "\xE1\xAC\x93", 3 }
   },
   {
-    { "Da", "Da", 3 },
-    { "Ta", "Ta", 3 },
+    { "Da", "\xE1\xAC\xA4", 3 },
+    { "Ta", "\xE1\xAC\xA2", 3 },
     { "Piala", LV_SYMBOL_OK, 2 }
   }
 };
@@ -107,13 +108,13 @@ static void on_node_click(lv_event_t* e) {
     snprintf(buf, sizeof(buf), "Aksara Bali %s: Selesai!", node.name);
     ui_show_toast(buf);
     active_write_index = current_page * 3 + node_idx;
-    switch_tab(1); // Buka kanvas nulis
+    ui_learn_start(AKSARA_BALI, current_page * 3 + node_idx); // Buka Kuis Pembelajaran
   } else if (node.state == 1) {
     audio_play(SOUND_NODE);
     snprintf(buf, sizeof(buf), "Level Aktif: Aksara %s!", node.name);
     ui_show_toast(buf);
     active_write_index = current_page * 3 + node_idx;
-    switch_tab(1); // Buka kanvas nulis
+    ui_learn_start(AKSARA_BALI, current_page * 3 + node_idx); // Buka Kuis Pembelajaran
   } else if (node.state == 2) {
     audio_play(SOUND_REWARD);
     ui_show_toast("Peti Hadiah Sastra: +50 XP!");
@@ -273,24 +274,28 @@ static void update_path_page() {
       // Selesai (Emerald/Teal)
       c_top = lv_color_hex(0x059669);
       c_dark = lv_color_hex(0x047857);
-      txt = LV_SYMBOL_OK;
+      txt = node.symbol;
+      f = &font_bali_22;
     } else if (node.state == 1) {
       // Sedang Aktif (Emas/Amber Bali)
       c_top = C_BALI_1;
       c_dark = C_BALI_2;
-      txt = node.name;
+      txt = node.symbol;
+      f = &font_bali_22;
     } else if (node.state == 2) {
       // Peti / Piala
       c_top = lv_color_hex(0xEA580C);
       c_dark = lv_color_hex(0xC2410C);
-      txt = (current_page == 1) ? "Peti" : "Win";
       f = &lv_font_montserrat_14;
+      txt = (current_page == 1) ? "Peti" : "Win";
+      // font bali
     } else {
       // Terkunci
       c_top = lv_color_hex(0x334155);
       c_dark = lv_color_hex(0x1E293B);
-      txt = node.name;
-      f = &lv_font_montserrat_14;
+      txt = node.symbol;
+      f = &font_bali_22;
+      // font bali
     }
 
     create_duo_node(path_nodes_cont, POS[current_page][i][0], POS[current_page][i][1], 62,
@@ -329,12 +334,12 @@ static void update_path_page() {
   }
 
   // Variasi Maskot Buddy untuk setiap babak (Pose berbeda di Babak 1, 2, dan 3)
-  const lv_image_dsc_t* buddy_src = &aksarabuddy_mascot_98x120;
+  const lv_image_dsc_t* buddy_src = &BuddyMaskot;
   int mascot_x = 268;
   int mascot_y = 88;
 
   if (current_page == 0) {
-    buddy_src = &aksarabuddy_mascot_98x120; // Pose Babak 1: Belajar & Papan Aksara (98x120)
+    buddy_src = &BuddyMaskot;              // Pose Babak 1: Buddy Maskot (100x124)
     mascot_x = 268;
     mascot_y = 88;
   } else if (current_page == 1) {
@@ -519,8 +524,11 @@ static void switch_tab(int tab_index) {
     char b[24];
     snprintf(b, sizeof(b), "Aksara %s", NAMA[active_write_index]);
     lv_label_set_text(write_target_title, b);
-    lv_label_set_text(write_preview_lbl, NAMA[active_write_index]);
-    lv_label_set_text(write_guide_letter, NAMA[active_write_index]);
+    static const char* AKSARA[9] = { "\xE1\xAC\xB3", "\xE1\xAC\xA6", "\xE1\xAC\x98", "Peti", "\xE1\xAC\xAD", "\xE1\xAC\x93", "\xE1\xAC\xA4", "\xE1\xAC\xA2", "Win" };
+    lv_obj_set_style_text_font(write_preview_lbl, (active_write_index == 3 || active_write_index == 8) ? &lv_font_montserrat_20 : &font_bali_22, 0);
+    lv_obj_set_style_text_font(write_guide_letter, (active_write_index == 3 || active_write_index == 8) ? &lv_font_montserrat_20 : &font_bali_22, 0);
+    lv_label_set_text(write_preview_lbl, AKSARA[active_write_index]);
+    lv_label_set_text(write_guide_letter, AKSARA[active_write_index]);
   } else {
     // Tab Setelan
     lv_obj_clear_flag(view_settings, LV_OBJ_FLAG_HIDDEN);

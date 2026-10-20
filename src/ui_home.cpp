@@ -1,6 +1,7 @@
 #include "ui_home.h"
 #include "ui_jawa.h"
 #include "ui_bali.h"
+#include "ui_learn.h"
 
 static const AppCallbacks* home_cbs = nullptr;
 static lv_obj_t* scr_home = nullptr;
@@ -140,6 +141,7 @@ void ui_init(const AppCallbacks* callbacks) {
   // Inisialisasi Layar Khusus Aksara Jawa dan Aksara Bali secara terpisah
   ui_jawa_init(callbacks);
   ui_bali_init(callbacks);
+  ui_learn_init(callbacks);
 
   // Tampilkan Layar Home
   lv_scr_load(scr_home);
