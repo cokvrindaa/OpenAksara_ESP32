@@ -373,7 +373,6 @@ static void update_cards_action_state() {
 // Sub-builder: Slide Konsep Mandiri (Hanya Muncul di Node 0)
 static void render_single_concept_slide(lv_obj_t* parent, int concept_idx) {
   struct SingleConcept {
-    const char* badge_tag;
     const char* title;
     const char* detail;
     const char* note;
@@ -382,28 +381,24 @@ static void render_single_concept_slide(lv_obj_t* parent, int concept_idx) {
 
   SingleConcept concepts_jawa[4] = {
     {
-      "KONSEP 1 DARI 4",
       "1. Aksara Carakan / Nglegena",
       "Aksara dasar yang secara alami berbunyi konsonan dan vokal 'a' utuh (Ha, Na, Ca, Ra, Ka, Da, Ta, Sa, Wa, La, dst).",
       "Setiap aksara sudah memiliki bunyi utuh tanpa memerlukan sandhangan tambahan apapun.",
       lv_color_hex(0xF59E0B) // Amber
     },
     {
-      "KONSEP 2 DARI 4",
       "2. Sandhangan Swara & Panyigeg",
       "Tanda yang dipasang untuk mengubah vokal 'a' menjadi vokal lain: Wulu (i), Suku (u), Taling (e), Taling Tarung (o), dan Pepet (e).",
       "Serta tanda pemati suku kata: Layar (r), Cecak (ng), Wignyan (h), dan Pangkon (pemati umum).",
       lv_color_hex(0x10B981) // Emerald
     },
     {
-      "KONSEP 3 DARI 4",
       "3. Pasangan Aksara",
       "Bentuk khusus aksara yang berfungsi untuk mematikan vokal suku kata sebelumnya ketika ada dua konsonan berurutan.",
       "Masing-masing dari 20 aksara Carakan memiliki bentuk pasangan spesifik (ditulis di bawah/samping).",
       lv_color_hex(0x38BDF8) // Cyan
     },
     {
-      "KONSEP 4 DARI 4",
       "4. Aksara Rekan & Murda",
       "Aksara Rekan digunakan untuk melafalkan kata serapan asing (kh, f, dz, z, gh).",
       "Aksara Murda berfungsi khusus sebagai huruf kapital untuk penulisan nama orang terhormat, gelar, dan tempat.",
@@ -413,28 +408,24 @@ static void render_single_concept_slide(lv_obj_t* parent, int concept_idx) {
 
   SingleConcept concepts_bali[4] = {
     {
-      "KONSEP 1 DARI 4",
       "1. Aksara Wreastra",
       "Aksara pokok yang digunakan dalam penulisan bahasa Bali lumrah sehari-hari (Ha, Na, Ca, Ra, Ka, Da, Ta, Sa, Wa, La, dst).",
       "Secara alami setiap aksara Wreastra sudah berbunyi vokal 'a' secara mandiri dan utuh.",
       lv_color_hex(0xF59E0B) // Amber
     },
     {
-      "KONSEP 2 DARI 4",
       "2. Pangangge Suara & Tengenan",
       "Tanda yang dipasang untuk mengubah vokal: Ulu (i), Suku (u), Taleng (e), Tedong (a panjang), dan Pepet (e).",
       "Serta tanda penutup konsonan (Tengenan): Surang (r), Cecek (ng), Bisah (h), dan Adeg-adeg (pemati).",
       lv_color_hex(0x10B981) // Emerald
     },
     {
-      "KONSEP 3 DARI 4",
       "3. Gantungan & Gempelan",
       "Bentuk aksara gantung (Gantungan di bawah) dan tempel (Gempelan di kanan) untuk meredam vokal konsonan sebelumnya.",
       "Digunakan saat dua konsonan bertemu berturut-turut tanpa jeda vokal.",
       lv_color_hex(0x38BDF8) // Cyan
     },
     {
-      "KONSEP 4 DARI 4",
       "4. Aksara Swalalita & Modre",
       "Aksara Swalalita digunakan khusus untuk penulisan kidung sastra Kawi, Jawa Kuno, dan Sansekerta.",
       "Aksara Modre digunakan dalam konteks keagamaan, doa suci, rajah, dan lambang mistis ke Tuhanan.",
@@ -444,24 +435,18 @@ static void render_single_concept_slide(lv_obj_t* parent, int concept_idx) {
 
   SingleConcept* cur = (current_script == AKSARA_JAWA) ? &concepts_jawa[concept_idx] : &concepts_bali[concept_idx];
 
-  // Header Badge Kategori
-  lv_obj_t* badge = ui_make_card(parent, 16, 8, 180, 26, lv_color_hex(0x133857), lv_color_hex(0x133857), 6);
-  lv_obj_clear_flag(badge, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_t* b_lbl = ui_make_label(badge, cur->badge_tag, &lv_font_montserrat_14, lv_color_hex(0x38BDF8));
-  lv_obj_center(b_lbl);
-
-  // Judul Besar Proporsional (Montserrat 20 Bold)
+  // Judul Besar Proporsional (Montserrat 20 Bold) di posisi atas yang lapang
   lv_obj_t* title = ui_make_label(parent, cur->title, &lv_font_montserrat_20, cur->theme_color);
-  lv_obj_set_pos(title, 16, 38);
+  lv_obj_set_pos(title, 16, 12);
 
-  // Kartu Utama Penjelasan (Lebar 448px, Tinggi 144px) - Headline dihapus agar lebih lega
-  lv_obj_t* main_card = ui_make_card(parent, 16, 66, 448, 144, C_CARD, C_CARD, 16);
+  // Kartu Utama Penjelasan (Lebar 448px, Tinggi 156px) - Lapang & bebas sesak
+  lv_obj_t* main_card = ui_make_card(parent, 16, 44, 448, 156, C_CARD, C_CARD, 16);
   lv_obj_set_style_border_color(main_card, lv_color_hex(0x2A3245), 0);
   lv_obj_set_style_border_width(main_card, 1, 0);
   lv_obj_clear_flag(main_card, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_set_flex_flow(main_card, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_all(main_card, 14, 0);
-  lv_obj_set_style_pad_row(main_card, 10, 0);
+  lv_obj_set_style_pad_all(main_card, 16, 0);
+  lv_obj_set_style_pad_row(main_card, 12, 0);
 
   // Detail Paragraf (Montserrat 16 - Lebih besar & sangat jelas dibaca)
   lv_obj_t* d_lbl = ui_make_label(main_card, cur->detail, &lv_font_montserrat_16, lv_color_hex(0xF3F4F6));
