@@ -26,11 +26,51 @@ void flush_cb(lv_display_t* disp, const lv_area_t* area, uint8_t* px_map) {
   lv_display_flush_ready(disp);
 }
 
-// ---- Driver touch LVGL v9 ----
+// ---- Driver touch super cepat & non-blocking untuk LVGL v9 ----
+static bool is_touching = false;
+
+static inline bool touch_read_fast(uint16_t* out_x, uint16_t* out_y) {
+  // 1. Cek pressure (Z) XPT2046 secara instan (< 25us) tanpa delay
+  uint16_t z = tft.getTouchRawZ();
+  if (z < 300) {
+    is_touching = false;
+    return false;
+  }
+
+  // 2. Baca 2 sampel ADC mentah untuk stabilitas (tanpa delay blocking)
+  uint16_t x1 = 0, y1 = 0;
+  uint16_t x2 = 0, y2 = 0;
+  tft.getTouchRaw(&x1, &y1);
+  tft.getTouchRaw(&x2, &y2);
+
+  // Filter anomali saat jari/stylus baru lepas
+  if (abs((int)x1 - (int)x2) > 60 || abs((int)y1 - (int)y2) > 60) {
+    if (tft.getTouchRawZ() < 300) {
+      is_touching = false;
+      return false;
+    }
+  }
+
+  uint16_t rx = (x1 + x2) >> 1;
+  uint16_t ry = (y1 + y2) >> 1;
+
+  // 3. Konversi kalibrasi koordinat sesuai orientasi landscape (480x320)
+  tft.convertRawXY(&rx, &ry);
+
+  if (rx >= 480 || ry >= 320) {
+    is_touching = false;
+    return false;
+  }
+
+  *out_x = rx;
+  *out_y = ry;
+  is_touching = true;
+  return true;
+}
+
 void touch_cb(lv_indev_t* indev, lv_indev_data_t* data) {
   uint16_t x = 0, y = 0;
-  bool touched = tft.getTouch(&x, &y, 300);
-  if (touched) {
+  if (touch_read_fast(&x, &y)) {
     data->state = LV_INDEV_STATE_PRESSED;
     data->point.x = x;
     data->point.y = y;
@@ -99,6 +139,7 @@ void setup() {
   indev = lv_indev_create();
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, touch_cb);
+  lv_timer_set_period(lv_indev_get_read_timer(indev), 10); // Polling touch 100 Hz (10ms)
 
   ui_init(&appCbs);
 }
@@ -106,7 +147,12 @@ void setup() {
 void loop() {
   audio_update();
   uint32_t ms = lv_timer_handler();
-  if (ms > 5) ms = 5;
-  if (ms == 0) ms = 1;
-  delay(ms);
+  if (is_touching) {
+    // Mode responsif maksimal: saat menggores, NOL delay untuk 60+ FPS zero-lag!
+    yield();
+  } else {
+    if (ms > 5) ms = 5;
+    if (ms == 0) ms = 1;
+    delay(ms);
+  }
 }

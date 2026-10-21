@@ -59,9 +59,84 @@ static const PathNodeData BALI_PAGES[3][3] = {
 // Canvas Nulis Aksara Bali
 static lv_obj_t* write_target_title = nullptr;
 static lv_obj_t* write_target_sub = nullptr;
-static lv_obj_t* write_guide_letter = nullptr;
+static lv_obj_t* write_guide_track = nullptr;
+static lv_obj_t* write_start_marker = nullptr;
+static lv_obj_t* write_end_marker = nullptr;
+static lv_obj_t* write_feedback_lbl = nullptr;
 static lv_obj_t* write_preview_lbl = nullptr;
 static int active_write_index = 2; // Default ke aksara "Ca"
+static TraceState bali_tab_trace;
+static lv_point_precise_t bali_guide_pts[24];
+
+// Waypoint Jalur Aksara Bali (Pola Bentuk Native)
+static const StrokeWaypoint BALI_GUIDE_HA[] = {
+  { 72, 70 }, { 75, 88 }, { 82, 108 }, { 96, 116 }, { 110, 105 },
+  { 118, 80 }, { 128, 60 }, { 142, 52 }, { 154, 75 }, { 158, 106 },
+  { 168, 75 }, { 182, 52 }, { 195, 75 }, { 204, 108 }
+};
+static const StrokeWaypoint BALI_GUIDE_NA[] = {
+  { 75, 60 }, { 82, 85 }, { 92, 110 }, { 112, 112 }, { 125, 85 },
+  { 138, 55 }, { 150, 80 }, { 158, 110 }, { 178, 112 }, { 192, 88 }, { 200, 65 }
+};
+static const StrokeWaypoint BALI_GUIDE_CA[] = {
+  { 70, 80 }, { 80, 110 }, { 105, 55 }, { 130, 75 }, { 120, 100 },
+  { 145, 112 }, { 170, 60 }, { 185, 75 }, { 198, 110 }
+};
+static const StrokeWaypoint BALI_GUIDE_RA[] = {
+  { 80, 110 }, { 95, 75 }, { 110, 55 }, { 125, 75 }, { 135, 110 },
+  { 150, 75 }, { 165, 55 }, { 180, 75 }, { 192, 110 }
+};
+static const StrokeWaypoint BALI_GUIDE_KA[] = {
+  { 75, 55 }, { 85, 85 }, { 95, 110 }, { 115, 85 }, { 128, 110 },
+  { 148, 52 }, { 168, 70 }, { 185, 110 }
+};
+static const StrokeWaypoint BALI_GUIDE_DA[] = {
+  { 80, 110 }, { 95, 60 }, { 115, 55 }, { 130, 85 }, { 150, 55 },
+  { 170, 75 }, { 185, 110 }
+};
+static const StrokeWaypoint BALI_GUIDE_TA[] = {
+  { 75, 110 }, { 92, 60 }, { 112, 55 }, { 128, 105 }, { 145, 60 },
+  { 165, 55 }, { 180, 110 }
+};
+
+static void get_bali_guide(int index, const StrokeWaypoint*& pts, uint8_t& count) {
+  switch (index) {
+    case 0: pts = BALI_GUIDE_HA; count = sizeof(BALI_GUIDE_HA)/sizeof(BALI_GUIDE_HA[0]); break;
+    case 1: pts = BALI_GUIDE_NA; count = sizeof(BALI_GUIDE_NA)/sizeof(BALI_GUIDE_NA[0]); break;
+    case 2: pts = BALI_GUIDE_CA; count = sizeof(BALI_GUIDE_CA)/sizeof(BALI_GUIDE_CA[0]); break;
+    case 4: pts = BALI_GUIDE_RA; count = sizeof(BALI_GUIDE_RA)/sizeof(BALI_GUIDE_RA[0]); break;
+    case 5: pts = BALI_GUIDE_KA; count = sizeof(BALI_GUIDE_KA)/sizeof(BALI_GUIDE_KA[0]); break;
+    case 6: pts = BALI_GUIDE_DA; count = sizeof(BALI_GUIDE_DA)/sizeof(BALI_GUIDE_DA[0]); break;
+    case 7: pts = BALI_GUIDE_TA; count = sizeof(BALI_GUIDE_TA)/sizeof(BALI_GUIDE_TA[0]); break;
+    default: pts = BALI_GUIDE_HA; count = sizeof(BALI_GUIDE_HA)/sizeof(BALI_GUIDE_HA[0]); break;
+  }
+}
+
+static void update_bali_write_guide() {
+  if (!write_guide_track) return;
+  const StrokeWaypoint* guide_pts = nullptr;
+  uint8_t count = 0;
+  get_bali_guide(active_write_index, guide_pts, count);
+
+  for (int i = 0; i < count && i < 24; i++) {
+    bali_guide_pts[i].x = guide_pts[i].x;
+    bali_guide_pts[i].y = guide_pts[i].y;
+  }
+  lv_line_set_points(write_guide_track, bali_guide_pts, count);
+
+  if (write_start_marker) {
+    lv_obj_set_pos(write_start_marker, guide_pts[0].x - 8, guide_pts[0].y - 8);
+  }
+  if (write_end_marker) {
+    lv_obj_set_pos(write_end_marker, guide_pts[count - 1].x - 8, guide_pts[count - 1].y - 8);
+  }
+
+  if (write_feedback_lbl) {
+    lv_label_set_text(write_feedback_lbl, "Mulai di HIJAU -> MERAH");
+    lv_obj_set_style_text_color(write_feedback_lbl, lv_color_hex(0x38BDF8), 0);
+  }
+  ui_trace_clear(&bali_tab_trace);
+}
 
 // Deklarasi fungsi navigasi
 static void switch_tab(int tab_index);
@@ -132,13 +207,37 @@ static void on_node_click(lv_event_t* e) {
 static void on_clear_canvas_click(lv_event_t* e) {
   (void)e;
   audio_play(SOUND_CLICK);
-  ui_show_toast("Kanvas Bali dibersihkan");
+  ui_trace_clear(&bali_tab_trace);
+  if (write_feedback_lbl) {
+    lv_label_set_text(write_feedback_lbl, "Mulai di HIJAU -> MERAH");
+    lv_obj_set_style_text_color(write_feedback_lbl, lv_color_hex(0x38BDF8), 0);
+  }
+  ui_show_toast("Kanvas dibersihkan");
 }
 
 static void on_check_write_click(lv_event_t* e) {
   (void)e;
-  audio_play(SOUND_SUCCESS);
-  ui_show_toast("Goresan Bali Rapi! +15 XP");
+  const StrokeWaypoint* guide_pts = nullptr;
+  uint8_t count = 0;
+  get_bali_guide(active_write_index, guide_pts, count);
+
+  StrokeEvalResult eval = ui_eval_stroke_trace(&bali_tab_trace, guide_pts, count);
+  if (eval.success) {
+    audio_play(SOUND_SUCCESS);
+    audio_play(SOUND_REWARD);
+    if (write_feedback_lbl) {
+      lv_label_set_text(write_feedback_lbl, "BENAR!");
+      lv_obj_set_style_text_color(write_feedback_lbl, lv_color_hex(0x22C55E), 0);
+    }
+    ui_show_toast(eval.message);
+  } else {
+    audio_play(SOUND_ERROR);
+    if (write_feedback_lbl) {
+      lv_label_set_text(write_feedback_lbl, "COBA LAGI");
+      lv_obj_set_style_text_color(write_feedback_lbl, lv_color_hex(0xEF4444), 0);
+    }
+    ui_show_toast(eval.message);
+  }
 }
 
 static void mascot_bounce_anim_cb(void* var, int32_t val) {
@@ -427,17 +526,35 @@ static void build_write_view(lv_obj_t* parent) {
   write_preview_lbl = ui_make_label(boxHuruf, "Ca", &lv_font_montserrat_28, lv_color_hex(0xFFFFFF));
   lv_obj_center(write_preview_lbl);
 
-  // Area Kanvas Gambar
-  lv_obj_t* canvasCard = ui_make_card(view_write, 160, 8, 308, 160, lv_color_hex(0x0F131A), lv_color_hex(0x0F131A), 16);
+  // Area Kanvas Tracing ala Contoh Gambar User (308x160 px)
+  lv_obj_t* canvasCard = ui_make_card(view_write, 160, 8, 308, 160, lv_color_hex(0x0A0F1D), lv_color_hex(0x0A0F1D), 16);
   lv_obj_set_style_border_color(canvasCard, C_BALI_1, 0);
   lv_obj_set_style_border_width(canvasCard, 2, 0);
 
-  lv_obj_t* canvasHint = ui_make_label(canvasCard, "Tulis aksara Bali di area ini",
-                                       &lv_font_montserrat_14, C_MUTED);
-  lv_obj_align(canvasHint, LV_ALIGN_TOP_MID, 0, 8);
+  // Label Feedback di pojok kanan atas (seperti "BENAR!" pada gambar contoh user)
+  write_feedback_lbl = ui_make_label(canvasCard, "Mulai di HIJAU -> MERAH", &lv_font_montserrat_14, lv_color_hex(0x38BDF8));
+  lv_obj_align(write_feedback_lbl, LV_ALIGN_TOP_RIGHT, -12, 8);
 
-  write_guide_letter = ui_make_label(canvasCard, "Ca", &lv_font_montserrat_28, lv_color_hex(0x3B2A10));
-  lv_obj_center(write_guide_letter);
+  // Jalur Biru Tebal (Track ala Contoh Gambar User)
+  write_guide_track = lv_line_create(canvasCard);
+  lv_obj_clear_flag(write_guide_track, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_set_style_line_color(write_guide_track, lv_color_hex(0x2563EB), 0); // Biru pekat
+  lv_obj_set_style_line_width(write_guide_track, 16, 0); // Tebal 16px
+  lv_obj_set_style_line_rounded(write_guide_track, true, 0);
+
+  // Titik Mulai (Lingkaran Hijau)
+  write_start_marker = ui_make_card(canvasCard, 0, 0, 16, 16, lv_color_hex(0x22C55E), lv_color_hex(0x22C55E), 8);
+  lv_obj_set_style_border_color(write_start_marker, lv_color_hex(0xFFFFFF), 0);
+  lv_obj_set_style_border_width(write_start_marker, 2, 0);
+  lv_obj_clear_flag(write_start_marker, LV_OBJ_FLAG_CLICKABLE);
+
+  // Titik Akhir (Lingkaran Oranye/Merah)
+  write_end_marker = ui_make_card(canvasCard, 0, 0, 16, 16, lv_color_hex(0xF97316), lv_color_hex(0xF97316), 8);
+  lv_obj_set_style_border_color(write_end_marker, lv_color_hex(0xFFFFFF), 0);
+  lv_obj_set_style_border_width(write_end_marker, 2, 0);
+  lv_obj_clear_flag(write_end_marker, LV_OBJ_FLAG_CLICKABLE);
+
+  ui_trace_attach(&bali_tab_trace, canvasCard);
 
   // Tombol Bersihkan & Periksa
   lv_obj_t* btnClear = ui_make_card(view_write, 160, 174, 146, 42, C_CARD, C_CARD, 12);
@@ -525,10 +642,9 @@ static void switch_tab(int tab_index) {
     snprintf(b, sizeof(b), "Aksara %s", NAMA[active_write_index]);
     lv_label_set_text(write_target_title, b);
     static const char* AKSARA[9] = { "\xE1\xAC\xB3", "\xE1\xAC\xA6", "\xE1\xAC\x98", "Peti", "\xE1\xAC\xAD", "\xE1\xAC\x93", "\xE1\xAC\xA4", "\xE1\xAC\xA2", "Win" };
-    lv_obj_set_style_text_font(write_preview_lbl, (active_write_index == 3 || active_write_index == 8) ? &lv_font_montserrat_20 : &font_bali_22, 0);
-    lv_obj_set_style_text_font(write_guide_letter, (active_write_index == 3 || active_write_index == 8) ? &lv_font_montserrat_20 : &font_bali_22, 0);
+    lv_obj_set_style_text_font(write_preview_lbl, (active_write_index == 3 || active_write_index == 8) ? &lv_font_montserrat_20 : &font_bali_38, 0);
     lv_label_set_text(write_preview_lbl, AKSARA[active_write_index]);
-    lv_label_set_text(write_guide_letter, AKSARA[active_write_index]);
+    update_bali_write_guide();
   } else {
     // Tab Setelan
     lv_obj_clear_flag(view_settings, LV_OBJ_FLAG_HIDDEN);
