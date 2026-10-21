@@ -111,14 +111,16 @@ extern "C"
   LV_FONT_DECLARE(font_bali_22);
   LV_FONT_DECLARE(font_jawa_38);
   LV_FONT_DECLARE(font_bali_38);
+  LV_FONT_DECLARE(font_jawa_160);
+  LV_FONT_DECLARE(font_bali_160);
 #ifdef __cplusplus
 }
 #endif
 
 // ---------- Kanvas Goresan Aksara Interaktif (Sequential Grid Checkpoints & Corridor Guard) ----------
 #define MAX_TRACE_STROKES 6
-#define MAX_TRACE_POINTS_PER_STROKE 60
-#define MAX_CHECKPOINTS 16
+#define MAX_TRACE_POINTS_PER_STROKE 100
+#define MAX_CHECKPOINTS 100
 
 struct StrokeWaypoint
 {
@@ -264,9 +266,7 @@ inline void ui_trace_reset_checkpoints(TraceState *st)
   }
   if (st->feedback_lbl)
   {
-    char buf[48];
-    snprintf(buf, sizeof(buf), "Mulai dari P1 (Tetap di garis)");
-    lv_label_set_text(st->feedback_lbl, buf);
+    lv_label_set_text(st->feedback_lbl, "Mulai dari titik hijau (ikuti garis)");
     lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0x38BDF8), 0);
   }
 }
@@ -349,32 +349,49 @@ inline void ui_trace_set_checkpoints(TraceState *st, const StrokeWaypoint *pts, 
   st->corridor_r = corridor_r > 0 ? corridor_r : 20;
   st->fatal_corridor_r = fatal_corridor_r > 0 ? fatal_corridor_r : 32;
 
-  const int BADGE_SZ = 20;
-  const int BADGE_HALF = BADGE_SZ / 2;
-
   for (uint8_t i = 0; i < count; i++)
   {
     st->checkpoints[i].x = pts[i].x;
     st->checkpoints[i].y = pts[i].y;
     st->checkpoints[i].reached = false;
+    st->checkpoints[i].marker_card = nullptr;
+    st->checkpoints[i].label_obj = nullptr;
+  }
 
-    lv_obj_t *card = ui_make_card(st->canvas_card,
-                                  pts[i].x - BADGE_HALF,
-                                  pts[i].y - BADGE_HALF,
-                                  BADGE_SZ, BADGE_SZ,
-                                  lv_color_hex(0x1E293B), lv_color_hex(0x1E293B),
-                                  BADGE_HALF);
-    lv_obj_clear_flag(card, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+  // Tampilkan titik Awal (Hijau) & titik Akhir (Oranye) agar kanvas tetap bersih & kontur terbaca jelas
+  if (count > 0)
+  {
+    const int BADGE_SZ = 14;
+    const int BADGE_HALF = BADGE_SZ / 2;
+    lv_obj_t *start_card = ui_make_card(st->canvas_card,
+                                        pts[0].x - BADGE_HALF,
+                                        pts[0].y - BADGE_HALF,
+                                        BADGE_SZ, BADGE_SZ,
+                                        lv_color_hex(0x22C55E), lv_color_hex(0x22C55E),
+                                        BADGE_HALF);
+    lv_obj_clear_flag(start_card, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(start_card, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_border_color(start_card, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_border_width(start_card, 2, 0);
+    st->checkpoints[0].marker_card = start_card;
+  }
 
-    char ptxt[8];
-    snprintf(ptxt, sizeof(ptxt), "P%d", i + 1);
-    lv_obj_t *lbl = ui_make_label(card, ptxt, &lv_font_montserrat_10, lv_color_hex(0xBAE6FD));
-    lv_obj_clear_flag(lbl, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_center(lbl);
-
-    st->checkpoints[i].marker_card = card;
-    st->checkpoints[i].label_obj = lbl;
+  if (count > 1)
+  {
+    const int BADGE_SZ = 14;
+    const int BADGE_HALF = BADGE_SZ / 2;
+    int last = count - 1;
+    lv_obj_t *end_card = ui_make_card(st->canvas_card,
+                                      pts[last].x - BADGE_HALF,
+                                      pts[last].y - BADGE_HALF,
+                                      BADGE_SZ, BADGE_SZ,
+                                      lv_color_hex(0xEA580C), lv_color_hex(0xEA580C),
+                                      BADGE_HALF);
+    lv_obj_clear_flag(end_card, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(end_card, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_border_color(end_card, lv_color_hex(0xFDBA74), 0);
+    lv_obj_set_style_border_width(end_card, 2, 0);
+    st->checkpoints[last].marker_card = end_card;
   }
 
   ui_trace_reset_checkpoints(st);
@@ -407,7 +424,7 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
       audio_play(SOUND_ERROR);
       if (st->feedback_lbl)
       {
-        lv_label_set_text(st->feedback_lbl, "GAGAL! Mulai dari titik P1");
+        lv_label_set_text(st->feedback_lbl, "GAGAL! Mulai dari titik awal (hijau)");
         lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
       }
       return;
@@ -419,7 +436,7 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
       st->stray_points++;
       if (st->feedback_lbl)
       {
-        lv_label_set_text(st->feedback_lbl, "Mulai goresan dari P1!");
+        lv_label_set_text(st->feedback_lbl, "Mulai dari titik hijau!");
         lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xF59E0B), 0);
       }
       return;
@@ -471,9 +488,7 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
       }
       if (st->feedback_lbl)
       {
-        char buf[54];
-        snprintf(buf, sizeof(buf), "Keluar garis! Kembali ke P%d", curr);
-        lv_label_set_text(st->feedback_lbl, buf);
+        lv_label_set_text(st->feedback_lbl, "Keluar garis! Ikuti alur aksara");
         lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
       }
     }
@@ -558,9 +573,7 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
         ui_trace_style_checkpoint(st, st->active_checkpoint_idx);
         if (st->feedback_lbl)
         {
-          char buf[48];
-          snprintf(buf, sizeof(buf), "Bagus! Lanjut ke P%d", st->active_checkpoint_idx + 1);
-          lv_label_set_text(st->feedback_lbl, buf);
+          lv_label_set_text(st->feedback_lbl, "Bagus! Teruskan goresan...");
           lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0x38BDF8), 0);
         }
       }
@@ -587,9 +600,7 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
       {
         if (st->feedback_lbl)
         {
-          char buf[54];
-          snprintf(buf, sizeof(buf), "Urutan terlewati! Cari P%d dahulu", curr_target + 1);
-          lv_label_set_text(st->feedback_lbl, buf);
+          lv_label_set_text(st->feedback_lbl, "Urutan terlewati! Ikuti alur garis");
           lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xF59E0B), 0);
         }
         break;
@@ -607,9 +618,7 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
       {
         if (st->feedback_lbl)
         {
-          char buf[48];
-          snprintf(buf, sizeof(buf), "Arah terbalik! Tuju P%d", curr_target + 1);
-          lv_label_set_text(st->feedback_lbl, buf);
+          lv_label_set_text(st->feedback_lbl, "Arah terbalik! Ikuti arah goresan");
           lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
         }
       }

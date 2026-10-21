@@ -59,41 +59,35 @@ static const PathNodeData JAWA_PAGES[3][3] = {
 // Canvas Nulis Aksara
 static lv_obj_t* write_target_title = nullptr;
 static lv_obj_t* write_target_sub = nullptr;
+static lv_obj_t* write_watermark_lbl = nullptr;
 static lv_obj_t* write_guide_track = nullptr;
 static lv_obj_t* write_feedback_lbl = nullptr;
 static lv_obj_t* write_preview_lbl = nullptr;
 static int active_write_index = 2; // Default ke aksara "Ca"
 static TraceState jawa_tab_trace;
-static lv_point_precise_t jawa_guide_pts[24];
+static lv_point_precise_t jawa_guide_pts[100];
 
-// Waypoint Jalur Aksara Jawa (Pola Bentuk Native)
+// Waypoint Jalur Aksara Jawa (Tersinkronisasi Presisi dengan Font Asli 72px di Tengah Kanvas 308x160)
 static const StrokeWaypoint JAWA_GUIDE_HA[] = {
-  { 72, 110 }, { 80, 75 }, { 95, 55 }, { 110, 75 }, { 122, 110 },
-  { 140, 112 }, { 155, 70 }, { 170, 55 }, { 188, 75 }, { 202, 110 }
+  { 122, 108 }, { 134, 58 }, { 144, 98 }, { 156, 58 }, { 168, 98 }, { 180, 58 }, { 188, 108 }
 };
 static const StrokeWaypoint JAWA_GUIDE_NA[] = {
-  { 70, 110 }, { 85, 60 }, { 105, 55 }, { 120, 108 },
-  { 135, 60 }, { 155, 55 }, { 170, 108 }, { 185, 110 }, { 198, 75 }
+  { 124, 108 }, { 136, 58 }, { 148, 100 }, { 160, 58 }, { 174, 108 }, { 184, 75 }
 };
 static const StrokeWaypoint JAWA_GUIDE_CA[] = {
-  { 70, 80 }, { 85, 110 }, { 110, 55 }, { 135, 75 }, { 122, 100 },
-  { 148, 112 }, { 172, 60 }, { 188, 75 }, { 200, 110 }
+  { 94, 76 }, { 114, 28 }, { 86, 124 }, { 130, 104 }, { 162, 36 }, { 194, 86 }, { 214, 132 }
 };
 static const StrokeWaypoint JAWA_GUIDE_RA[] = {
-  { 80, 110 }, { 98, 65 }, { 115, 55 }, { 132, 85 }, { 145, 110 },
-  { 165, 60 }, { 182, 55 }, { 195, 110 }
+  { 124, 108 }, { 138, 58 }, { 152, 96 }, { 166, 58 }, { 180, 108 }
 };
 static const StrokeWaypoint JAWA_GUIDE_KA[] = {
-  { 75, 55 }, { 88, 85 }, { 98, 110 }, { 118, 85 }, { 130, 110 },
-  { 152, 52 }, { 172, 70 }, { 188, 110 }
+  { 122, 85 }, { 134, 55 }, { 144, 106 }, { 156, 70 }, { 170, 56 }, { 184, 108 }
 };
 static const StrokeWaypoint JAWA_GUIDE_DA[] = {
-  { 80, 110 }, { 95, 60 }, { 115, 55 }, { 130, 85 }, { 152, 55 },
-  { 172, 75 }, { 188, 110 }
+  { 124, 106 }, { 140, 56 }, { 154, 82 }, { 168, 62 }, { 182, 108 }
 };
 static const StrokeWaypoint JAWA_GUIDE_TA[] = {
-  { 75, 110 }, { 92, 60 }, { 112, 55 }, { 128, 105 }, { 145, 60 },
-  { 165, 55 }, { 182, 110 }
+  { 122, 108 }, { 136, 56 }, { 150, 72 }, { 164, 56 }, { 178, 108 }
 };
 
 static void get_jawa_guide(int index, const StrokeWaypoint*& pts, uint8_t& count) {
@@ -110,19 +104,26 @@ static void get_jawa_guide(int index, const StrokeWaypoint*& pts, uint8_t& count
 }
 
 static void update_jawa_write_guide() {
+  if (write_watermark_lbl) {
+    static const char* AKSARA[9] = { "\xEA\xA6\xB2", "\xEA\xA6\xA4", "\xEA\xA6\x95", "", "\xEA\xA6\xAA", "\xEA\xA6\x8F", "\xEA\xA6\xA2", "\xEA\xA6\xA0", "" };
+    if (active_write_index >= 0 && active_write_index < 9) {
+      lv_label_set_text(write_watermark_lbl, AKSARA[active_write_index]);
+    }
+  }
+
   if (!write_guide_track) return;
   const StrokeWaypoint* guide_pts = nullptr;
   uint8_t count = 0;
   get_jawa_guide(active_write_index, guide_pts, count);
 
-  for (int i = 0; i < count && i < 24; i++) {
+  for (int i = 0; i < count && i < 100; i++) {
     jawa_guide_pts[i].x = guide_pts[i].x;
     jawa_guide_pts[i].y = guide_pts[i].y;
   }
-  lv_line_set_points(write_guide_track, jawa_guide_pts, count);
+  lv_line_set_points(write_guide_track, jawa_guide_pts, count > 100 ? 100 : count);
 
-  // Inisialisasi checkpoints urutan titik P1 .. Pn (R=18px, Koridor=20px, Batas Gagal Parah=32px)
-  ui_trace_set_checkpoints(&jawa_tab_trace, guide_pts, count, 18, 20, 32);
+  // Inisialisasi checkpoints urutan titik (R=20px, Koridor=24px, Batas Gagal Parah=38px)
+  ui_trace_set_checkpoints(&jawa_tab_trace, guide_pts, count, 20, 24, 38);
   ui_trace_clear(&jawa_tab_trace);
 }
 
@@ -511,15 +512,22 @@ static void build_write_view(lv_obj_t* parent) {
   lv_obj_set_style_border_color(canvasCard, C_JAWA_1, 0);
   lv_obj_set_style_border_width(canvasCard, 2, 0);
 
+  // Watermark Glif Aksara Asli Transparan (Background Guide 160px JUMBO)
+  write_watermark_lbl = ui_make_label(canvasCard, "\xEA\xA6\x95", &font_jawa_160, lv_color_hex(0x38BDF8));
+  lv_obj_set_style_text_opa(write_watermark_lbl, LV_OPA_30, 0); // 30% opasitas lembut transparan
+  lv_obj_center(write_watermark_lbl);
+  lv_obj_clear_flag(write_watermark_lbl, LV_OBJ_FLAG_CLICKABLE);
+
   // Label Feedback di pojok kanan atas (seperti "BENAR!" pada gambar contoh user)
-  write_feedback_lbl = ui_make_label(canvasCard, "Mulai di HIJAU -> MERAH", &lv_font_montserrat_14, lv_color_hex(0x38BDF8));
+  write_feedback_lbl = ui_make_label(canvasCard, "Mulai di P1 -> Pn", &lv_font_montserrat_14, lv_color_hex(0x38BDF8));
   lv_obj_align(write_feedback_lbl, LV_ALIGN_TOP_RIGHT, -12, 8);
 
-  // Jalur Biru Tebal (Track ala Contoh Gambar User)
+  // Jalur Biru Tipis & Halus (Line Track)
   write_guide_track = lv_line_create(canvasCard);
   lv_obj_clear_flag(write_guide_track, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_set_style_line_color(write_guide_track, lv_color_hex(0x2563EB), 0); // Biru pekat
-  lv_obj_set_style_line_width(write_guide_track, 16, 0); // Tebal 16px
+  lv_obj_set_style_line_color(write_guide_track, lv_color_hex(0x2563EB), 0); // Biru panduan
+  lv_obj_set_style_line_width(write_guide_track, 4, 0);                      // Tebal 4px rapi (tidak menutupi huruf)
+  lv_obj_set_style_line_opa(write_guide_track, LV_OPA_60, 0);                // 60% opasitas
   lv_obj_set_style_line_rounded(write_guide_track, true, 0);
 
   ui_trace_attach(&jawa_tab_trace, canvasCard);

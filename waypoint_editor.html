@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>OpenAksara - Waypoint Coordinate Editor</title>
+  <style>
+    @font-face {
+      font-family: 'BaliNative';
+      src: url('asset/fonts/NotoSansBalinese-Regular.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'JawaNative';
+      src: url('asset/fonts/NotoSansJavanese-Regular.ttf') format('truetype');
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #0B0D12;
+      color: #F2F4F8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 6px;
+      color: #38BDF8;
+    }
+    p.sub {
+      color: #8A93A6;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .toolbar-container {
+      width: 100%;
+      max-width: 980px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      background: #161A22;
+      border: 1px solid #232938;
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+
+    .toolbar-row.compact {
+      padding: 8px 12px;
+      background: #11151D;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #94A3B8;
+      cursor: pointer;
+    }
+
+    label span {
+      white-space: nowrap;
+    }
+
+    select, button, input[type="range"] {
+      background: #161A22;
+      border: 1px solid #232938;
+      color: #F2F4F8;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+    }
+    select:focus, button:hover {
+      border-color: #38BDF8;
+    }
+    button.btn-primary {
+      background: #2563EB;
+      border-color: #3B82F6;
+      font-weight: bold;
+    }
+    button.btn-primary:hover {
+      background: #1D4ED8;
+    }
+    button.btn-danger {
+      background: #DC2626;
+      border-color: #EF4444;
+    }
+
+    .editor-wrapper {
+      background: #161A22;
+      border: 2px solid #232938;
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 980px;
+      overflow-x: auto;
+    }
+
+    .canvas-container {
+      position: relative;
+      background: #0A0F1D;
+      border: 2px solid #38BDF8;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: crosshair;
+      user-select: none;
+    }
+
+    /* Ukuran kanvas asli ESP32: 308 x 160 px */
+    #mainCanvas {
+      display: block;
+    }
+
+    .info-bar {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      font-size: 12px;
+      color: #8A93A6;
+    }
+
+    .output-section {
+      width: 100%;
+      max-width: 650px;
+      background: #161A22;
+      border: 1px solid #232938;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .output-header span {
+      font-size: 13px;
+      font-weight: bold;
+      color: #38BDF8;
+    }
+
+    textarea {
+      width: 100%;
+      height: 110px;
+      background: #0B0D12;
+      border: 1px solid #232938;
+      border-radius: 8px;
+      color: #22C55E;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 13px;
+      padding: 10px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .instructions {
+      max-width: 650px;
+      margin-top: 16px;
+      background: #0F172A;
+      border-left: 4px solid #38BDF8;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #94A3B8;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎨 OpenAksara Waypoint Plotter</h1>
+  <p class="sub">Klik langsung di atas lekukan aksara untuk membuat titik acuan (Checkpoints P1, P2.. Pn) yang presisi 100%</p>
+
+  <div class="toolbar-container">
+    <!-- Baris 1: Pemilihan Naskah & Huruf -->
+    <div class="toolbar-row">
+      <label>
+        <span>Jenis Aksara:</span>
+        <select id="scriptType" onchange="onScriptChange()" style="font-weight:bold; color:#38BDF8;">
+          <option value="bali" selected>Aksara Bali</option>
+          <option value="jawa">Aksara Jawa</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Pilihan Huruf / Tanda:</span>
+        <select id="letterSelect" onchange="onLetterChange()" style="font-size:14px; font-weight:bold; min-width:230px;">
+          <!-- Diisi otomatis oleh JavaScript -->
+        </select>
+      </label>
+
+      <label id="vokalRefContainer" style="display:none; background:#0B0D12; border:1px solid #232938; padding:4px 10px; border-radius:8px;">
+        <span>Tampilan Vokal:</span>
+        <select id="vokalRefMode" onchange="redraw()" style="padding:4px 8px; font-size:12px;">
+          <option value="dotted" selected>Lingkaran Acuan (◌)</option>
+          <option value="sample">Huruf Acuan (Ha)</option>
+          <option value="raw">Hanya Tanda Vokal</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Baris 2: Pengaturan Kanvas & Tampilan Glif -->
+    <div class="toolbar-row compact">
+      <label>
+        <span>Zoom Layar:</span>
+        <select id="zoomLevel" onchange="onZoomChange()" style="padding:4px 8px; font-size:13px;">
+          <option value="1">1x (308x160 px)</option>
+          <option value="2" selected>2x (Presisi 616x320)</option>
+          <option value="3">3x (Detail 924x480)</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Ukuran Glif:</span>
+        <select id="fontSizeSelect" onchange="redraw()" style="padding:4px 8px; font-size:13px;">
+          <option value="auto" selected>✨ Auto-Fit JUMBO (Anti-Kepotong)</option>
+          <option value="160">160px (Maksimal)</option>
+          <option value="140">140px (Besar)</option>
+          <option value="120">120px (Sedang)</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Opasitas:</span>
+        <input type="range" id="fontOpa" min="10" max="95" value="40" oninput="redraw()" style="width:65px;">
+      </label>
+
+      <label>
+        <span>Jarak Titik:</span>
+        <input type="range" id="stepDist" min="4" max="14" value="7" style="width:60px;" oninput="document.getElementById('stepVal').textContent=this.value+'px'">
+        <span id="stepVal" style="color:#38BDF8; font-weight:bold; min-width:28px;">7px</span>
+      </label>
+
+      <label style="cursor:pointer;">
+        <input type="checkbox" id="toggleBadges" onchange="redraw()">
+        <span>Label P1..Pn</span>
+      </label>
+
+      <label title="Geser posisi glif secara vertikal">
+        <span>Geser Y:</span>
+        <input type="range" id="shiftY" min="-40" max="40" value="0" style="width:55px;" oninput="document.getElementById('shiftYVal').textContent=this.value; redraw();">
+        <span id="shiftYVal" style="color:#38BDF8; font-weight:bold; min-width:22px;">0</span>
+      </label>
+    </div>
+
+    <!-- Baris 3: Tombol Aksi Langsung -->
+    <div class="toolbar-row compact" style="justify-content: space-between;">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button onclick="undoPoint()">↶ Undo</button>
+        <button class="btn-danger" onclick="clearPoints()">🗑 Bersihkan Kanvas</button>
+        <button onclick="loadDefaultPoints()">⚡ Muat Titik Saat Ini</button>
+        <button onclick="resetShift()">↺ Reset Geser Y</button>
+      </div>
+      <div>
+        <button class="btn-primary" onclick="copyCppCode()">📋 Salin Kode C++</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="editor-wrapper">
+    <div class="canvas-container" id="canvasContainer">
+      <canvas id="mainCanvas" width="308" height="160"></canvas>
+    </div>
+    <div class="info-bar">
+      <span id="coordInfo">Kursor: (X: -, Y: -)</span>
+      <span id="countInfo">Total Titik: 0</span>
+      <span id="radiusInfo">R Toleransi: 18px</span>
+    </div>
+  </div>
+
+  <div class="output-section">
+    <div class="output-header">
+      <span>Kode C++ Siap Pakai:</span>
+      <button class="btn-primary" onclick="copyCppCode()">📋 Salin Kode C++</button>
+    </div>
+    <textarea id="cppOutput" readonly placeholder="Klik pada kanvas untuk menghasilkan array koordinat C++..."></textarea>
+  </div>
+
+  <div class="instructions">
+    <strong>💡 Cara Pakai (Mode Gores / Drag Bebas - Cuma 1 Detik!):</strong><br>
+    1. Pilih aksara yang mau dibuatkan jalurnya (misal: <strong>Aksara Bali Ca</strong> atau tanda vokal seperti <strong>Wulu / Suku</strong>).<br>
+    2. Untuk <strong>Sandhangan / Pengangge Suara</strong>, gunakan menu <em>Tampilan Vokal</em> untuk memilih antara lingkaran acuan (◌), huruf acuan (Ha), atau tanda murni.<br>
+    3. <strong>Tekan & tahan klik mouse / stylus</strong> di titik awal (kepala huruf), lalu <strong>seret/gores mengikuti lekukan huruf</strong> sampai selesai (ekor).<br>
+    4. Tool otomatis merekam titik-titik $P_1, P_2 \dots P_n$ secara rapat, mulus, dan presisi tanpa kepotong.<br>
+    5. Setelah selesai menggores, klik tombol <strong>"Salin Kode C++"</strong> dan tinggal paste ke proyek!
+  </div>
+
+  <script>
+    const BALI_LETTERS = [
+      // 18 Aksara Wreastra (Konsonan Utama)
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ha", char: "ᬳ", varName: "BALI_GUIDE_HA", defaultPts: [{x:86,y:66},{x:106,y:28},{x:122,y:86},{x:138,y:132},{x:154,y:72},{x:182,y:28},{x:206,y:86},{x:222,y:132}] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Na", char: "ᬦ", varName: "BALI_GUIDE_NA", defaultPts: [{x:90,y:128},{x:110,y:28},{x:138,y:100},{x:162,y:32},{x:190,y:120},{x:214,y:72}] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ca", char: "ᬘ", varName: "BALI_GUIDE_CA", defaultPts: [{x:92,y:80},{x:90,y:64},{x:90,y:49},{x:101,y:38},{x:116,y:44},{x:123,y:60},{x:125,y:76},{x:125,y:91},{x:127,y:107},{x:118,y:120},{x:103,y:122},{x:98,y:107},{x:107,y:93},{x:123,y:96},{x:136,y:104},{x:147,y:116},{x:163,y:118},{x:178,y:118},{x:190,y:107},{x:192,y:91},{x:183,y:78},{x:170,y:67},{x:163,y:51},{x:178,y:47},{x:194,y:49},{x:210,y:56},{x:216,y:71},{x:218,y:87},{x:218,y:102},{x:218,y:118}] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ra", char: "ᬭ", varName: "BALI_GUIDE_RA", defaultPts: [{x:94,y:132},{x:122,y:32},{x:150,y:112},{x:178,y:32},{x:206,y:132}] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ka", char: "ᬓ", varName: "BALI_GUIDE_KA", defaultPts: [{x:90,y:86},{x:114,y:26},{x:130,y:128},{x:154,y:56},{x:182,y:28},{x:210,y:132}] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Da", char: "ᬤ", varName: "BALI_GUIDE_DA", defaultPts: [{x:94,y:128},{x:126,y:28},{x:154,y:80},{x:182,y:40},{x:210,y:132}] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ta", char: "ᬢ", varName: "BALI_GUIDE_TA", defaultPts: [{x:90,y:132},{x:118,y:28},{x:146,y:60},{x:174,y:28},{x:202,y:132}] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Sa", char: "ᬲ", varName: "BALI_GUIDE_SA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Wa", char: "ᬯ", varName: "BALI_GUIDE_WA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "La", char: "ᬮ", varName: "BALI_GUIDE_LA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ma", char: "ᬫ", varName: "BALI_GUIDE_MA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ga", char: "ᬕ", varName: "BALI_GUIDE_GA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ba", char: "ᬩ", varName: "BALI_GUIDE_BA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Nga", char: "ᬗ", varName: "BALI_GUIDE_NGA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Pa", char: "ᬧ", varName: "BALI_GUIDE_PA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ja", char: "ᬚ", varName: "BALI_GUIDE_JA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Ya", char: "ᬬ", varName: "BALI_GUIDE_YA", defaultPts: [] },
+      { group: "Aksara Wreastra (18 Huruf)", name: "Nya", char: "ᬜ", varName: "BALI_GUIDE_NYA", defaultPts: [] },
+
+      // Pengangge Suara (Vokal Diakritik Bali)
+      { group: "Pengangge Suara (Vokal Bali)", name: "Tedung (a panjang)", char: "◌ᬵ", rawChar: "ᬵ", desc: "Bunyi /aa/ panjang (di belakang konsonan)", varName: "BALI_GUIDE_TEDUNG", defaultPts: [] },
+      { group: "Pengangge Suara (Vokal Bali)", name: "Ulu (i)", char: "◌ᬶ", rawChar: "ᬶ", desc: "Bunyi /i/ (di atas konsonan)", varName: "BALI_GUIDE_ULU", defaultPts: [] },
+      { group: "Pengangge Suara (Vokal Bali)", name: "Ulu Sari (ii panjang)", char: "◌ᬷ", rawChar: "ᬷ", desc: "Bunyi /ii/ panjang (di atas konsonan)", varName: "BALI_GUIDE_ULU_SARI", defaultPts: [] },
+      { group: "Pengangge Suara (Vokal Bali)", name: "Suku (u)", char: "◌ᬸ", rawChar: "ᬸ", desc: "Bunyi /u/ (di bawah konsonan)", varName: "BALI_GUIDE_SUKU", defaultPts: [] },
+      { group: "Pengangge Suara (Vokal Bali)", name: "Suku Ilut (uu panjang)", char: "◌ᬹ", rawChar: "ᬹ", desc: "Bunyi /uu/ panjang (di bawah konsonan)", varName: "BALI_GUIDE_SUKU_ILUT", defaultPts: [] },
+      { group: "Pengangge Suara (Vokal Bali)", name: "Taleng (é)", char: "ᬾ◌", rawChar: "ᬾ", desc: "Bunyi /é/ (di depan konsonan)", varName: "BALI_GUIDE_TALENG", defaultPts: [] },
+      { group: "Pengangge Suara (Vokal Bali)", name: "Taleng Tedung (o)", char: "ᬾ◌ᬵ", rawChar: "ᭀ", desc: "Bunyi /o/ (mengapit konsonan)", varName: "BALI_GUIDE_TALENG_TEDUNG", defaultPts: [] },
+      { group: "Pengangge Suara (Vokal Bali)", name: "Pepet (e)", char: "◌ᭂ", rawChar: "ᭂ", desc: "Bunyi /e/ pepet (di atas konsonan)", varName: "BALI_GUIDE_PEPET", defaultPts: [] },
+      { group: "Pengangge Suara (Vokal Bali)", name: "Taleng Marepa (ai)", char: "ᬿ◌", rawChar: "ᬿ", desc: "Bunyi /ai/ (di depan konsonan)", varName: "BALI_GUIDE_TALENG_MAREPA", defaultPts: [] }
+    ];
+
+    const JAWA_LETTERS = [
+      // 20 Aksara Carakan (Nglegena)
+      { group: "Aksara Carakan (20 Huruf)", name: "Ha", char: "ꦲ", varName: "JAWA_GUIDE_HA", defaultPts: [{x:90,y:132},{x:114,y:32},{x:134,y:112},{x:158,y:32},{x:182,y:112},{x:206,y:32},{x:222,y:132}] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Na", char: "ꦤ", varName: "JAWA_GUIDE_NA", defaultPts: [{x:94,y:132},{x:118,y:32},{x:142,y:116},{x:166,y:32},{x:194,y:132},{x:214,y:66}] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ca", char: "ꦕ", varName: "JAWA_GUIDE_CA", defaultPts: [{x:94,y:76},{x:114,y:28},{x:86,y:124},{x:130,y:104},{x:162,y:36},{x:194,y:86},{x:214,y:132}] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ra", char: "ꦫ", varName: "JAWA_GUIDE_RA", defaultPts: [{x:94,y:132},{x:122,y:32},{x:150,y:108},{x:178,y:32},{x:206,y:132}] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ka", char: "ꦏ", varName: "JAWA_GUIDE_KA", defaultPts: [{x:90,y:86},{x:114,y:26},{x:134,y:128},{x:158,y:56},{x:186,y:28},{x:214,y:132}] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Da", char: "ꦢ", varName: "JAWA_GUIDE_DA", defaultPts: [{x:94,y:128},{x:126,y:28},{x:154,y:80},{x:182,y:40},{x:210,y:132}] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ta", char: "ꦠ", varName: "JAWA_GUIDE_TA", defaultPts: [{x:90,y:132},{x:118,y:28},{x:146,y:60},{x:174,y:28},{x:202,y:132}] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Sa", char: "ꦱ", varName: "JAWA_GUIDE_SA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Wa", char: "ꦮ", varName: "JAWA_GUIDE_WA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "La", char: "ꦭ", varName: "JAWA_GUIDE_LA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Pa", char: "ꦥ", varName: "JAWA_GUIDE_PA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Dha", char: "ꦝ", varName: "JAWA_GUIDE_DHA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ja", char: "ꦗ", varName: "JAWA_GUIDE_JA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ya", char: "ꦪ", varName: "JAWA_GUIDE_YA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Nya", char: "ꦚ", varName: "JAWA_GUIDE_NYA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ma", char: "ꦩ", varName: "JAWA_GUIDE_MA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ga", char: "ꦒ", varName: "JAWA_GUIDE_GA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Ba", char: "ꦧ", varName: "JAWA_GUIDE_BA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Tha", char: "ꦛ", varName: "JAWA_GUIDE_THA", defaultPts: [] },
+      { group: "Aksara Carakan (20 Huruf)", name: "Nga", char: "ꦔ", varName: "JAWA_GUIDE_NGA", defaultPts: [] },
+
+      // Sandhangan Swara (Vokal Diakritik Jawa)
+      { group: "Sandhangan Swara (Vokal Jawa)", name: "Wulu (i)", char: "◌ꦶ", rawChar: "ꦶ", desc: "Swara [i] (ing dhuwur aksara)", varName: "JAWA_GUIDE_WULU", defaultPts: [] },
+      { group: "Sandhangan Swara (Vokal Jawa)", name: "Suku (u)", char: "◌ꦸ", rawChar: "ꦸ", desc: "Swara [u] (ing ngisor aksara)", varName: "JAWA_GUIDE_SUKU", defaultPts: [] },
+      { group: "Sandhangan Swara (Vokal Jawa)", name: "Taling (é)", char: "ꦺ◌", rawChar: "ꦺ", desc: "Swara [é] (ing ngarep aksara)", varName: "JAWA_GUIDE_TALING", defaultPts: [] },
+      { group: "Sandhangan Swara (Vokal Jawa)", name: "Pepet (e)", char: "◌ꦼ", rawChar: "ꦼ", desc: "Swara [e/ə] pepet (ing dhuwur aksara)", varName: "JAWA_GUIDE_PEPET", defaultPts: [] },
+      { group: "Sandhangan Swara (Vokal Jawa)", name: "Taling Tarung (o)", char: "ꦺ◌ꦴ", rawChar: "ꦺꦴ", desc: "Swara [o] (ngapit aksara)", varName: "JAWA_GUIDE_TALING_TARUNG", defaultPts: [] },
+      { group: "Sandhangan Swara (Vokal Jawa)", name: "Tarung (a panjang)", char: "◌ꦴ", rawChar: "ꦴ", desc: "Swara [a:] panjang (ing buri aksara)", varName: "JAWA_GUIDE_TARUNG", defaultPts: [] },
+      { group: "Sandhangan Swara (Vokal Jawa)", name: "Wulu Dirga (ii panjang)", char: "◌ꦷ", rawChar: "ꦷ", desc: "Swara [i:] panjang (ing dhuwur aksara)", varName: "JAWA_GUIDE_WULU_DIRGA", defaultPts: [] },
+      { group: "Sandhangan Swara (Vokal Jawa)", name: "Suku Mendut (uu panjang)", char: "◌ꦹ", rawChar: "ꦹ", desc: "Swara [u:] panjang (ing ngisor aksara)", varName: "JAWA_GUIDE_SUKU_MENDUT", defaultPts: [] }
+    ];
+
+    function loadDefaultPoints() {
+      if (currentLetter && currentLetter.defaultPts && currentLetter.defaultPts.length > 0) {
+        points = JSON.parse(JSON.stringify(currentLetter.defaultPts));
+        redraw();
+      } else {
+        alert("Aksara ini belum memiliki titik contoh bawaan.\nSilakan langsung gores (tahan & seret mouse/stylus) di atas huruf pada kanvas!");
+      }
+    }
+
+    const canvas = document.getElementById("mainCanvas");
+    const ctx = canvas.getContext("2d");
+    let zoom = 2;
+    let points = [];
+    let currentLetter = BALI_LETTERS[0];
+    let currentScript = "bali";
+
+    function init() {
+      populateLetterSelect();
+      applyZoom(zoom);
+      redraw();
+      if (document.fonts) {
+        document.fonts.ready.then(() => {
+          redraw();
+        });
+      }
+    }
+
+    function populateLetterSelect() {
+      const select = document.getElementById("letterSelect");
+      select.innerHTML = "";
+      const list = currentScript === "bali" ? BALI_LETTERS : JAWA_LETTERS;
+      let currentOptGroup = null;
+      let lastGroupName = "";
+
+      list.forEach((item, idx) => {
+        const groupName = item.group || "Aksara";
+        if (groupName !== lastGroupName) {
+          currentOptGroup = document.createElement("optgroup");
+          currentOptGroup.label = groupName;
+          select.appendChild(currentOptGroup);
+          lastGroupName = groupName;
+        }
+        const opt = document.createElement("option");
+        opt.value = idx;
+        opt.textContent = `${item.name} (${item.char})`;
+        currentOptGroup.appendChild(opt);
+      });
+      currentLetter = list[0];
+      select.value = "0";
+      updateVokalRefVisibility();
+    }
+
+    function onScriptChange() {
+      currentScript = document.getElementById("scriptType").value;
+      populateLetterSelect();
+      points = [];
+      resetShift();
+      redraw();
+    }
+
+    function onLetterChange() {
+      const idx = parseInt(document.getElementById("letterSelect").value);
+      const list = currentScript === "bali" ? BALI_LETTERS : JAWA_LETTERS;
+      currentLetter = list[idx];
+      points = [];
+      updateVokalRefVisibility();
+      resetShift();
+      redraw();
+    }
+
+    function updateVokalRefVisibility() {
+      const vokalContainer = document.getElementById("vokalRefContainer");
+      if (vokalContainer) {
+        if (currentLetter && currentLetter.rawChar) {
+          vokalContainer.style.display = "flex";
+        } else {
+          vokalContainer.style.display = "none";
+        }
+      }
+    }
+
+    function resetShift() {
+      const shiftEl = document.getElementById("shiftY");
+      if (shiftEl) {
+        shiftEl.value = 0;
+        const valEl = document.getElementById("shiftYVal");
+        if (valEl) valEl.textContent = "0";
+      }
+      redraw();
+    }
+
+    function onZoomChange() {
+      zoom = parseInt(document.getElementById("zoomLevel").value);
+      applyZoom(zoom);
+    }
+
+    function applyZoom(z) {
+      canvas.style.width = (308 * z) + "px";
+      canvas.style.height = (160 * z) + "px";
+    }
+
+    let isDrawing = false;
+
+    function getCanvasCoords(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: Math.round((clientX - rect.left) * scaleX),
+        y: Math.round((clientY - rect.top) * scaleY)
+      };
+    }
+
+    function addPointIfFarEnough(p) {
+      const step = document.getElementById("stepDist") ? parseInt(document.getElementById("stepDist").value) : 7;
+      if (points.length === 0) {
+        points.push(p);
+        redraw();
+        return;
+      }
+      const last = points[points.length - 1];
+      const d2 = (p.x - last.x)**2 + (p.y - last.y)**2;
+      if (d2 >= (step * step)) {
+        points.push(p);
+        redraw();
+      }
+    }
+
+    // Mouse Events (Klik & Gores / Drag Bebas)
+    canvas.addEventListener("mousedown", function(e) {
+      isDrawing = true;
+      const p = getCanvasCoords(e.clientX, e.clientY);
+      addPointIfFarEnough(p);
+    });
+
+    window.addEventListener("mousemove", function(e) {
+      const rect = canvas.getBoundingClientRect();
+      if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+        const p = getCanvasCoords(e.clientX, e.clientY);
+        document.getElementById("coordInfo").textContent = `Kursor: (X: ${p.x}, Y: ${p.y})`;
+        if (isDrawing) {
+          addPointIfFarEnough(p);
+        }
+      }
+    });
+
+    window.addEventListener("mouseup", function() {
+      if (isDrawing) {
+        isDrawing = false;
+        updateCppOutput();
+      }
+    });
+
+    // Touch Events (Stylus / Touchscreen Laptop / Tablet)
+    canvas.addEventListener("touchstart", function(e) {
+      if (e.touches.length > 0) {
+        isDrawing = true;
+        const p = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+        addPointIfFarEnough(p);
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", function(e) {
+      if (isDrawing && e.touches.length > 0) {
+        const p = getCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+        addPointIfFarEnough(p);
+        document.getElementById("coordInfo").textContent = `Touch: (X: ${p.x}, Y: ${p.y})`;
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", function() {
+      isDrawing = false;
+      updateCppOutput();
+    });
+
+    function undoPoint() {
+      if (points.length > 0) {
+        points.pop();
+        redraw();
+      }
+    }
+
+    function clearPoints() {
+      points = [];
+      redraw();
+    }
+
+    function redraw() {
+      // 1. Bersihkan latar kanvas (#0A0F1D)
+      ctx.fillStyle = "#0A0F1D";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Grid tipis pembantu
+      ctx.strokeStyle = "#161E2E";
+      ctx.lineWidth = 1;
+      for (let x = 20; x < canvas.width; x += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 20; y < canvas.height; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Garis tengah kanvas
+      ctx.strokeStyle = "#232938";
+      ctx.beginPath();
+      ctx.moveTo(154, 0); ctx.lineTo(154, 160);
+      ctx.moveTo(0, 80); ctx.lineTo(308, 80);
+      ctx.stroke();
+
+      // 2. Gambar Watermark Glif Aksara Asli di Tengah (Anti-Kepotong & Auto-Fit)
+      ctx.save();
+      const fontFam = currentScript === "bali" ? "BaliNative, sans-serif" : "JawaNative, sans-serif";
+      const opaVal = (document.getElementById("fontOpa") ? parseInt(document.getElementById("fontOpa").value) : 40) / 100;
+      const fontOpt = document.getElementById("fontSizeSelect") ? document.getElementById("fontSizeSelect").value : "auto";
+      const shiftY = document.getElementById("shiftY") ? parseInt(document.getElementById("shiftY").value) : 0;
+
+      // Tentukan teks glif yang akan digambar
+      let textToDraw = currentLetter.char;
+      if (currentLetter.rawChar) {
+        const mode = document.getElementById("vokalRefMode") ? document.getElementById("vokalRefMode").value : "dotted";
+        if (mode === "raw") {
+          textToDraw = currentLetter.rawChar;
+        } else if (mode === "sample") {
+          if (currentScript === "bali") {
+            if (currentLetter.rawChar === "ᬾ") textToDraw = "ᬾᬳ";
+            else if (currentLetter.rawChar === "ᭀ") textToDraw = "ᬾᬳᬵ";
+            else if (currentLetter.rawChar === "ᬿ") textToDraw = "ᬿᬳ";
+            else textToDraw = "ᬳ" + currentLetter.rawChar;
+          } else {
+            if (currentLetter.rawChar === "ꦺ") textToDraw = "ꦺꦲ";
+            else if (currentLetter.rawChar === "ꦺꦴ") textToDraw = "ꦺꦲꦴ";
+            else textToDraw = "ꦲ" + currentLetter.rawChar;
+          }
+        } else { // "dotted"
+          textToDraw = currentLetter.char;
+        }
+      }
+
+      let baseSize = 135;
+      if (fontOpt !== "auto") {
+        baseSize = parseInt(fontOpt);
+      }
+
+      ctx.font = `${baseSize}px ${fontFam}`;
+      let m = ctx.measureText(textToDraw);
+
+      let ascent = m.actualBoundingBoxAscent;
+      let descent = m.actualBoundingBoxDescent;
+      let left = m.actualBoundingBoxLeft;
+      let right = m.actualBoundingBoxRight;
+
+      let drawSize = baseSize;
+
+      // Jika browser mendukung TextMetrics visual bounding box
+      if (ascent !== undefined && descent !== undefined && left !== undefined && right !== undefined) {
+        let glyphW = right + left;
+        let glyphH = ascent + descent;
+
+        if (glyphW > 0 && glyphH > 0) {
+          if (fontOpt === "auto") {
+            const maxAllowedW = 240;
+            const maxAllowedH = 114; // margin aman 23px atas & 23px bawah
+            const scaleW = maxAllowedW / glyphW;
+            const scaleH = maxAllowedH / glyphH;
+            const scale = Math.min(scaleW, scaleH);
+            drawSize = Math.round(Math.min(160, Math.max(50, baseSize * scale)));
+
+            // Ukur ulang dengan drawSize hasil auto-fit
+            ctx.font = `${drawSize}px ${fontFam}`;
+            m = ctx.measureText(textToDraw);
+            ascent = m.actualBoundingBoxAscent;
+            descent = m.actualBoundingBoxDescent;
+            left = m.actualBoundingBoxLeft;
+            right = m.actualBoundingBoxRight;
+          }
+
+          // Auto-centering visual presisi di (154, 80)
+          const drawX = 154 - (right - left) / 2;
+          const drawY = (80 + shiftY) + (ascent - descent) / 2;
+
+          ctx.fillStyle = `rgba(56, 189, 248, ${opaVal})`;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillText(textToDraw, drawX, drawY);
+        } else {
+          // Fallback jika width/height 0
+          ctx.font = `${drawSize}px ${fontFam}`;
+          ctx.fillStyle = `rgba(56, 189, 248, ${opaVal})`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(textToDraw, 154, 80 + shiftY);
+        }
+      } else {
+        // Fallback untuk browser lawas
+        ctx.font = `${drawSize}px ${fontFam}`;
+        ctx.fillStyle = `rgba(56, 189, 248, ${opaVal})`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(textToDraw, 154, 80 + shiftY);
+      }
+      ctx.restore();
+
+      // 3. Gambar Garis Jalur Biru (Connecting Track)
+      if (points.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.strokeStyle = "#2563EB";
+        ctx.lineWidth = 5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.stroke();
+      }
+
+      // 4. Gambar Checkpoint Badges (Sesuai Toggle Checkbox)
+      const showLabels = document.getElementById("toggleBadges") ? document.getElementById("toggleBadges").checked : false;
+
+      points.forEach((pt, idx) => {
+        const isStart = (idx === 0);
+        const isEnd = (idx === points.length - 1 && points.length > 1);
+
+        if (showLabels) {
+          // Mode Detail: Badge P1, P2.. Pn
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 9, 0, Math.PI * 2);
+          ctx.fillStyle = isStart ? "#22C55E" : (isEnd ? "#EA580C" : "#1E293B");
+          ctx.fill();
+
+          ctx.strokeStyle = (isStart || isEnd) ? "#FFFFFF" : "#38BDF8";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.font = "bold 9px -apple-system, sans-serif";
+          ctx.fillStyle = "#FFFFFF";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("P" + (idx + 1), pt.x, pt.y);
+        } else {
+          // Mode Bersih (Default): Titik dot halus tanpa badge angka
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, isStart || isEnd ? 4.5 : 3, 0, Math.PI * 2);
+          ctx.fillStyle = isStart ? "#22C55E" : (isEnd ? "#EA580C" : "#FFFFFF");
+          ctx.fill();
+
+          ctx.strokeStyle = isStart || isEnd ? "#FFFFFF" : "#2563EB";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      });
+
+      // Update info & kode output C++
+      document.getElementById("countInfo").textContent = currentLetter.desc ? `Total Titik: ${points.length} • ${currentLetter.desc}` : `Total Titik: ${points.length}`;
+      updateCppOutput();
+    }
+
+    function updateCppOutput() {
+      if (points.length === 0) {
+        document.getElementById("cppOutput").value = "";
+        return;
+      }
+
+      let code = `static const StrokeWaypoint ${currentLetter.varName}[] = {\n  `;
+      points.forEach((pt, idx) => {
+        code += `{ ${pt.x}, ${pt.y} }`;
+        if (idx < points.length - 1) {
+          code += ", ";
+          if ((idx + 1) % 5 === 0) code += "\n  ";
+        }
+      });
+      code += "\n};";
+
+      document.getElementById("cppOutput").value = code;
+    }
+
+    function copyCppCode() {
+      const textarea = document.getElementById("cppOutput");
+      if (!textarea.value) {
+        alert("Belum ada titik yang diklik! Silakan klik pada kanvas terlebih dahulu.");
+        return;
+      }
+      textarea.select();
+      navigator.clipboard.writeText(textarea.value).then(() => {
+        alert("Berhasil disalin ke clipboard! Tinggal paste ke kode proyek.");
+      });
+    }
+
+    // Jalankan saat halaman dibuka
+    window.onload = init;
+  </script>
+</body>
+</html>
+
