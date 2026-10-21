@@ -91,10 +91,11 @@ LV_IMAGE_DECLARE(Buddy4);
 LV_IMAGE_DECLARE(BuddyJawa);
 LV_IMAGE_DECLARE(BuddyBali);
 
-// Font Aksara Daerah Native
+// Font Aksara Daerah Native (22px standar & 38px JUMBO)
 LV_FONT_DECLARE(font_jawa_22);
 LV_FONT_DECLARE(font_bali_22);
+LV_FONT_DECLARE(font_jawa_38);
+LV_FONT_DECLARE(font_bali_38);
 #ifdef __cplusplus
 }
 #endif
-
