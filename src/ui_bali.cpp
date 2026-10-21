@@ -60,8 +60,6 @@ static const PathNodeData BALI_PAGES[3][3] = {
 static lv_obj_t* write_target_title = nullptr;
 static lv_obj_t* write_target_sub = nullptr;
 static lv_obj_t* write_guide_track = nullptr;
-static lv_obj_t* write_start_marker = nullptr;
-static lv_obj_t* write_end_marker = nullptr;
 static lv_obj_t* write_feedback_lbl = nullptr;
 static lv_obj_t* write_preview_lbl = nullptr;
 static int active_write_index = 2; // Default ke aksara "Ca"
@@ -124,17 +122,8 @@ static void update_bali_write_guide() {
   }
   lv_line_set_points(write_guide_track, bali_guide_pts, count);
 
-  if (write_start_marker) {
-    lv_obj_set_pos(write_start_marker, guide_pts[0].x - 8, guide_pts[0].y - 8);
-  }
-  if (write_end_marker) {
-    lv_obj_set_pos(write_end_marker, guide_pts[count - 1].x - 8, guide_pts[count - 1].y - 8);
-  }
-
-  if (write_feedback_lbl) {
-    lv_label_set_text(write_feedback_lbl, "Mulai di HIJAU -> MERAH");
-    lv_obj_set_style_text_color(write_feedback_lbl, lv_color_hex(0x38BDF8), 0);
-  }
+  // Inisialisasi checkpoints urutan titik P1 .. Pn (R=18px, Koridor=20px, Batas Gagal Parah=32px)
+  ui_trace_set_checkpoints(&bali_tab_trace, guide_pts, count, 18, 20, 32);
   ui_trace_clear(&bali_tab_trace);
 }
 
@@ -208,20 +197,12 @@ static void on_clear_canvas_click(lv_event_t* e) {
   (void)e;
   audio_play(SOUND_CLICK);
   ui_trace_clear(&bali_tab_trace);
-  if (write_feedback_lbl) {
-    lv_label_set_text(write_feedback_lbl, "Mulai di HIJAU -> MERAH");
-    lv_obj_set_style_text_color(write_feedback_lbl, lv_color_hex(0x38BDF8), 0);
-  }
   ui_show_toast("Kanvas dibersihkan");
 }
 
 static void on_check_write_click(lv_event_t* e) {
   (void)e;
-  const StrokeWaypoint* guide_pts = nullptr;
-  uint8_t count = 0;
-  get_bali_guide(active_write_index, guide_pts, count);
-
-  StrokeEvalResult eval = ui_eval_stroke_trace(&bali_tab_trace, guide_pts, count);
+  StrokeEvalResult eval = ui_eval_stroke_trace(&bali_tab_trace);
   if (eval.success) {
     audio_play(SOUND_SUCCESS);
     audio_play(SOUND_REWARD);
@@ -233,7 +214,7 @@ static void on_check_write_click(lv_event_t* e) {
   } else {
     audio_play(SOUND_ERROR);
     if (write_feedback_lbl) {
-      lv_label_set_text(write_feedback_lbl, "COBA LAGI");
+      lv_label_set_text(write_feedback_lbl, "BELUM SELESAI");
       lv_obj_set_style_text_color(write_feedback_lbl, lv_color_hex(0xEF4444), 0);
     }
     ui_show_toast(eval.message);
@@ -542,19 +523,8 @@ static void build_write_view(lv_obj_t* parent) {
   lv_obj_set_style_line_width(write_guide_track, 16, 0); // Tebal 16px
   lv_obj_set_style_line_rounded(write_guide_track, true, 0);
 
-  // Titik Mulai (Lingkaran Hijau)
-  write_start_marker = ui_make_card(canvasCard, 0, 0, 16, 16, lv_color_hex(0x22C55E), lv_color_hex(0x22C55E), 8);
-  lv_obj_set_style_border_color(write_start_marker, lv_color_hex(0xFFFFFF), 0);
-  lv_obj_set_style_border_width(write_start_marker, 2, 0);
-  lv_obj_clear_flag(write_start_marker, LV_OBJ_FLAG_CLICKABLE);
-
-  // Titik Akhir (Lingkaran Oranye/Merah)
-  write_end_marker = ui_make_card(canvasCard, 0, 0, 16, 16, lv_color_hex(0xF97316), lv_color_hex(0xF97316), 8);
-  lv_obj_set_style_border_color(write_end_marker, lv_color_hex(0xFFFFFF), 0);
-  lv_obj_set_style_border_width(write_end_marker, 2, 0);
-  lv_obj_clear_flag(write_end_marker, LV_OBJ_FLAG_CLICKABLE);
-
   ui_trace_attach(&bali_tab_trace, canvasCard);
+  bali_tab_trace.feedback_lbl = write_feedback_lbl;
 
   // Tombol Bersihkan & Periksa
   lv_obj_t* btnClear = ui_make_card(view_write, 160, 174, 146, 42, C_CARD, C_CARD, 12);
