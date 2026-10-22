@@ -30,29 +30,50 @@ static lv_obj_t* btn_page_down = nullptr;
 static lv_obj_t* lbl_page_ind = nullptr;
 static lv_obj_t* header_sub = nullptr;
 
-// Aksara Bali Data (Wreastra)
+// Aksara Bali Data (Wreastra - 18 Konsonan Lengkap)
 struct PathNodeData {
   const char* name;
   const char* symbol;
   int state; // 0 = Selesai, 1 = Aktif, 2 = Peti/Bonus, 3 = Terkunci
 };
 
-// 3 Halaman, masing-masing 3 node (total 9 node)
-static const PathNodeData BALI_PAGES[3][3] = {
+// 6 Halaman, masing-masing 3 node (total 18 node Wreastra lengkap)
+static const PathNodeData BALI_PAGES[6][3] = {
+  // Babak 1
   {
     { "Ha", "\xE1\xAC\xB3", 0 },
     { "Na", "\xE1\xAC\xA6", 0 },
     { "Ca", "\xE1\xAC\x98", 1 }
   },
+  // Babak 2
   {
-    { "Peti", LV_SYMBOL_IMAGE, 2 },
     { "Ra", "\xE1\xAC\xAD", 3 },
-    { "Ka", "\xE1\xAC\x93", 3 }
+    { "Ka", "\xE1\xAC\x93", 3 },
+    { "Da", "\xE1\xAC\xA4", 3 }
   },
+  // Babak 3
   {
-    { "Da", "\xE1\xAC\xA4", 3 },
     { "Ta", "\xE1\xAC\xA2", 3 },
-    { "Piala", LV_SYMBOL_OK, 2 }
+    { "Sa", "\xE1\xAC\xB2", 3 },
+    { "Wa", "\xE1\xAC\xAF", 3 }
+  },
+  // Babak 4
+  {
+    { "La", "\xE1\xAC\xAE", 3 },
+    { "Ma", "\xE1\xAC\xAB", 3 },
+    { "Ga", "\xE1\xAC\x95", 3 }
+  },
+  // Babak 5
+  {
+    { "Ba", "\xE1\xAC\xA9", 3 },
+    { "Nga", "\xE1\xAC\x97", 3 },
+    { "Pa", "\xE1\xAC\xA7", 3 }
+  },
+  // Babak 6
+  {
+    { "Ja", "\xE1\xAC\x9A", 3 },
+    { "Ya", "\xE1\xAC\xAC", 3 },
+    { "Nya", "\xE1\xAC\x9C", 3 }
   }
 };
 
@@ -67,9 +88,35 @@ static int active_write_index = 2; // Default ke aksara "Ca"
 static TraceState bali_tab_trace;
 static lv_point_precise_t bali_guide_pts[100];
 
+// 18 Aksara Bali Wreastra Lengkap
+static const char* BALI_NAMES[18] = {
+  "Ha", "Na", "Ca", "Ra", "Ka", "Da",
+  "Ta", "Sa", "Wa", "La", "Ma", "Ga",
+  "Ba", "Nga", "Pa", "Ja", "Ya", "Nya"
+};
+static const char* BALI_AKSARA[18] = {
+  "\xE1\xAC\xB3", "\xE1\xAC\xA6", "\xE1\xAC\x98", "\xE1\xAC\xAD", "\xE1\xAC\x93", "\xE1\xAC\xA4",
+  "\xE1\xAC\xA2", "\xE1\xAC\xB2", "\xE1\xAC\xAF", "\xE1\xAC\xAE", "\xE1\xAC\xAB", "\xE1\xAC\x95",
+  "\xE1\xAC\xA9", "\xE1\xAC\x97", "\xE1\xAC\xA7", "\xE1\xAC\x9A", "\xE1\xAC\xAC", "\xE1\xAC\x9C"
+};
+
 // Waypoint Jalur Aksara Bali (Tersinkronisasi Presisi dengan Font Asli 160px di Tengah Kanvas 308x160)
 static const StrokeWaypoint BALI_GUIDE_HA[] = {
-  { 86, 66 }, { 106, 28 }, { 122, 86 }, { 138, 132 }, { 154, 72 }, { 182, 28 }, { 206, 86 }, { 222, 132 }
+  { 80, 66 }, { 80, 59 }, { 82, 52 }, { 87, 47 }, { 93, 43 }, 
+  { 100, 42 }, { 107, 42 }, { 108, 49 }, { 104, 56 }, { 103, 63 }, 
+  { 101, 70 }, { 98, 77 }, { 96, 84 }, { 95, 91 }, { 95, 98 }, 
+  { 97, 105 }, { 102, 110 }, { 107, 116 }, { 114, 118 }, { 121, 120 }, 
+  { 128, 118 }, { 135, 117 }, { 138, 110 }, { 142, 104 }, { 144, 97 }, 
+  { 146, 90 }, { 146, 83 }, { 146, 76 }, { 145, 69 }, { 145, 62 }, 
+  { 145, 55 }, { 147, 48 }, { 153, 44 }, { 160, 41 }, { 167, 41 }, 
+  { 174, 43 }, { 180, 47 }, { 184, 53 }, { 186, 60 }, { 188, 67 }, 
+  { 190, 74 }, { 190, 81 }, { 192, 88 }, { 192, 95 }, { 193, 102 }, 
+  { 194, 109 }, { 194, 116 }, { 194, 109 }, { 194, 102 }, { 194, 95 }, 
+  { 194, 88 }, { 195, 81 }, { 196, 74 }, { 195, 67 }, { 195, 60 }, 
+  { 194, 53 }, { 195, 46 }, { 202, 43 }, { 209, 42 }, { 216, 43 }, 
+  { 223, 44 }, { 224, 51 }, { 226, 58 }, { 226, 65 }, { 227, 72 }, 
+  { 227, 79 }, { 227, 86 }, { 227, 93 }, { 227, 100 }, { 227, 107 }, 
+  { 228, 114 }
 };
 static const StrokeWaypoint BALI_GUIDE_NA[] = {
   { 122, 106 }, { 132, 56 }, { 146, 92 }, { 158, 58 }, { 172, 102 }, { 184, 78 }
@@ -95,24 +142,28 @@ static const StrokeWaypoint BALI_GUIDE_TA[] = {
   { 122, 108 }, { 136, 56 }, { 150, 72 }, { 164, 56 }, { 178, 108 }
 };
 
+static const StrokeWaypoint BALI_GUIDE_DEF[] = {
+  { 104, 115 }, { 120, 52 }, { 148, 100 }, { 178, 52 }, { 204, 115 }
+};
+
 static void get_bali_guide(int index, const StrokeWaypoint*& pts, uint8_t& count) {
   switch (index) {
     case 0: pts = BALI_GUIDE_HA; count = sizeof(BALI_GUIDE_HA)/sizeof(BALI_GUIDE_HA[0]); break;
     case 1: pts = BALI_GUIDE_NA; count = sizeof(BALI_GUIDE_NA)/sizeof(BALI_GUIDE_NA[0]); break;
     case 2: pts = BALI_GUIDE_CA; count = sizeof(BALI_GUIDE_CA)/sizeof(BALI_GUIDE_CA[0]); break;
-    case 4: pts = BALI_GUIDE_RA; count = sizeof(BALI_GUIDE_RA)/sizeof(BALI_GUIDE_RA[0]); break;
-    case 5: pts = BALI_GUIDE_KA; count = sizeof(BALI_GUIDE_KA)/sizeof(BALI_GUIDE_KA[0]); break;
-    case 6: pts = BALI_GUIDE_DA; count = sizeof(BALI_GUIDE_DA)/sizeof(BALI_GUIDE_DA[0]); break;
-    case 7: pts = BALI_GUIDE_TA; count = sizeof(BALI_GUIDE_TA)/sizeof(BALI_GUIDE_TA[0]); break;
-    default: pts = BALI_GUIDE_HA; count = sizeof(BALI_GUIDE_HA)/sizeof(BALI_GUIDE_HA[0]); break;
+    case 3: pts = BALI_GUIDE_RA; count = sizeof(BALI_GUIDE_RA)/sizeof(BALI_GUIDE_RA[0]); break;
+    case 4: pts = BALI_GUIDE_KA; count = sizeof(BALI_GUIDE_KA)/sizeof(BALI_GUIDE_KA[0]); break;
+    case 5: pts = BALI_GUIDE_DA; count = sizeof(BALI_GUIDE_DA)/sizeof(BALI_GUIDE_DA[0]); break;
+    case 6: pts = BALI_GUIDE_TA; count = sizeof(BALI_GUIDE_TA)/sizeof(BALI_GUIDE_TA[0]); break;
+    default: pts = BALI_GUIDE_DEF; count = sizeof(BALI_GUIDE_DEF)/sizeof(BALI_GUIDE_DEF[0]); break;
   }
 }
 
 static void update_bali_write_guide() {
   if (write_watermark_lbl) {
-    static const char* AKSARA[9] = { "\xE1\xAC\xB3", "\xE1\xAC\xA6", "\xE1\xAC\x98", "", "\xE1\xAC\xAD", "\xE1\xAC\x93", "\xE1\xAC\xA4", "\xE1\xAC\xA2", "" };
-    if (active_write_index >= 0 && active_write_index < 9) {
-      lv_label_set_text(write_watermark_lbl, AKSARA[active_write_index]);
+    if (active_write_index >= 0 && active_write_index < 18) {
+      lv_label_set_text(write_watermark_lbl, BALI_AKSARA[active_write_index]);
+      lv_obj_align(write_watermark_lbl, LV_ALIGN_CENTER, 0, 29);
     }
   }
 
@@ -160,7 +211,7 @@ static void on_page_up_click(lv_event_t* e) {
 
 static void on_page_down_click(lv_event_t* e) {
   (void)e;
-  if (current_page < 2) {
+  if (current_page < 5) {
     audio_play(SOUND_PAGE);
     current_page++;
     update_path_page();
@@ -171,30 +222,32 @@ static void on_node_click(lv_event_t* e) {
   int node_idx = (int)(intptr_t)lv_event_get_user_data(e);
   const PathNodeData& node = BALI_PAGES[current_page][node_idx];
 
-  char buf[48];
+  char buf[64];
+  int active_idx = current_page * 3 + node_idx;
+  active_write_index = active_idx;
+
   if (node.state == 0) {
     audio_play(SOUND_NODE);
-    snprintf(buf, sizeof(buf), "Aksara Bali %s: Selesai!", node.name);
+    snprintf(buf, sizeof(buf), "Aksara Bali %s: Latihan Ulang!", node.name);
     ui_show_toast(buf);
-    active_write_index = current_page * 3 + node_idx;
-    ui_learn_start(AKSARA_BALI, current_page * 3 + node_idx); // Buka Kuis Pembelajaran
+    ui_learn_start(AKSARA_BALI, active_idx);
   } else if (node.state == 1) {
     audio_play(SOUND_NODE);
     snprintf(buf, sizeof(buf), "Level Aktif: Aksara %s!", node.name);
     ui_show_toast(buf);
-    active_write_index = current_page * 3 + node_idx;
-    ui_learn_start(AKSARA_BALI, current_page * 3 + node_idx); // Buka Kuis Pembelajaran
+    ui_learn_start(AKSARA_BALI, active_idx);
   } else if (node.state == 2) {
     audio_play(SOUND_REWARD);
     ui_show_toast("Peti Hadiah Sastra: +50 XP!");
   } else {
-    audio_play(SOUND_CLICK);
-    snprintf(buf, sizeof(buf), "Aksara Bali %s masih terkunci", node.name);
+    audio_play(SOUND_NODE);
+    snprintf(buf, sizeof(buf), "Mulai Belajar Aksara %s!", node.name);
     ui_show_toast(buf);
+    ui_learn_start(AKSARA_BALI, active_idx);
   }
 
   if (bali_cbs && bali_cbs->onSelectAksara) {
-    bali_cbs->onSelectAksara(AKSARA_BALI, current_page * 3 + node_idx);
+    bali_cbs->onSelectAksara(AKSARA_BALI, active_idx);
   }
 }
 
@@ -314,11 +367,11 @@ static void update_path_page() {
 
   // Update teks indikator halaman
   char ind_buf[16];
-  snprintf(ind_buf, sizeof(ind_buf), "%d / 3", current_page + 1);
+  snprintf(ind_buf, sizeof(ind_buf), "%d / 6", current_page + 1);
   lv_label_set_text(lbl_page_ind, ind_buf);
 
   char sub_buf[32];
-  snprintf(sub_buf, sizeof(sub_buf), "Jalur Belajar • Babak %d / 3", current_page + 1);
+  snprintf(sub_buf, sizeof(sub_buf), "Jalur Belajar • Babak %d / 6", current_page + 1);
   if (header_sub) lv_label_set_text(header_sub, sub_buf);
 
   // Update tombol panah atas/bawah
@@ -328,20 +381,26 @@ static void update_path_page() {
     lv_obj_set_style_opa(btn_page_up, LV_OPA_COVER, 0);
   }
 
-  if (current_page == 2) {
+  if (current_page == 5) {
     lv_obj_set_style_opa(btn_page_down, LV_OPA_30, 0);
   } else {
     lv_obj_set_style_opa(btn_page_down, LV_OPA_COVER, 0);
   }
 
-  // Koordinat 3 Node berbeda untuk setiap babak (variasi jalur berliku dinamis)
-  static const int POS[3][3][2] = {
+  // Koordinat 3 Node berbeda untuk setiap babak (variasi jalur berliku dinamis melengkung kiri/kanan)
+  static const int POS[6][3][2] = {
     // Babak 1: Melengkung ke Kiri (Node di X=70..165, Info Card di KANAN X=246)
     { { 165, 16 }, { 70,  82 }, { 155, 148 } },
-    // Babak 2: Melengkung ke Kanan (Node di X=185..280, Info Card di KIRI X=16)
+    // Babak 2: Melengkung ke Kanan (Node di X=185..280, Info Card di KIRI X=14)
     { { 185, 16 }, { 280, 82 }, { 195, 148 } },
-    // Babak 3: Jalur Gelombang Kiri (Node di X=85..165, Info Card di KANAN X=246)
-    { { 85,  18 }, { 165, 82 }, { 85,  146 } }
+    // Babak 3: Jalur Gelombang Kiri
+    { { 165, 16 }, { 70,  82 }, { 155, 148 } },
+    // Babak 4: Jalur Gelombang Kanan
+    { { 185, 16 }, { 280, 82 }, { 195, 148 } },
+    // Babak 5: Jalur Gelombang Kiri
+    { { 165, 16 }, { 70,  82 }, { 155, 148 } },
+    // Babak 6: Jalur Gelombang Kanan
+    { { 185, 16 }, { 280, 82 }, { 195, 148 } }
   };
 
   // Titik jalur penghubung (S-curve sesuai babak)
@@ -353,34 +412,26 @@ static void update_path_page() {
     const PathNodeData& node = BALI_PAGES[current_page][i];
     lv_color_t c_top, c_dark;
     const char* txt = node.symbol;
-    const lv_font_t* f = &lv_font_montserrat_20;
+    const lv_font_t* f = &font_bali_22;
 
     if (node.state == 0) {
       // Selesai (Emerald/Teal)
       c_top = lv_color_hex(0x059669);
       c_dark = lv_color_hex(0x047857);
-      txt = node.symbol;
-      f = &font_bali_22;
     } else if (node.state == 1) {
       // Sedang Aktif (Emas/Amber Bali)
       c_top = C_BALI_1;
       c_dark = C_BALI_2;
-      txt = node.symbol;
-      f = &font_bali_22;
     } else if (node.state == 2) {
       // Peti / Piala
       c_top = lv_color_hex(0xEA580C);
       c_dark = lv_color_hex(0xC2410C);
       f = &lv_font_montserrat_14;
-      txt = (current_page == 1) ? "Peti" : "Win";
-      // font bali
+      txt = "Win";
     } else {
       // Terkunci
       c_top = lv_color_hex(0x334155);
       c_dark = lv_color_hex(0x1E293B);
-      txt = node.symbol;
-      f = &font_bali_22;
-      // font bali
     }
 
     create_duo_node(path_nodes_cont, POS[current_page][i][0], POS[current_page][i][1], 62,
@@ -388,54 +439,40 @@ static void update_path_page() {
   }
 
   // Info Card & Maskot menyesuaikan ruang kosong agar tidak tabrakan dengan node:
-  // Di Babak 2 (node ke kanan) -> Card & Maskot di KIRI
-  // Di Babak 1 & 3 (node ke kiri) -> Card & Maskot di KANAN
-  int card_x = (current_page == 1) ? 14 : 244;
+  bool is_right_curve = (current_page % 2 == 1);
+  int card_x = is_right_curve ? 14 : 244;
   int card_y = 10;
   lv_obj_t* infoCard = ui_make_card(path_nodes_cont, card_x, card_y, 146, 70, C_CARD, C_CARD, 12);
   lv_obj_clear_flag(infoCard, LV_OBJ_FLAG_CLICKABLE);
 
-  if (current_page == 0) {
-    lv_obj_t* t1 = ui_make_label(infoCard, "Babak 1: Dasar", &lv_font_montserrat_14, C_TEXT);
-    lv_obj_set_pos(t1, 10, 6);
-    lv_obj_t* t2 = ui_make_label(infoCard, "Ha • Na • Ca", &lv_font_montserrat_14, C_BALI_1);
-    lv_obj_set_pos(t2, 10, 26);
-    lv_obj_t* t3 = ui_make_label(infoCard, "Level 1 - 3", &lv_font_montserrat_14, C_SUB);
-    lv_obj_set_pos(t3, 10, 46);
-  } else if (current_page == 1) {
-    lv_obj_t* t1 = ui_make_label(infoCard, "Babak 2: Wreastra", &lv_font_montserrat_14, C_TEXT);
-    lv_obj_set_pos(t1, 10, 6);
-    lv_obj_t* t2 = ui_make_label(infoCard, "Peti • Ra • Ka", &lv_font_montserrat_14, lv_color_hex(0xEA580C));
-    lv_obj_set_pos(t2, 10, 26);
-    lv_obj_t* t3 = ui_make_label(infoCard, "Bonus + Belajar", &lv_font_montserrat_14, C_SUB);
-    lv_obj_set_pos(t3, 10, 46);
-  } else {
-    lv_obj_t* t1 = ui_make_label(infoCard, "Babak 3: Mahir", &lv_font_montserrat_14, C_TEXT);
-    lv_obj_set_pos(t1, 10, 6);
-    lv_obj_t* t2 = ui_make_label(infoCard, "Da • Ta • Piala", &lv_font_montserrat_14, lv_color_hex(0x10B981));
-    lv_obj_set_pos(t2, 10, 26);
-    lv_obj_t* t3 = ui_make_label(infoCard, "Selesai Babak 1!", &lv_font_montserrat_14, C_SUB);
-    lv_obj_set_pos(t3, 10, 46);
-  }
+  struct BabakMeta {
+    const char* title;
+    const char* letters;
+    const char* desc;
+    lv_color_t color;
+  };
 
-  // Variasi Maskot Buddy untuk setiap babak (Pose berbeda di Babak 1, 2, dan 3)
-  const lv_image_dsc_t* buddy_src = &BuddyMaskot;
-  int mascot_x = 268;
-  int mascot_y = 88;
+  static const BabakMeta BALI_META[6] = {
+    { "Babak 1: Dasar", "Ha • Na • Ca", "Level 1 - 3", C_BALI_1 },
+    { "Babak 2: Wreastra", "Ra • Ka • Da", "Level 4 - 6", lv_color_hex(0x10B981) },
+    { "Babak 3: Lanjutan", "Ta • Sa • Wa", "Level 7 - 9", lv_color_hex(0x38BDF8) },
+    { "Babak 4: Menengah", "La • Ma • Ga", "Level 10 - 12", lv_color_hex(0xA855F7) },
+    { "Babak 5: Terampil", "Ba • Nga • Pa", "Level 13 - 15", lv_color_hex(0xEC4899) },
+    { "Babak 6: Mahir", "Ja • Ya • Nya", "Tamat 18 Aksara!", lv_color_hex(0xF59E0B) }
+  };
 
-  if (current_page == 0) {
-    buddy_src = &BuddyMaskot;              // Pose Babak 1: Buddy Maskot (100x124)
-    mascot_x = 268;
-    mascot_y = 88;
-  } else if (current_page == 1) {
-    buddy_src = &Buddy3;                   // Pose Babak 2: Chibi ceria (100x124)
-    mascot_x = 36;
-    mascot_y = 86;
-  } else {
-    buddy_src = &Buddy4;                   // Pose Babak 3: Cheerful semangat juara (100x134)
-    mascot_x = 268;
-    mascot_y = 82;
-  }
+  const BabakMeta& meta = BALI_META[current_page];
+  lv_obj_t* t1 = ui_make_label(infoCard, meta.title, &lv_font_montserrat_14, C_TEXT);
+  lv_obj_set_pos(t1, 10, 6);
+  lv_obj_t* t2 = ui_make_label(infoCard, meta.letters, &lv_font_montserrat_14, meta.color);
+  lv_obj_set_pos(t2, 10, 26);
+  lv_obj_t* t3 = ui_make_label(infoCard, meta.desc, &lv_font_montserrat_14, C_SUB);
+  lv_obj_set_pos(t3, 10, 46);
+
+  // Maskot Buddy berposisi di sisi berlawanan dari node
+  const lv_image_dsc_t* buddy_src = (current_page % 3 == 0) ? &BuddyMaskot : ((current_page % 3 == 1) ? &Buddy3 : &Buddy4);
+  int mascot_x = is_right_curve ? 36 : 268;
+  int mascot_y = 86;
 
   lv_obj_t* mascot = lv_image_create(path_nodes_cont);
   lv_image_set_src(mascot, buddy_src);
@@ -473,10 +510,10 @@ static void build_path_view(lv_obj_t* parent) {
   lv_obj_t* upIc = ui_make_label(btn_page_up, LV_SYMBOL_UP, &lv_font_montserrat_20, lv_color_hex(0xFFFFFF));
   lv_obj_center(upIc);
 
-  // Indikator Halaman ("1 / 3")
+  // Indikator Halaman ("1 / 6")
   lv_obj_t* ind_box = ui_make_card(nav_side, 6, 80, 58, 36, C_CARD_PR, C_CARD_PR, 10);
   lv_obj_clear_flag(ind_box, LV_OBJ_FLAG_CLICKABLE);
-  lbl_page_ind = ui_make_label(ind_box, "1 / 3", &lv_font_montserrat_14, C_TEXT);
+  lbl_page_ind = ui_make_label(ind_box, "1 / 6", &lv_font_montserrat_14, C_TEXT);
   lv_obj_center(lbl_page_ind);
 
   // Tombol Panah Bawah (▼)
@@ -520,7 +557,7 @@ static void build_write_view(lv_obj_t* parent) {
   // Watermark Glif Aksara Asli Transparan (Background Guide 160px JUMBO)
   write_watermark_lbl = ui_make_label(canvasCard, "\xE1\xAC\x98", &font_bali_160, lv_color_hex(0x38BDF8));
   lv_obj_set_style_text_opa(write_watermark_lbl, LV_OPA_30, 0); // 30% opasitas lembut transparan
-  lv_obj_center(write_watermark_lbl);
+  lv_obj_align(write_watermark_lbl, LV_ALIGN_CENTER, 0, 29);    // Offset +29px agar tengah visual pas di Y=80
   lv_obj_clear_flag(write_watermark_lbl, LV_OBJ_FLAG_CLICKABLE);
 
   // Label Feedback di pojok kanan atas (seperti "BENAR!" pada gambar contoh user)
@@ -619,14 +656,14 @@ static void switch_tab(int tab_index) {
     lv_obj_set_style_text_color(tab_lbl_write, C_BALI_1, 0);
 
     // Update target aksara sesuai pilihan aktif
-    static const char* NAMA[9] = { "Ha", "Na", "Ca", "Peti", "Ra", "Ka", "Da", "Ta", "Piala" };
-    char b[24];
-    snprintf(b, sizeof(b), "Aksara %s", NAMA[active_write_index]);
-    lv_label_set_text(write_target_title, b);
-    static const char* AKSARA[9] = { "\xE1\xAC\xB3", "\xE1\xAC\xA6", "\xE1\xAC\x98", "Peti", "\xE1\xAC\xAD", "\xE1\xAC\x93", "\xE1\xAC\xA4", "\xE1\xAC\xA2", "Win" };
-    lv_obj_set_style_text_font(write_preview_lbl, (active_write_index == 3 || active_write_index == 8) ? &lv_font_montserrat_20 : &font_bali_38, 0);
-    lv_label_set_text(write_preview_lbl, AKSARA[active_write_index]);
-    update_bali_write_guide();
+    if (active_write_index >= 0 && active_write_index < 18) {
+      char b[32];
+      snprintf(b, sizeof(b), "Aksara %s", BALI_NAMES[active_write_index]);
+      lv_label_set_text(write_target_title, b);
+      lv_obj_set_style_text_font(write_preview_lbl, &font_bali_38, 0);
+      lv_label_set_text(write_preview_lbl, BALI_AKSARA[active_write_index]);
+      update_bali_write_guide();
+    }
   } else {
     // Tab Setelan
     lv_obj_clear_flag(view_settings, LV_OBJ_FLAG_HIDDEN);

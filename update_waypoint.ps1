@@ -97,9 +97,11 @@ $btnUpdate.Add_Click({
 
   $targetFile = ""
   if ($varName.StartsWith("BALI_")) {
-    $targetFile = Join-Path $PSScriptRoot "src\ui_bali.cpp"
+    $targetFile = Join-Path $PSScriptRoot "src\ui\ui_bali.cpp"
+    if (-not (Test-Path $targetFile)) { $targetFile = Join-Path $PSScriptRoot "src\ui_bali.cpp" }
   } elseif ($varName.StartsWith("JAWA_")) {
-    $targetFile = Join-Path $PSScriptRoot "src\ui_jawa.cpp"
+    $targetFile = Join-Path $PSScriptRoot "src\ui\ui_jawa.cpp"
+    if (-not (Test-Path $targetFile)) { $targetFile = Join-Path $PSScriptRoot "src\ui_jawa.cpp" }
   } else {
     $lblStatus.Text = "❌ Nama variabel '$varName' harus diawali BALI_ atau JAWA_"
     $lblStatus.ForeColor = [System.Drawing.Color]::FromArgb(239, 68, 68)

@@ -30,28 +30,55 @@ static lv_obj_t* btn_page_down = nullptr;
 static lv_obj_t* lbl_page_ind = nullptr;
 static lv_obj_t* header_sub = nullptr;
 
-// Aksara Jawa Data (Hanacaraka)
+// Aksara Jawa Data (Carakan - 20 Konsonan Lengkap)
 struct PathNodeData {
   const char* name;
   const char* symbol;
   int state; // 0 = Selesai, 1 = Aktif, 2 = Peti/Bonus, 3 = Terkunci
 };
 
-// 3 Halaman, masing-masing 3 node (total 9 node)
-static const PathNodeData JAWA_PAGES[3][3] = {
+// 7 Halaman, masing-masing 3 node (total 21 node: 20 Carakan + 1 Piala Juara)
+static const PathNodeData JAWA_PAGES[7][3] = {
+  // Babak 1
   {
     { "Ha", "\xEA\xA6\xB2", 0 },
     { "Na", "\xEA\xA6\xA4", 0 },
     { "Ca", "\xEA\xA6\x95", 1 }
   },
+  // Babak 2
   {
-    { "Peti", LV_SYMBOL_IMAGE, 2 },
-    { "Ra", "\xEA\xA6\xAA", 3 },
-    { "Ka", "\xEA\xA6\x8F", 3 }
+    { "Ra", "\xEA\xA6\xAB", 3 },
+    { "Ka", "\xEA\xA6\x8F", 3 },
+    { "Da", "\xEA\xA6\xA2", 3 }
   },
+  // Babak 3
   {
-    { "Da", "\xEA\xA6\xA2", 3 },
     { "Ta", "\xEA\xA6\xA0", 3 },
+    { "Sa", "\xEA\xA6\xB1", 3 },
+    { "Wa", "\xEA\xA6\xAE", 3 }
+  },
+  // Babak 4
+  {
+    { "La", "\xEA\xA6\xAD", 3 },
+    { "Pa", "\xEA\xA6\xA5", 3 },
+    { "Dha", "\xEA\xA6\x9D", 3 }
+  },
+  // Babak 5
+  {
+    { "Ja", "\xEA\xA6\x97", 3 },
+    { "Ya", "\xEA\xA6\xAA", 3 },
+    { "Nya", "\xEA\xA6\x9A", 3 }
+  },
+  // Babak 6
+  {
+    { "Ma", "\xEA\xA6\xA9", 3 },
+    { "Ga", "\xEA\xA6\x92", 3 },
+    { "Ba", "\xEA\xA6\xA7", 3 }
+  },
+  // Babak 7
+  {
+    { "Tha", "\xEA\xA6\x9B", 3 },
+    { "Nga", "\xEA\xA6\x94", 3 },
     { "Piala", LV_SYMBOL_OK, 2 }
   }
 };
@@ -67,27 +94,102 @@ static int active_write_index = 2; // Default ke aksara "Ca"
 static TraceState jawa_tab_trace;
 static lv_point_precise_t jawa_guide_pts[100];
 
+// 20 Aksara Jawa Carakan + 1 Piala Juara
+static const char* JAWA_NAMES[21] = {
+  "Ha", "Na", "Ca", "Ra", "Ka", "Da",
+  "Ta", "Sa", "Wa", "La", "Pa", "Dha",
+  "Ja", "Ya", "Nya", "Ma", "Ga", "Ba",
+  "Tha", "Nga", "Piala"
+};
+static const char* JAWA_AKSARA[21] = {
+  "\xEA\xA6\xB2", "\xEA\xA6\xA4", "\xEA\xA6\x95", "\xEA\xA6\xAB", "\xEA\xA6\x8F", "\xEA\xA6\xA2",
+  "\xEA\xA6\xA0", "\xEA\xA6\xB1", "\xEA\xA6\xAE", "\xEA\xA6\xAD", "\xEA\xA6\xA5", "\xEA\xA6\x9D",
+  "\xEA\xA6\x97", "\xEA\xA6\xAA", "\xEA\xA6\x9A", "\xEA\xA6\xA9", "\xEA\xA6\x92", "\xEA\xA6\xA7",
+  "\xEA\xA6\x9B", "\xEA\xA6\x94", "Win"
+};
+
 // Waypoint Jalur Aksara Jawa (Tersinkronisasi Presisi dengan Font Asli 72px di Tengah Kanvas 308x160)
 static const StrokeWaypoint JAWA_GUIDE_HA[] = {
   { 122, 108 }, { 134, 58 }, { 144, 98 }, { 156, 58 }, { 168, 98 }, { 180, 58 }, { 188, 108 }
 };
 static const StrokeWaypoint JAWA_GUIDE_NA[] = {
-  { 124, 108 }, { 136, 58 }, { 148, 100 }, { 160, 58 }, { 174, 108 }, { 184, 75 }
+  { 108, 119 }, { 101, 117 }, { 95, 113 }, { 93, 106 }, { 91, 99 }, 
+  { 92, 92 }, { 92, 85 }, { 90, 78 }, { 91, 71 }, { 91, 64 }, 
+  { 92, 57 }, { 95, 50 }, { 101, 46 }, { 106, 41 }, { 114, 42 }, 
+  { 121, 45 }, { 127, 49 }, { 129, 56 }, { 130, 63 }, { 130, 70 }, 
+  { 131, 77 }, { 129, 84 }, { 129, 91 }, { 130, 98 }, { 131, 105 }, 
+  { 130, 112 }, { 130, 119 }, { 132, 112 }, { 133, 105 }, { 131, 98 }, 
+  { 133, 91 }, { 140, 89 }, { 147, 90 }, { 154, 91 }, { 162, 90 }, 
+  { 171, 93 }, { 179, 95 }, { 184, 100 }, { 186, 107 }, { 181, 112 }, 
+  { 175, 116 }, { 168, 118 }, { 162, 113 }, { 158, 107 }, { 160, 100 }, 
+  { 160, 93 }, { 160, 86 }, { 157, 79 }, { 158, 72 }, { 159, 65 }, 
+  { 162, 58 }, { 166, 52 }, { 171, 47 }, { 176, 42 }, { 183, 42 }, 
+  { 190, 43 }, { 197, 43 }, { 204, 45 }, { 210, 49 }, { 213, 56 }, 
+  { 215, 63 }, { 216, 70 }, { 217, 77 }, { 217, 84 }, { 217, 91 }, 
+  { 217, 98 }, { 218, 105 }, { 217, 112 }, { 216, 119 }
 };
 static const StrokeWaypoint JAWA_GUIDE_CA[] = {
-  { 94, 76 }, { 114, 28 }, { 86, 124 }, { 130, 104 }, { 162, 36 }, { 194, 86 }, { 214, 132 }
+  { 98, 119 }, { 88, 99 }, { 87, 79 }, { 89, 56 }, { 100, 46 }, 
+  { 115, 44 }, { 131, 46 }, { 140, 60 }, { 144, 73 }, { 144, 89 }, 
+  { 143, 106 }, { 138, 119 }, { 122, 117 }, { 119, 106 }, { 121, 96 }, 
+  { 134, 93 }, { 157, 102 }, { 166, 111 }, { 182, 118 }, { 192, 105 }, 
+  { 189, 91 }, { 192, 84 }, { 190, 72 }, { 185, 60 }, { 181, 53 }, 
+  { 173, 47 }, { 166, 43 }, { 180, 40 }, { 193, 44 }, { 207, 46 }, 
+  { 217, 52 }, { 220, 66 }, { 221, 80 }, { 222, 96 }, { 222, 107 }, 
+  { 223, 121 }
 };
 static const StrokeWaypoint JAWA_GUIDE_RA[] = {
-  { 124, 108 }, { 138, 58 }, { 152, 96 }, { 166, 58 }, { 180, 108 }
+  { 118, 62 }, { 112, 58 }, { 106, 54 }, { 101, 48 }, { 94, 46 }, 
+  { 87, 45 }, { 94, 46 }, { 101, 46 }, { 108, 46 }, { 115, 46 }, 
+  { 122, 46 }, { 129, 47 }, { 136, 49 }, { 142, 53 }, { 145, 60 }, 
+  { 145, 67 }, { 144, 74 }, { 144, 81 }, { 143, 88 }, { 141, 95 }, 
+  { 136, 100 }, { 132, 106 }, { 139, 108 }, { 146, 110 }, { 152, 115 }, 
+  { 159, 115 }, { 166, 114 }, { 167, 107 }, { 166, 100 }, { 168, 93 }, 
+  { 169, 86 }, { 168, 79 }, { 167, 72 }, { 167, 65 }, { 167, 58 }, 
+  { 171, 52 }, { 175, 46 }, { 182, 45 }, { 191, 46 }, { 199, 46 }, 
+  { 206, 47 }, { 211, 52 }, { 214, 59 }, { 214, 66 }, { 215, 73 }, 
+  { 215, 80 }, { 215, 87 }, { 214, 94 }, { 214, 101 }, { 215, 108 }, 
+  { 214, 115 }
 };
 static const StrokeWaypoint JAWA_GUIDE_KA[] = {
-  { 122, 85 }, { 134, 55 }, { 144, 106 }, { 156, 70 }, { 170, 56 }, { 184, 108 }
+  { 84, 114 }, { 78, 110 }, { 76, 103 }, { 75, 96 }, { 74, 89 }, 
+  { 74, 82 }, { 74, 75 }, { 75, 68 }, { 74, 61 }, { 78, 55 }, 
+  { 81, 48 }, { 88, 45 }, { 95, 46 }, { 99, 52 }, { 99, 59 }, 
+  { 98, 66 }, { 98, 73 }, { 98, 80 }, { 99, 87 }, { 100, 94 }, 
+  { 101, 101 }, { 98, 108 }, { 99, 115 }, { 99, 108 }, { 102, 101 }, 
+  { 104, 94 }, { 103, 87 }, { 110, 86 }, { 117, 87 }, { 124, 88 }, 
+  { 131, 88 }, { 138, 90 }, { 143, 95 }, { 147, 101 }, { 151, 107 }, 
+  { 148, 114 }, { 141, 115 }, { 134, 113 }, { 131, 106 }, { 131, 99 }, 
+  { 133, 92 }, { 133, 85 }, { 133, 78 }, { 133, 71 }, { 133, 64 }, 
+  { 133, 56 }, { 135, 49 }, { 143, 45 }, { 150, 45 }, { 159, 44 }, 
+  { 167, 46 }, { 174, 47 }, { 180, 52 }, { 183, 59 }, { 183, 66 }, 
+  { 182, 73 }, { 182, 80 }, { 183, 87 }, { 183, 94 }, { 185, 101 }, 
+  { 184, 108 }, { 183, 115 }, { 190, 116 }, { 197, 115 }, { 202, 110 }, 
+  { 201, 103 }, { 202, 96 }, { 204, 89 }, { 204, 82 }, { 203, 75 }, 
+  { 203, 68 }, { 202, 61 }, { 201, 54 }, { 199, 47 }, { 206, 46 }, 
+  { 213, 46 }, { 220, 47 }, { 226, 51 }, { 228, 58 }, { 231, 65 }, 
+  { 232, 72 }, { 232, 79 }, { 231, 86 }, { 231, 93 }, { 231, 100 }, 
+  { 231, 107 }, { 231, 114 }
 };
 static const StrokeWaypoint JAWA_GUIDE_DA[] = {
-  { 124, 106 }, { 140, 56 }, { 154, 82 }, { 168, 62 }, { 182, 108 }
+  { 106, 116 }, { 100, 112 }, { 97, 105 }, { 95, 98 }, { 95, 91 }, 
+  { 95, 84 }, { 96, 77 }, { 96, 70 }, { 96, 62 }, { 100, 55 }, 
+  { 105, 49 }, { 114, 47 }, { 121, 46 }, { 128, 45 }, { 135, 46 }, 
+  { 127, 50 }, { 123, 57 }, { 122, 64 }, { 121, 71 }, { 120, 80 }, 
+  { 119, 90 }, { 119, 98 }, { 121, 107 }, { 127, 114 }, { 135, 114 }, 
+  { 143, 112 }, { 145, 105 }, { 151, 101 }, { 159, 98 }, { 166, 97 }, 
+  { 173, 99 }, { 180, 103 }, { 181, 112 }, { 174, 115 }, { 167, 113 }, 
+  { 162, 107 }, { 160, 97 }, { 161, 89 }, { 163, 82 }, { 162, 75 }, 
+  { 162, 68 }, { 161, 58 }, { 164, 51 }, { 173, 46 }, { 184, 44 }, 
+  { 192, 45 }, { 199, 46 }, { 205, 50 }, { 206, 57 }, { 207, 67 }, 
+  { 207, 78 }, { 208, 86 }, { 209, 94 }, { 209, 103 }, { 209, 111 }
 };
 static const StrokeWaypoint JAWA_GUIDE_TA[] = {
   { 122, 108 }, { 136, 56 }, { 150, 72 }, { 164, 56 }, { 178, 108 }
+};
+
+static const StrokeWaypoint JAWA_GUIDE_DEF[] = {
+  { 104, 115 }, { 120, 52 }, { 148, 100 }, { 178, 52 }, { 204, 115 }
 };
 
 static void get_jawa_guide(int index, const StrokeWaypoint*& pts, uint8_t& count) {
@@ -95,19 +197,19 @@ static void get_jawa_guide(int index, const StrokeWaypoint*& pts, uint8_t& count
     case 0: pts = JAWA_GUIDE_HA; count = sizeof(JAWA_GUIDE_HA)/sizeof(JAWA_GUIDE_HA[0]); break;
     case 1: pts = JAWA_GUIDE_NA; count = sizeof(JAWA_GUIDE_NA)/sizeof(JAWA_GUIDE_NA[0]); break;
     case 2: pts = JAWA_GUIDE_CA; count = sizeof(JAWA_GUIDE_CA)/sizeof(JAWA_GUIDE_CA[0]); break;
-    case 4: pts = JAWA_GUIDE_RA; count = sizeof(JAWA_GUIDE_RA)/sizeof(JAWA_GUIDE_RA[0]); break;
-    case 5: pts = JAWA_GUIDE_KA; count = sizeof(JAWA_GUIDE_KA)/sizeof(JAWA_GUIDE_KA[0]); break;
-    case 6: pts = JAWA_GUIDE_DA; count = sizeof(JAWA_GUIDE_DA)/sizeof(JAWA_GUIDE_DA[0]); break;
-    case 7: pts = JAWA_GUIDE_TA; count = sizeof(JAWA_GUIDE_TA)/sizeof(JAWA_GUIDE_TA[0]); break;
-    default: pts = JAWA_GUIDE_HA; count = sizeof(JAWA_GUIDE_HA)/sizeof(JAWA_GUIDE_HA[0]); break;
+    case 3: pts = JAWA_GUIDE_RA; count = sizeof(JAWA_GUIDE_RA)/sizeof(JAWA_GUIDE_RA[0]); break;
+    case 4: pts = JAWA_GUIDE_KA; count = sizeof(JAWA_GUIDE_KA)/sizeof(JAWA_GUIDE_KA[0]); break;
+    case 5: pts = JAWA_GUIDE_DA; count = sizeof(JAWA_GUIDE_DA)/sizeof(JAWA_GUIDE_DA[0]); break;
+    case 6: pts = JAWA_GUIDE_TA; count = sizeof(JAWA_GUIDE_TA)/sizeof(JAWA_GUIDE_TA[0]); break;
+    default: pts = JAWA_GUIDE_DEF; count = sizeof(JAWA_GUIDE_DEF)/sizeof(JAWA_GUIDE_DEF[0]); break;
   }
 }
 
 static void update_jawa_write_guide() {
   if (write_watermark_lbl) {
-    static const char* AKSARA[9] = { "\xEA\xA6\xB2", "\xEA\xA6\xA4", "\xEA\xA6\x95", "", "\xEA\xA6\xAA", "\xEA\xA6\x8F", "\xEA\xA6\xA2", "\xEA\xA6\xA0", "" };
-    if (active_write_index >= 0 && active_write_index < 9) {
-      lv_label_set_text(write_watermark_lbl, AKSARA[active_write_index]);
+    if (active_write_index >= 0 && active_write_index < 20) {
+      lv_label_set_text(write_watermark_lbl, JAWA_AKSARA[active_write_index]);
+      lv_obj_align(write_watermark_lbl, LV_ALIGN_CENTER, 0, 29);
     }
   }
 
@@ -155,7 +257,7 @@ static void on_page_up_click(lv_event_t* e) {
 
 static void on_page_down_click(lv_event_t* e) {
   (void)e;
-  if (current_page < 2) {
+  if (current_page < 6) {
     audio_play(SOUND_PAGE);
     current_page++;
     update_path_page();
@@ -166,30 +268,32 @@ static void on_node_click(lv_event_t* e) {
   int node_idx = (int)(intptr_t)lv_event_get_user_data(e);
   const PathNodeData& node = JAWA_PAGES[current_page][node_idx];
 
-  char buf[48];
-  if (node.state == 0) {
+  char buf[64];
+  int active_idx = current_page * 3 + node_idx;
+  active_write_index = active_idx;
+
+  if (node.state == 2) {
+    audio_play(SOUND_REWARD);
+    ui_show_toast("Piala Juara: Selamat! 20 Aksara Carakan Selesai!");
+  } else if (node.state == 0) {
     audio_play(SOUND_NODE);
-    snprintf(buf, sizeof(buf), "Aksara %s: Sudah Selesai!", node.name);
+    snprintf(buf, sizeof(buf), "Aksara %s: Latihan Ulang!", node.name);
     ui_show_toast(buf);
-    active_write_index = current_page * 3 + node_idx;
-    ui_learn_start(AKSARA_JAWA, current_page * 3 + node_idx); // Buka Kuis Pembelajaran
+    ui_learn_start(AKSARA_JAWA, active_idx);
   } else if (node.state == 1) {
     audio_play(SOUND_NODE);
     snprintf(buf, sizeof(buf), "Level Aktif: Aksara %s!", node.name);
     ui_show_toast(buf);
-    active_write_index = current_page * 3 + node_idx;
-    ui_learn_start(AKSARA_JAWA, current_page * 3 + node_idx); // Buka Kuis Pembelajaran
-  } else if (node.state == 2) {
-    audio_play(SOUND_REWARD);
-    ui_show_toast("Peti Hadiah: +50 XP Belajar!");
+    ui_learn_start(AKSARA_JAWA, active_idx);
   } else {
-    audio_play(SOUND_CLICK);
-    snprintf(buf, sizeof(buf), "Aksara %s masih terkunci", node.name);
+    audio_play(SOUND_NODE);
+    snprintf(buf, sizeof(buf), "Mulai Belajar Aksara %s!", node.name);
     ui_show_toast(buf);
+    ui_learn_start(AKSARA_JAWA, active_idx);
   }
 
   if (jawa_cbs && jawa_cbs->onSelectAksara) {
-    jawa_cbs->onSelectAksara(AKSARA_JAWA, current_page * 3 + node_idx);
+    jawa_cbs->onSelectAksara(AKSARA_JAWA, active_idx);
   }
 }
 
@@ -309,11 +413,11 @@ static void update_path_page() {
 
   // Update teks indikator halaman
   char ind_buf[16];
-  snprintf(ind_buf, sizeof(ind_buf), "%d / 3", current_page + 1);
+  snprintf(ind_buf, sizeof(ind_buf), "%d / 7", current_page + 1);
   lv_label_set_text(lbl_page_ind, ind_buf);
 
   char sub_buf[32];
-  snprintf(sub_buf, sizeof(sub_buf), "Jalur Belajar • Babak %d / 3", current_page + 1);
+  snprintf(sub_buf, sizeof(sub_buf), "Jalur Belajar • Babak %d / 7", current_page + 1);
   if (header_sub) lv_label_set_text(header_sub, sub_buf);
 
   // Update tombol panah atas/bawah (disable jika di ujung)
@@ -323,20 +427,28 @@ static void update_path_page() {
     lv_obj_set_style_opa(btn_page_up, LV_OPA_COVER, 0);
   }
 
-  if (current_page == 2) {
+  if (current_page == 6) {
     lv_obj_set_style_opa(btn_page_down, LV_OPA_30, 0);
   } else {
     lv_obj_set_style_opa(btn_page_down, LV_OPA_COVER, 0);
   }
 
-  // Koordinat 3 Node berbeda untuk setiap babak (variasi jalur berliku dinamis)
-  static const int POS[3][3][2] = {
+  // Koordinat 3 Node berbeda untuk setiap babak (variasi jalur berliku dinamis melengkung kiri/kanan)
+  static const int POS[7][3][2] = {
     // Babak 1: Melengkung ke Kiri (Node di X=70..165, Info Card di KANAN X=246)
     { { 165, 16 }, { 70,  82 }, { 155, 148 } },
-    // Babak 2: Melengkung ke Kanan (Node di X=185..280, Info Card di KIRI X=16)
+    // Babak 2: Melengkung ke Kanan (Node di X=185..280, Info Card di KIRI X=14)
     { { 185, 16 }, { 280, 82 }, { 195, 148 } },
-    // Babak 3: Jalur Gelombang Kiri (Node di X=85..165, Info Card di KANAN X=246)
-    { { 85,  18 }, { 165, 82 }, { 85,  146 } }
+    // Babak 3: Jalur Gelombang Kiri
+    { { 165, 16 }, { 70,  82 }, { 155, 148 } },
+    // Babak 4: Jalur Gelombang Kanan
+    { { 185, 16 }, { 280, 82 }, { 195, 148 } },
+    // Babak 5: Jalur Gelombang Kiri
+    { { 165, 16 }, { 70,  82 }, { 155, 148 } },
+    // Babak 6: Jalur Gelombang Kanan
+    { { 185, 16 }, { 280, 82 }, { 195, 148 } },
+    // Babak 7: Puncak Melengkung ke Kiri
+    { { 165, 16 }, { 70,  82 }, { 155, 148 } }
   };
 
   // Titik jalur penghubung (S-curve sesuai babak)
@@ -348,34 +460,26 @@ static void update_path_page() {
     const PathNodeData& node = JAWA_PAGES[current_page][i];
     lv_color_t c_top, c_dark;
     const char* txt = node.symbol;
-    const lv_font_t* f = &lv_font_montserrat_20;
+    const lv_font_t* f = &font_jawa_22;
 
     if (node.state == 0) {
       // Selesai (Centang biru)
       c_top = lv_color_hex(0x0284C7);
       c_dark = lv_color_hex(0x0369A1);
-      txt = node.symbol;
-      f = &font_jawa_22;
     } else if (node.state == 1) {
       // Sedang Aktif (Ungu Jawa)
       c_top = C_JAWA_1;
       c_dark = C_JAWA_2;
-      txt = node.symbol;
-      f = &font_jawa_22;
     } else if (node.state == 2) {
-      // Peti Hadiah / Piala
+      // Peti Hadiah / Piala Juara
       c_top = lv_color_hex(0xF59E0B);
       c_dark = lv_color_hex(0xB45309);
       f = &lv_font_montserrat_14;
-      txt = (current_page == 1) ? "Peti" : "Win";
-      // font aksara
+      txt = "Win";
     } else {
       // Terkunci
       c_top = lv_color_hex(0x334155);
       c_dark = lv_color_hex(0x1E293B);
-      txt = node.symbol;
-      f = &font_jawa_22;
-      // font aksara
     }
 
     create_duo_node(path_nodes_cont, POS[current_page][i][0], POS[current_page][i][1], 62,
@@ -383,54 +487,41 @@ static void update_path_page() {
   }
 
   // Info Card & Maskot menyesuaikan ruang kosong agar tidak tabrakan dengan node:
-  // Di Babak 2 (node ke kanan) -> Card & Maskot di KIRI
-  // Di Babak 1 & 3 (node ke kiri) -> Card & Maskot di KANAN
-  int card_x = (current_page == 1) ? 14 : 244;
+  bool is_right_curve = (current_page % 2 == 1);
+  int card_x = is_right_curve ? 14 : 244;
   int card_y = 10;
   lv_obj_t* infoCard = ui_make_card(path_nodes_cont, card_x, card_y, 146, 70, C_CARD, C_CARD, 12);
   lv_obj_clear_flag(infoCard, LV_OBJ_FLAG_CLICKABLE);
 
-  if (current_page == 0) {
-    lv_obj_t* t1 = ui_make_label(infoCard, "Babak 1: Dasar", &lv_font_montserrat_14, C_TEXT);
-    lv_obj_set_pos(t1, 10, 6);
-    lv_obj_t* t2 = ui_make_label(infoCard, "Ha • Na • Ca", &lv_font_montserrat_14, C_JAWA_1);
-    lv_obj_set_pos(t2, 10, 26);
-    lv_obj_t* t3 = ui_make_label(infoCard, "Level 1 - 3", &lv_font_montserrat_14, C_SUB);
-    lv_obj_set_pos(t3, 10, 46);
-  } else if (current_page == 1) {
-    lv_obj_t* t1 = ui_make_label(infoCard, "Babak 2: Lanjutan", &lv_font_montserrat_14, C_TEXT);
-    lv_obj_set_pos(t1, 10, 6);
-    lv_obj_t* t2 = ui_make_label(infoCard, "Peti • Ra • Ka", &lv_font_montserrat_14, lv_color_hex(0xF59E0B));
-    lv_obj_set_pos(t2, 10, 26);
-    lv_obj_t* t3 = ui_make_label(infoCard, "Bonus + Belajar", &lv_font_montserrat_14, C_SUB);
-    lv_obj_set_pos(t3, 10, 46);
-  } else {
-    lv_obj_t* t1 = ui_make_label(infoCard, "Babak 3: Mahir", &lv_font_montserrat_14, C_TEXT);
-    lv_obj_set_pos(t1, 10, 6);
-    lv_obj_t* t2 = ui_make_label(infoCard, "Da • Ta • Piala", &lv_font_montserrat_14, lv_color_hex(0x22C55E));
-    lv_obj_set_pos(t2, 10, 26);
-    lv_obj_t* t3 = ui_make_label(infoCard, "Selesai Babak 1!", &lv_font_montserrat_14, C_SUB);
-    lv_obj_set_pos(t3, 10, 46);
-  }
+  struct BabakMeta {
+    const char* title;
+    const char* letters;
+    const char* desc;
+    lv_color_t color;
+  };
 
-  // Variasi Maskot Buddy untuk setiap babak (Pose berbeda di Babak 1, 2, dan 3)
-  const lv_image_dsc_t* buddy_src = &BuddyMaskot;
-  int mascot_x = 268;
-  int mascot_y = 88;
+  static const BabakMeta JAWA_META[7] = {
+    { "Babak 1: Dasar", "Ha • Na • Ca", "Level 1 - 3", C_JAWA_1 },
+    { "Babak 2: Carakan", "Ra • Ka • Da", "Level 4 - 6", lv_color_hex(0x10B981) },
+    { "Babak 3: Lanjutan", "Ta • Sa • Wa", "Level 7 - 9", lv_color_hex(0x38BDF8) },
+    { "Babak 4: Menengah", "La • Pa • Dha", "Level 10 - 12", lv_color_hex(0xA855F7) },
+    { "Babak 5: Terampil", "Ja • Ya • Nya", "Level 13 - 15", lv_color_hex(0xEC4899) },
+    { "Babak 6: Mahir", "Ma • Ga • Ba", "Level 16 - 18", lv_color_hex(0xF59E0B) },
+    { "Babak 7: Puncak", "Tha • Nga • Juara", "Tamat 20 Aksara!", lv_color_hex(0x22C55E) }
+  };
 
-  if (current_page == 0) {
-    buddy_src = &BuddyMaskot;              // Pose Babak 1: Buddy Maskot (100x124)
-    mascot_x = 268;
-    mascot_y = 88;
-  } else if (current_page == 1) {
-    buddy_src = &Buddy3;                   // Pose Babak 2: Chibi ceria (100x124)
-    mascot_x = 36;
-    mascot_y = 86;
-  } else {
-    buddy_src = &Buddy4;                   // Pose Babak 3: Cheerful semangat juara (100x134)
-    mascot_x = 268;
-    mascot_y = 82;
-  }
+  const BabakMeta& meta = JAWA_META[current_page];
+  lv_obj_t* t1 = ui_make_label(infoCard, meta.title, &lv_font_montserrat_14, C_TEXT);
+  lv_obj_set_pos(t1, 10, 6);
+  lv_obj_t* t2 = ui_make_label(infoCard, meta.letters, &lv_font_montserrat_14, meta.color);
+  lv_obj_set_pos(t2, 10, 26);
+  lv_obj_t* t3 = ui_make_label(infoCard, meta.desc, &lv_font_montserrat_14, C_SUB);
+  lv_obj_set_pos(t3, 10, 46);
+
+  // Variasi Maskot Buddy untuk setiap babak
+  const lv_image_dsc_t* buddy_src = (current_page % 3 == 0) ? &BuddyMaskot : ((current_page % 3 == 1) ? &Buddy3 : &Buddy4);
+  int mascot_x = is_right_curve ? 36 : 268;
+  int mascot_y = 86;
 
   lv_obj_t* mascot = lv_image_create(path_nodes_cont);
   lv_image_set_src(mascot, buddy_src);
@@ -468,10 +559,10 @@ static void build_path_view(lv_obj_t* parent) {
   lv_obj_t* upIc = ui_make_label(btn_page_up, LV_SYMBOL_UP, &lv_font_montserrat_20, lv_color_hex(0xFFFFFF));
   lv_obj_center(upIc);
 
-  // Indikator Halaman (Contoh: "1 / 3")
+  // Indikator Halaman (Contoh: "1 / 7")
   lv_obj_t* ind_box = ui_make_card(nav_side, 6, 80, 58, 36, C_CARD_PR, C_CARD_PR, 10);
   lv_obj_clear_flag(ind_box, LV_OBJ_FLAG_CLICKABLE);
-  lbl_page_ind = ui_make_label(ind_box, "1 / 3", &lv_font_montserrat_14, C_TEXT);
+  lbl_page_ind = ui_make_label(ind_box, "1 / 7", &lv_font_montserrat_14, C_TEXT);
   lv_obj_center(lbl_page_ind);
 
   // Tombol Panah Bawah (▼)
@@ -515,7 +606,7 @@ static void build_write_view(lv_obj_t* parent) {
   // Watermark Glif Aksara Asli Transparan (Background Guide 160px JUMBO)
   write_watermark_lbl = ui_make_label(canvasCard, "\xEA\xA6\x95", &font_jawa_160, lv_color_hex(0x38BDF8));
   lv_obj_set_style_text_opa(write_watermark_lbl, LV_OPA_30, 0); // 30% opasitas lembut transparan
-  lv_obj_center(write_watermark_lbl);
+  lv_obj_align(write_watermark_lbl, LV_ALIGN_CENTER, 0, 29);    // Offset +29px agar tengah visual pas di Y=80
   lv_obj_clear_flag(write_watermark_lbl, LV_OBJ_FLAG_CLICKABLE);
 
   // Label Feedback di pojok kanan atas (seperti "BENAR!" pada gambar contoh user)
@@ -614,14 +705,14 @@ static void switch_tab(int tab_index) {
     lv_obj_set_style_text_color(tab_lbl_write, C_JAWA_1, 0);
 
     // Update target aksara sesuai pilihan aktif
-    static const char* NAMA[9] = { "Ha", "Na", "Ca", "Peti", "Ra", "Ka", "Da", "Ta", "Piala" };
-    char b[24];
-    snprintf(b, sizeof(b), "Aksara %s", NAMA[active_write_index]);
-    lv_label_set_text(write_target_title, b);
-    static const char* AKSARA[9] = { "\xEA\xA6\xB2", "\xEA\xA6\xA4", "\xEA\xA6\x95", "Peti", "\xEA\xA6\xAA", "\xEA\xA6\x8F", "\xEA\xA6\xA2", "\xEA\xA6\xA0", "Win" };
-    lv_obj_set_style_text_font(write_preview_lbl, (active_write_index == 3 || active_write_index == 8) ? &lv_font_montserrat_20 : &font_jawa_38, 0);
-    lv_label_set_text(write_preview_lbl, AKSARA[active_write_index]);
-    update_jawa_write_guide();
+    if (active_write_index >= 0 && active_write_index < 21) {
+      char b[32];
+      snprintf(b, sizeof(b), "Aksara %s", JAWA_NAMES[active_write_index]);
+      lv_label_set_text(write_target_title, b);
+      lv_obj_set_style_text_font(write_preview_lbl, (active_write_index == 20) ? &lv_font_montserrat_20 : &font_jawa_38, 0);
+      lv_label_set_text(write_preview_lbl, JAWA_AKSARA[active_write_index]);
+      update_jawa_write_guide();
+    }
   } else {
     // Tab Setelan
     lv_obj_clear_flag(view_settings, LV_OBJ_FLAG_HIDDEN);

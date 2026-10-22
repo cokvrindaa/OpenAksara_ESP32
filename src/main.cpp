@@ -95,11 +95,7 @@ void onStartPractice(AksaraType type) {
 }
 
 void onSelectAksara(AksaraType type, int index) {
-  static const char* nama[5] = { "Ha", "Na", "Ca", "Ra", "Ka" };
-  if (index >= 0 && index < 5) {
-    Serial.printf("Pilih aksara %s (%s)\n", nama[index], type == AKSARA_JAWA ? "Jawa" : "Bali");
-  }
-  // TODO: buka latihan khusus untuk aksara ini
+  Serial.printf("Pilih node aksara index #%d (%s)\n", index, type == AKSARA_JAWA ? "Jawa" : "Bali");
 }
 
 void onAllAksara(AksaraType type) {

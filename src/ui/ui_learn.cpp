@@ -10,32 +10,50 @@ struct AksaraItem {
   const char* aksara;  // Karakter UTF-8 Native Aksara
 };
 
-// 10 Aksara Jawa Utama
-static const AksaraItem JAWA_ITEMS[10] = {
-  { "ha", "\xEA\xA6\xB2" }, // ꦲ
-  { "na", "\xEA\xA6\xA4" }, // ꦤ
-  { "ca", "\xEA\xA6\x95" }, // ꦕ
-  { "ra", "\xEA\xA6\xAA" }, // ꦫ
-  { "ka", "\xEA\xA6\x8F" }, // ꦏ
-  { "da", "\xEA\xA6\xA2" }, // ꦢ
-  { "ta", "\xEA\xA6\xA0" }, // ꦠ
-  { "sa", "\xEA\xA6\xB1" }, // ꦱ
-  { "wa", "\xEA\xA6\xAE" }, // ꦮ
-  { "la", "\xEA\xA6\xAD" }  // ꦭ
+// 20 Aksara Jawa Carakan (Nglegena Lengkap)
+static const AksaraItem JAWA_ITEMS[20] = {
+  { "ha", "\xEA\xA6\xB2" }, // ꦲ (0)
+  { "na", "\xEA\xA6\xA4" }, // ꦤ (1)
+  { "ca", "\xEA\xA6\x95" }, // ꦕ (2)
+  { "ra", "\xEA\xA6\xAB" }, // ꦫ (3)
+  { "ka", "\xEA\xA6\x8F" }, // ꦏ (4)
+  { "da", "\xEA\xA6\xA2" }, // ꦢ (5)
+  { "ta", "\xEA\xA6\xA0" }, // ꦠ (6)
+  { "sa", "\xEA\xA6\xB1" }, // ꦱ (7)
+  { "wa", "\xEA\xA6\xAE" }, // ꦮ (8)
+  { "la", "\xEA\xA6\xAD" }, // ꦭ (9)
+  { "pa", "\xEA\xA6\xA5" }, // ꦥ (10)
+  { "dha", "\xEA\xA6\x9D" }, // ꦝ (11)
+  { "ja", "\xEA\xA6\x97" }, // ꦗ (12)
+  { "ya", "\xEA\xA6\xAA" }, // ꦪ (13)
+  { "nya", "\xEA\xA6\x9A" }, // ꦚ (14)
+  { "ma", "\xEA\xA6\xA9" }, // ꦩ (15)
+  { "ga", "\xEA\xA6\x92" }, // ꦒ (16)
+  { "ba", "\xEA\xA6\xA7" }, // ꦧ (17)
+  { "tha", "\xEA\xA6\x9B" }, // ꦛ (18)
+  { "nga", "\xEA\xA6\x94" }  // ꦔ (19)
 };
 
-// 10 Aksara Bali Utama
-static const AksaraItem BALI_ITEMS[10] = {
-  { "ha", "\xE1\xAC\xB3" }, // ᬳ
-  { "na", "\xE1\xAC\xA6" }, // ᬦ
-  { "ca", "\xE1\xAC\x98" }, // ᬘ
-  { "ra", "\xE1\xAC\xAD" }, // ᬭ
-  { "ka", "\xE1\xAC\x93" }, // ᬓ
-  { "da", "\xE1\xAC\xA4" }, // ᬤ
-  { "ta", "\xE1\xAC\xA2" }, // ᬢ
-  { "sa", "\xE1\xAC\xB2" }, // ᬲ
-  { "wa", "\xE1\xAC\xAF" }, // ᬯ
-  { "la", "\xE1\xAC\xAE" }  // ᬮ
+// 18 Aksara Bali Wreastra Lengkap
+static const AksaraItem BALI_ITEMS[18] = {
+  { "ha", "\xE1\xAC\xB3" }, // ᬳ (0)
+  { "na", "\xE1\xAC\xA6" }, // ᬦ (1)
+  { "ca", "\xE1\xAC\x98" }, // ᬘ (2)
+  { "ra", "\xE1\xAC\xAD" }, // ᬭ (3)
+  { "ka", "\xE1\xAC\x93" }, // ᬓ (4)
+  { "da", "\xE1\xAC\xA4" }, // ᬤ (5)
+  { "ta", "\xE1\xAC\xA2" }, // ᬢ (6)
+  { "sa", "\xE1\xAC\xB2" }, // ᬲ (7)
+  { "wa", "\xE1\xAC\xAF" }, // ᬯ (8)
+  { "la", "\xE1\xAC\xAE" }, // ᬮ (9)
+  { "ma", "\xE1\xAC\xAB" }, // ᬫ (10)
+  { "ga", "\xE1\xAC\x95" }, // ᬕ (11)
+  { "ba", "\xE1\xAC\xA9" }, // ᬩ (12)
+  { "nga", "\xE1\xAC\x97" }, // ᬗ (13)
+  { "pa", "\xE1\xAC\xA7" }, // ᬧ (14)
+  { "ja", "\xE1\xAC\x9A" }, // ᬚ (15)
+  { "ya", "\xE1\xAC\xAC" }, // ᬬ (16)
+  { "nya", "\xE1\xAC\x9C" }  // ᬜ (17)
 };
 
 // Warna Status Interaktif Duolingo
@@ -144,12 +162,10 @@ static const AksaraItem* get_current_items() {
 }
 
 static int map_level_to_item_index(int level_idx) {
-  if (level_idx == 4) return 3; // Ra
-  if (level_idx == 5) return 4; // Ka
-  if (level_idx == 6) return 5; // Da
-  if (level_idx == 7) return 6; // Ta
-  if (level_idx >= 8) return 0;
-  return level_idx % 10;
+  int max_items = (current_script == AKSARA_JAWA) ? 20 : 18;
+  if (level_idx < 0) return 0;
+  if (level_idx >= max_items) return max_items - 1;
+  return level_idx;
 }
 
 // ---------- Event: Tutup / Kembali ----------
@@ -1268,9 +1284,10 @@ void ui_learn_start(AksaraType script, int level_index) {
   if (lbl_badge_xp) lv_label_set_text(lbl_badge_xp, b);
 
   // Pilih 4 item berurutan dari level
-  int base_idx = current_target_item_idx;
+  int total_items = (script == AKSARA_JAWA) ? 20 : 18;
+  int base_idx = current_target_item_idx % total_items;
   for (int i = 0; i < PAIR_COUNT; i++) {
-    active_item_indices[i] = (base_idx + i) % 10;
+    active_item_indices[i] = (base_idx + i) % total_items;
   }
 
   // Acak tombol kanan (shuffle deterministik agar seru)
