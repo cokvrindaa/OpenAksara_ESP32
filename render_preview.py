@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import os
 from matplotlib.patches import FancyBboxPatch, Rectangle, Circle
+from PIL import Image
 
 artifact_dir = r"C:\Users\cokvr\.gemini\antigravity\brain\f157119b-0846-4ce9-850e-bbbf528be1df"
 
@@ -13,15 +14,12 @@ def render_views():
     
     fig = plt.figure(figsize=(16, 12), dpi=150)
     
-    # 1. Isometric Assembly View
+    # 1. 3D Inside View of Top Case (Highlighting FPC Notch Relief Pocket & Standoffs)
     ax1 = fig.add_subplot(2, 2, 1, projection='3d')
-    ax1.set_title("3D Isometric View (USB di Kiri, Saklar di Kanan)", fontsize=11, fontweight='bold', pad=15)
+    ax1.set_title("Tampak Dalam Casing Atas: Ceruk Bezel Kaca + Relief Notch FPC", fontsize=11, fontweight='bold', pad=15)
     
-    top_poly = Poly3DCollection(top_mesh.vertices[top_mesh.faces], alpha=0.9, facecolor='#2563eb', edgecolor='#1e40af', linewidths=0.1)
+    top_poly = Poly3DCollection(top_mesh.vertices[top_mesh.faces], alpha=0.75, facecolor='#38bdf8', edgecolor='#0284c7', linewidths=0.1)
     ax1.add_collection3d(top_poly)
-    
-    bot_poly = Poly3DCollection(bottom_mesh.vertices[bottom_mesh.faces], alpha=0.9, facecolor='#475569', edgecolor='#334155', linewidths=0.1)
-    ax1.add_collection3d(bot_poly)
     
     ax1.set_xlim([-80, 80])
     ax1.set_ylim([-55, 55])
@@ -29,69 +27,80 @@ def render_views():
     ax1.set_xlabel("Panjang X (150 mm)", fontsize=9)
     ax1.set_ylabel("Lebar Y (100 mm)", fontsize=9)
     ax1.set_zlabel("Tinggi Z (30 mm)", fontsize=9)
-    ax1.view_init(elev=26, azim=45) # Angle showing the right side with the switch!
+    # Looking from underneath inside the top case
+    ax1.view_init(elev=-60, azim=-65)
     
-    # 2. Tampak Samping Kanan (Right Side View: Saklar 20x15mm)
+    # 2. Detailed Technical Diagram of LCD Mounting Area (Active Area + Glass + FPC Notch)
     ax2 = fig.add_subplot(2, 2, 2)
-    ax2.set_title("Tampak Samping Kanan: Lubang Saklar Switch 2-Pin 20x15mm", fontsize=11, fontweight='bold')
+    ax2.set_title("Detail Rekayasa Dudukan LCD: Kesesuaian Kaca & Notch FPC Touch", fontsize=11, fontweight='bold')
     
-    rect_side_bot = FancyBboxPatch((-50, 0), 100, 3, boxstyle="round,pad=0,rounding_size=1", facecolor='#64748b', edgecolor='#334155', linewidth=1.5, label="Tutup Bawah (3mm)")
-    ax2.add_patch(rect_side_bot)
+    # Outer Case section background
+    rect_bg = Rectangle((-60, -35), 120, 70, facecolor='#f8fafc', edgecolor='#cbd5e1', linewidth=1)
+    ax2.add_patch(rect_bg)
     
-    rect_side_top = FancyBboxPatch((-50, 3), 100, 27, boxstyle="round,pad=0,rounding_size=3", facecolor='#dbeafe', edgecolor='#1d4ed8', linewidth=2, label="Casing Atas (27mm)")
-    ax2.add_patch(rect_side_top)
+    # LCD Module PCB outline (98 x 56.34)
+    rect_pcb = Rectangle((-49, -28.17), 98, 56.34, fill=False, edgecolor='#ef4444', linestyle='--', linewidth=1.5, label="Modul PCB (98 x 56.34 mm)")
+    ax2.add_patch(rect_pcb)
     
-    # Switch Hole: Width Y = 19.4 mm (-9.7 to 9.7), Height Z = 13.0 mm (8.5 to 21.5)
-    rect_sw_side = FancyBboxPatch((-9.7, 8.5), 19.4, 13.0, boxstyle="round,pad=0,rounding_size=1", facecolor='#0f172a', edgecolor='#ef4444', linewidth=2, label="Lubang Saklar KCD1 (19.4 x 13.0 mm)")
-    ax2.add_patch(rect_sw_side)
+    # 4 Mounting Standoffs (92 x 49.5 mm)
+    for lx in [-46.0, 46.0]:
+        for ly in [-24.75, 24.75]:
+            c_post = Circle((lx, ly), 3.2, facecolor='#bae6fd', edgecolor='#0284c7', linewidth=1.2)
+            c_hole = Circle((lx, ly), 1.25, facecolor='#0284c7', edgecolor='none')
+            ax2.add_patch(c_post)
+            ax2.add_patch(c_hole)
+    ax2.plot([], [], 'o', color='#0284c7', markersize=6, label="4 Standoff Dudukan PCB (92 x 49.5 mm)")
     
-    # Dimension arrows & labels
-    ax2.annotate("", xy=(-9.7, 23.5), xytext=(9.7, 23.5), arrowprops=dict(arrowstyle="<->", color="#dc2626", lw=1.5))
-    ax2.text(0, 24.8, "Lebar Cutout: 19.4 mm", ha='center', va='bottom', fontsize=9, fontweight='bold', color="#dc2626")
+    # Glass Outline (84.96 x 55.5 mm)
+    rect_glass = Rectangle((-42.48, -27.75), 84.96, 55.5, fill=False, edgecolor='#64748b', linestyle='-', linewidth=1.5, label="Kaca LCD (85.0 x 55.5 mm)")
+    ax2.add_patch(rect_glass)
     
-    ax2.annotate("", xy=(13.0, 8.5), xytext=(13.0, 21.5), arrowprops=dict(arrowstyle="<->", color="#dc2626", lw=1.5))
-    ax2.text(15.0, 15.0, "Tinggi: 13.0 mm", ha='left', va='center', fontsize=9, fontweight='bold', color="#dc2626")
+    # NEW: FPC Ribbon Notch Relief Pocket in the casing (94.0 x 20.0 mm)
+    rect_fpc_relief = FancyBboxPatch((-47.0, -10.0), 94.0, 20.0, boxstyle="round,pad=0,rounding_size=2", facecolor='#fef08a', edgecolor='#ca8a04', alpha=0.5, linewidth=1.5, label="Ceruk Pelega Notch FPC (94 x 20 mm)")
+    ax2.add_patch(rect_fpc_relief)
     
-    # Centerline from base
-    ax2.plot([-35, 35], [15.0, 15.0], '--', color='#ef4444', lw=1.2)
-    ax2.text(-37, 15.0, "Pusat Z = 15.0 mm (Pas di Tengah)", ha='right', va='center', fontsize=8, fontweight='bold', color='#dc2626')
+    # FPC Ribbon Tab on right side (as in user's photo!)
+    rect_fpc_tab = FancyBboxPatch((41.0, -6.0), 5.5, 12.0, boxstyle="round,pad=0,rounding_size=1", facecolor='#eab308', edgecolor='#a16207', linewidth=1.2, label="Kabel Pita / Tab FPC Touch (Foto User)")
+    ax2.add_patch(rect_fpc_tab)
+    ax2.text(43.5, 0, "FPC\nTAB", ha='center', va='center', fontsize=6.5, fontweight='bold', color='#713f12')
 
-    ax2.text(0, 15.0, "ON / OFF\n(KCD1-101)", ha='center', va='center', fontsize=8, fontweight='bold', color='#f87171')
-
-    ax2.set_xlim([-58, 58])
-    ax2.set_ylim([-3, 35])
+    # Front Cutout Window (78.0 x 51.5 mm)
+    rect_win = FancyBboxPatch((-39.0, -25.75), 78.0, 51.5, boxstyle="round,pad=0,rounding_size=2", facecolor='#0f172a', edgecolor='#38bdf8', linewidth=2, label="Jendela Tampak Layar (78 x 51.5 mm)")
+    ax2.add_patch(rect_win)
+    
+    # Active Area (73.44 x 48.96 mm, offset by 2.33 mm towards left)
+    rect_aa = Rectangle((-39.05, -24.48), 73.44, 48.96, fill=False, edgecolor='#22c55e', linestyle=':', linewidth=1.5, label="Display Active Area (73.4 x 49 mm)")
+    ax2.add_patch(rect_aa)
+    
+    ax2.set_xlim([-55, 55])
+    ax2.set_ylim([-35, 35])
     ax2.set_aspect('equal')
-    ax2.grid(True, linestyle=':', alpha=0.5)
-    ax2.set_xlabel("Lebar Casing Y (100 mm)", fontsize=9)
-    ax2.set_ylabel("Tinggi Casing Z (30 mm)", fontsize=9)
-    ax2.legend(loc='lower center', bbox_to_anchor=(0.5, -0.28), ncol=2, fontsize=8)
+    ax2.grid(True, linestyle=':', alpha=0.4)
+    ax2.legend(loc='lower center', bbox_to_anchor=(0.5, -0.32), ncol=3, fontsize=7.5)
 
-    # 3. Top-Down Layout Diagram (with LCD Cutout + Mic Array + USB + Switch)
+    # 3. Top-Down Layout Diagram
     ax3 = fig.add_subplot(2, 2, 3)
-    ax3.set_title("Top View (Layout Lengkap): LCD + Mic + USB + Saklar", fontsize=11, fontweight='bold')
+    ax3.set_title("Top View (Layout Lengkap 150 x 100 mm)", fontsize=11, fontweight='bold')
     
     rect_outer = FancyBboxPatch((-75, -50), 150, 100, boxstyle="round,pad=0,rounding_size=5", facecolor='#e0f2fe', edgecolor='#0284c7', linewidth=2, label="Outer Case (150 x 100 mm)")
     ax3.add_patch(rect_outer)
     
-    rect_lcd = FancyBboxPatch((-38, -25.5), 76, 51, boxstyle="round,pad=0,rounding_size=2", facecolor='#0f172a', edgecolor='#0284c7', linewidth=1.5, label="LCD Window (76 x 51 mm)")
+    rect_lcd = FancyBboxPatch((-39, -25.75), 78, 51.5, boxstyle="round,pad=0,rounding_size=2", facecolor='#0f172a', edgecolor='#0284c7', linewidth=1.5, label="LCD Window (78 x 51.5 mm)")
     ax3.add_patch(rect_lcd)
-    
-    rect_pcb = Rectangle((-49, -28.17), 98, 56.34, fill=False, edgecolor='#f43f5e', linestyle='--', linewidth=1.5, label="ILI9488 PCB Outline")
-    ax3.add_patch(rect_pcb)
     
     mic_cluster = Circle((0, 38), 3.2, facecolor='#fbbf24', edgecolor='#d97706', linewidth=1.5, label="INMP441 Mic (9x Ø1.3mm)")
     ax3.add_patch(mic_cluster)
     ax3.text(0, 42.5, "INMP441 MIC", ha='center', va='bottom', fontsize=8, fontweight='bold', color='#b45309')
     
-    # USB Port on left side (horizontal slot in Y)
+    # USB Port on left side
     rect_usb = FancyBboxPatch((-76.5, -6.25), 3, 12.5, boxstyle="round,pad=0,rounding_size=1", facecolor='#10b981', edgecolor='#047857', linewidth=1.5, label="USB Charger (12.5 x 6.5 mm)")
     ax3.add_patch(rect_usb)
     ax3.text(-74, 9, "USB CHARGER", ha='right', va='bottom', fontsize=7.5, fontweight='bold', color='#047857')
     
-    # Switch on right side (cutout 19.4 mm along Y)
-    rect_sw = FancyBboxPatch((73.5, -9.7), 3, 19.4, boxstyle="round,pad=0,rounding_size=1", facecolor='#ef4444', edgecolor='#b91c1c', linewidth=1.5, label="Saklar 20x15mm (19.4 x 13 mm)")
+    # Slide Switch on right side
+    rect_sw = FancyBboxPatch((73.5, -4.25), 3, 8.5, boxstyle="round,pad=0,rounding_size=1", facecolor='#ef4444', edgecolor='#b91c1c', linewidth=1.5, label="Saklar Geser (8.5 x 4.5 mm)")
     ax3.add_patch(rect_sw)
-    ax3.text(74, 12, "SAKLAR ON/OFF", ha='left', va='bottom', fontsize=7.5, fontweight='bold', color='#b91c1c')
+    ax3.text(74, 8, "SAKLAR GESER", ha='left', va='bottom', fontsize=7.5, fontweight='bold', color='#b91c1c')
 
     for cx in [-66.5, 66.5]:
         for cy in [-41.5, 41.5]:
@@ -104,40 +113,16 @@ def render_views():
     ax3.grid(True, linestyle=':', alpha=0.5)
     ax3.legend(loc='lower center', bbox_to_anchor=(0.5, -0.32), ncol=3, fontsize=7.5)
     
-    # 4. Bottom-Up View (Speaker Grill & M3 Screws Detail)
+    # 4. Blueprint Reference Preview (Thumbnail of official datasheet)
     ax4 = fig.add_subplot(2, 2, 4)
-    ax4.set_title("Bottom View: Speaker Grill (35 Holes) & M3 Countersunk Screws", fontsize=11, fontweight='bold')
+    ax4.set_title("Referensi Blueprint Resmi MSP3520 (LCDWiki)", fontsize=11, fontweight='bold')
     
-    rect_bot = FancyBboxPatch((-75, -50), 150, 100, boxstyle="round,pad=0,rounding_size=5", facecolor='#f1f5f9', edgecolor='#475569', linewidth=2, label="Bottom Lid")
-    ax4.add_patch(rect_bot)
-    
-    spk_circle = Circle((35, 0), 16.5, fill=False, edgecolor='#64748b', linestyle=':', linewidth=1)
-    ax4.add_patch(spk_circle)
-    spk_holes = [(0, 0)]
-    rings = [(4.5, 6), (9.0, 12), (13.5, 16)]
-    for r, n in rings:
-        angles = np.linspace(0, 2*np.pi, n, endpoint=False)
-        for a in angles:
-            spk_holes.append((r * np.cos(a), r * np.sin(a)))
-    for hx, hy in spk_holes:
-        dot = Circle((35 + hx, hy), 1.0, facecolor='#1e293b', edgecolor='none')
-        ax4.add_patch(dot)
-    ax4.plot([], [], 'o', color='#1e293b', markersize=4, label="Speaker Grill (35x Ø2.2mm)")
-    ax4.text(35, -21, "SPEAKER GRILL", ha='center', va='top', fontsize=8, fontweight='bold', color='#334155')
-    
-    for cx in [-66.5, 66.5]:
-        for cy in [-41.5, 41.5]:
-            cs_outer = Circle((cx, cy), 3.1, fill=False, edgecolor='#dc2626', linewidth=1.5)
-            cs_inner = Circle((cx, cy), 1.7, facecolor='#dc2626', edgecolor='none')
-            ax4.add_patch(cs_outer)
-            ax4.add_patch(cs_inner)
-    ax4.plot([], [], 'o', color='#dc2626', markersize=6, label="M3 Countersunk Hole")
-    
-    ax4.set_xlim([-85, 85])
-    ax4.set_ylim([-60, 60])
-    ax4.set_aspect('equal')
-    ax4.grid(True, linestyle=':', alpha=0.5)
-    ax4.legend(loc='lower center', bbox_to_anchor=(0.5, -0.28), ncol=3, fontsize=7.5)
+    try:
+        bp_img = Image.open("msp3520_size.png")
+        ax4.imshow(bp_img)
+        ax4.axis('off')
+    except Exception as e:
+        ax4.text(0.5, 0.5, "Blueprint Loaded", ha='center', va='center')
     
     plt.tight_layout()
     

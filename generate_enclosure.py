@@ -3,10 +3,14 @@ Updated Script to generate 3D Printable Enclosure with:
 - 150mm (L) x 100mm (W) x 30mm (H)
 - Removable bottom with M3 countersunk screws
 - Top cutout for 3.5" ILI9488 LCD + internal mounting standoffs
+- UPDATED LCD INTEGRATION based on official MSP3520/HSD035577G6 blueprint & real module photo:
+  * Viewing window: 78.0 mm x 51.5 mm (accommodates the 2.33mm Active Area offset so all pixels & touch area are visible)
+  * Glass pocket: 86.5 mm x 56.5 mm x 1.4 mm
+  * NEW: FPC Ribbon Notch Relief Pocket (94.0 mm x 20.0 mm x 1.6 mm) specifically preventing any pinching of the touch screen ribbon cable!
 - Speaker grill on bottom lid (35 small acoustic holes + internal locator ring)
 - USB charger port cutout oriented HORIZONTALLY and CENTERED vertically (Z = 15.0 mm, Y = 0.0 mm)
 - Micro-hole array for INMP441 MEMS microphone on top face + internal mounting guide
-- NEW: Cutout for 2-Pin Rocker Switch ON-OFF (20x15mm, cutout 19.4 x 13.0 mm) on Right Wall
+- Mini Slide Switch slot (8.5mm wide x 4.5mm tall)
 """
 
 import os
@@ -68,22 +72,28 @@ def build_top_case(switch_position='right'):
     for h in holes:
         top_shell = top_shell - h
         
-    # 4. LCD Cutout Window (76.0 x 51.0 mm)
-    win_2d = create_rounded_rect(76.0, 51.0, 2.0, 32)
+    # 4. LCD Cutout Window (78.0 x 51.5 mm, accounts for Active Area offset)
+    win_2d = create_rounded_rect(78.0, 51.5, 2.0, 32)
     win_cut = win_2d.extrude(wall_t + 2.0).translate([0, 0, H_total - wall_t - 1.0])
     top_shell = top_shell - win_cut
     
-    # 5. Inner LCD Glass Recess (86.5 x 56.5 x 1.2 mm)
+    # 5. Inner LCD Glass Recess (86.5 x 56.5 x 1.4 mm)
     glass_2d = create_rounded_rect(86.5, 56.5, 2.0, 32)
-    glass_recess = glass_2d.extrude(1.2).translate([0, 0, H_total - wall_t - 0.01])
+    glass_recess = glass_2d.extrude(1.4).translate([0, 0, H_total - wall_t - 0.01])
     top_shell = top_shell - glass_recess
+    
+    # 5b. Touch Screen FPC Notch Relief Pocket (94.0 x 20.0 x 1.6 mm)
+    # Provides clearance so the touch flex cable / ribbon tab on the side of the glass is never pinched!
+    fpc_notch_2d = create_rounded_rect(94.0, 20.0, 2.0, 32)
+    fpc_notch_cut = fpc_notch_2d.extrude(1.6).translate([0, 0, H_total - wall_t - 0.21])
+    top_shell = top_shell - fpc_notch_cut
     
     # 6. LCD Module Mounting Standoffs (92.0 x 49.5 mm)
     lcd_cx = 92.0 / 2.0 # 46.0mm
     lcd_cy = 49.5 / 2.0 # 24.75mm
     lcd_boss_r = 3.2
     lcd_hole_r = 1.25 # 2.5mm hole for M2.5 / M3
-    standoff_h = 4.5
+    standoff_h = 4.0
     
     lcd_bosses = []
     lcd_holes = []
@@ -139,32 +149,32 @@ def build_top_case(switch_position='right'):
     usb_cutter = usb_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([-85.0, 0, 15.0])
     top_shell = top_shell - usb_cutter
 
-    # 9. NEW: Rocker Switch Cutout (2-Pin ON-OFF 20x15mm, KCD1-101)
-    # Standard snap-in cutout: 19.4 mm (width) x 13.0 mm (height), corner radius 1.0 mm
-    sw_w = 19.4
-    sw_h = 13.0
-    sw_r = 1.0
-    sw_dz = sw_h / 2.0 - sw_r
-    sw_dy = sw_w / 2.0 - sw_r
-    sc1 = CrossSection.circle(sw_r, 16).translate([sw_dz, sw_dy])
-    sc2 = CrossSection.circle(sw_r, 16).translate([-sw_dz, sw_dy])
-    sc3 = CrossSection.circle(sw_r, 16).translate([sw_dz, -sw_dy])
-    sc4 = CrossSection.circle(sw_r, 16).translate([-sw_dz, -sw_dy])
-    sw_slot_2d = CrossSection.batch_hull([sc1, sc2, sc3, sc4])
+    # 9. MINI SLIDE SWITCH
+    sw_w_y = 8.5
+    sw_h_z = 4.5
+    sw_r = 1.2
+    s_dz = sw_h_z / 2.0 - sw_r
+    s_dy = sw_w_y / 2.0 - sw_r
+    sc1 = CrossSection.circle(sw_r, 16).translate([s_dz, s_dy])
+    sc2 = CrossSection.circle(sw_r, 16).translate([-s_dz, s_dy])
+    sc3 = CrossSection.circle(sw_r, 16).translate([s_dz, -s_dy])
+    sc4 = CrossSection.circle(sw_r, 16).translate([-s_dz, -s_dy])
+    slide_slot_2d = CrossSection.batch_hull([sc1, sc2, sc3, sc4])
 
+    pocket_2d = CrossSection.square([6.0, 10.5], center=True)
+    
     if switch_position == 'right':
-        # Centered on right side wall (X = +75.0 mm, Y = 0.0 mm, Z = 15.0 mm)
-        sw_cutter = sw_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([65.0, 0, 15.0])
+        slot_cutter = slide_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([65.0, 0, 15.0])
+        pocket_cutter = pocket_2d.extrude(1.4).rotate([0, 90, 0]).translate([72.4, 0, 15.0])
+        h1 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([72.0, 7.5, 15.0])
+        h2 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([72.0, -7.5, 15.0])
+        top_shell = top_shell - slot_cutter - pocket_cutter - h1 - h2
     elif switch_position == 'left':
-        # On left wall next to USB port (X = -75.0 mm, Y = 25.0 mm, Z = 15.0 mm)
-        sw_cutter = sw_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([-85.0, 25.0, 15.0])
-    elif switch_position == 'back':
-        # On back wall (Y = +50.0 mm, X = 0.0 mm, Z = 15.0 mm)
-        sw_cutter = sw_slot_2d.extrude(20.0).rotate([90, 0, 0]).translate([0, 60.0, 15.0])
-    else:
-        sw_cutter = sw_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([65.0, 0, 15.0])
-
-    top_shell = top_shell - sw_cutter
+        slot_cutter = slide_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([-85.0, 25.0, 15.0])
+        pocket_cutter = pocket_2d.extrude(1.4).rotate([0, 90, 0]).translate([-73.8, 25.0, 15.0])
+        h1 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([-74.5, 32.5, 15.0])
+        h2 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([-74.5, 17.5, 15.0])
+        top_shell = top_shell - slot_cutter - pocket_cutter - h1 - h2
         
     return top_shell
 
@@ -239,7 +249,7 @@ def build_bottom_lid():
     return lid
 
 if __name__ == '__main__':
-    print("Generating Updated 3D Models with 20x15mm Rocker Switch Hole...")
+    print("Generating Updated 3D Models with FPC Notch Relief Pocket...")
     top = build_top_case(switch_position='right')
     print("Top case generated. Vertices:", top.num_vert(), "Triangles:", top.num_tri())
     
