@@ -148,6 +148,10 @@ struct TraceState
   lv_obj_t *canvas_card;
   lv_obj_t *draw_layer;
   lv_obj_t *feedback_lbl;
+  lv_obj_t *watermark_lbl;      // Watermark glif aksara di kanvas (160px)
+  lv_obj_t *guide_track;        // Jalur garis panduan (biru)
+  lv_obj_t *celebration_layer;  // Layer efek perayaan kejutan (surprise)
+  lv_color_t default_border_color;
   lv_point_precise_t (*points)[MAX_TRACE_POINTS_PER_STROKE];
   uint16_t pt_counts[MAX_TRACE_STROKES];
   uint8_t stroke_count;
@@ -271,13 +275,221 @@ inline void ui_trace_reset_checkpoints(TraceState *st)
   }
 }
 
+// Callback animasi untuk efek perayaan kejutan (celebration surprise)
+static void celebration_anim_x_cb(void* var, int32_t val) {
+  lv_obj_set_x((lv_obj_t*)var, val);
+}
+
+static void celebration_anim_y_cb(void* var, int32_t val) {
+  lv_obj_set_y((lv_obj_t*)var, val);
+}
+
+static void celebration_anim_opa_cb(void* var, int32_t val) {
+  lv_obj_set_style_opa((lv_obj_t*)var, (lv_opa_t)val, 0);
+}
+
+static void celebration_watermark_bounce_cb(void* var, int32_t val) {
+  lv_obj_align((lv_obj_t*)var, LV_ALIGN_CENTER, 0, val);
+}
+
+inline void ui_trace_set_completed_visuals(TraceState *st)
+{
+  if (!st)
+    return;
+
+  // 1. Sembunyikan coretan stylus user (coretannya di-hide)
+  if (st->draw_layer)
+  {
+    lv_obj_add_flag(st->draw_layer, LV_OBJ_FLAG_HIDDEN);
+  }
+
+  // 2. Sembunyikan garis panduan alur dan titik-titik acuan
+  if (st->guide_track)
+  {
+    lv_obj_add_flag(st->guide_track, LV_OBJ_FLAG_HIDDEN);
+  }
+  for (int i = 0; i < st->checkpoint_count; i++)
+  {
+    if (st->checkpoints[i].marker_card)
+    {
+      lv_obj_add_flag(st->checkpoints[i].marker_card, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
+
+  // 3. Tebalkan aksara (Bold aksara: 100% Opacity Penuh & Solid) + Animasi Melompat Girang
+  if (st->watermark_lbl)
+  {
+    lv_obj_set_style_text_opa(st->watermark_lbl, LV_OPA_COVER, 0);
+    lv_obj_set_style_text_color(st->watermark_lbl, lv_color_hex(0x38BDF8), 0);
+
+    lv_anim_del(st->watermark_lbl, celebration_watermark_bounce_cb);
+    lv_anim_t aw;
+    lv_anim_init(&aw);
+    lv_anim_set_var(&aw, st->watermark_lbl);
+    lv_anim_set_exec_cb(&aw, celebration_watermark_bounce_cb);
+    lv_anim_set_values(&aw, 29, 14);
+    lv_anim_set_duration(&aw, 160);
+    lv_anim_set_reverse_duration(&aw, 180);
+    lv_anim_set_path_cb(&aw, lv_anim_path_ease_out);
+    lv_anim_start(&aw);
+  }
+
+  // 4. Efek Surprise: Pendaran Border Emas & Kembang Api Simbol Ikon Font (Bebas Kotak-Kotak Error)
+  if (st->canvas_card)
+  {
+    lv_obj_set_style_border_color(st->canvas_card, lv_color_hex(0xFACC15), 0);
+    lv_obj_set_style_border_width(st->canvas_card, 3, 0);
+
+    if (st->celebration_layer)
+    {
+      lv_obj_delete(st->celebration_layer);
+      st->celebration_layer = nullptr;
+    }
+
+    st->celebration_layer = lv_obj_create(st->canvas_card);
+    lv_obj_remove_style_all(st->celebration_layer);
+    lv_obj_set_size(st->celebration_layer, LV_PCT(100), LV_PCT(100));
+    lv_obj_clear_flag(st->celebration_layer, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(st->celebration_layer, LV_OBJ_FLAG_SCROLLABLE);
+
+    // Kembang api partikel simbolik (menggunakan simbol resmi font, BUKAN card kotak)
+    static const char* SPARKLE_ICONS[8] = {
+      LV_SYMBOL_CHARGE, LV_SYMBOL_OK, LV_SYMBOL_CHARGE, LV_SYMBOL_OK,
+      LV_SYMBOL_CHARGE, LV_SYMBOL_OK, LV_SYMBOL_CHARGE, LV_SYMBOL_OK
+    };
+    static const lv_color_t SPARKLE_COLORS[8] = {
+      lv_color_hex(0xFACC15), lv_color_hex(0x22C55E),
+      lv_color_hex(0x38BDF8), lv_color_hex(0xF59E0B),
+      lv_color_hex(0x10B981), lv_color_hex(0xFACC15),
+      lv_color_hex(0x38BDF8), lv_color_hex(0x22C55E)
+    };
+    static const int8_t SPARKLE_OFFSETS[8][2] = {
+      {  65,   0 }, {  46,  46 }, {   0,  62 }, { -46,  46 },
+      { -65,   0 }, { -46, -46 }, {   0, -60 }, {  46, -46 }
+    };
+
+    const int cx = 154;
+    const int cy = 76;
+
+    for (int i = 0; i < 8; i++)
+    {
+      lv_obj_t* sp = ui_make_label(st->celebration_layer, SPARKLE_ICONS[i],
+                                   &lv_font_montserrat_14, SPARKLE_COLORS[i]);
+      lv_obj_set_pos(sp, cx, cy);
+      lv_obj_clear_flag(sp, LV_OBJ_FLAG_CLICKABLE);
+
+      int tx = cx + SPARKLE_OFFSETS[i][0];
+      int ty = cy + SPARKLE_OFFSETS[i][1];
+
+      // Animasi gerak X
+      lv_anim_t ax;
+      lv_anim_init(&ax);
+      lv_anim_set_var(&ax, sp);
+      lv_anim_set_exec_cb(&ax, celebration_anim_x_cb);
+      lv_anim_set_values(&ax, cx, tx);
+      lv_anim_set_duration(&ax, 600 + (i % 2) * 50);
+      lv_anim_set_path_cb(&ax, lv_anim_path_ease_out);
+      lv_anim_start(&ax);
+
+      // Animasi gerak Y
+      lv_anim_t ay;
+      lv_anim_init(&ay);
+      lv_anim_set_var(&ay, sp);
+      lv_anim_set_exec_cb(&ay, celebration_anim_y_cb);
+      lv_anim_set_values(&ay, cy, ty);
+      lv_anim_set_duration(&ay, 600 + (i % 2) * 50);
+      lv_anim_set_path_cb(&ay, lv_anim_path_ease_out);
+      lv_anim_start(&ay);
+
+      // Animasi fade out
+      lv_anim_t ao;
+      lv_anim_init(&ao);
+      lv_anim_set_var(&ao, sp);
+      lv_anim_set_exec_cb(&ao, celebration_anim_opa_cb);
+      lv_anim_set_values(&ao, LV_OPA_COVER, LV_OPA_0);
+      lv_anim_set_delay(&ao, 300);
+      lv_anim_set_duration(&ao, 350);
+      lv_anim_start(&ao);
+    }
+
+    // 5. Floating Badge Perayaan Kejutan: Lencana Emas Berpendar (Menggunakan Simbol Resmi Font)
+    lv_obj_t* pill = ui_make_card(st->celebration_layer, 44, 145, 220, 32,
+                                  lv_color_hex(0xF59E0B), lv_color_hex(0xD97706), 16);
+    lv_obj_set_style_border_color(pill, lv_color_hex(0xFEF08A), 0);
+    lv_obj_set_style_border_width(pill, 2, 0);
+    lv_obj_clear_flag(pill, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(pill, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t* pill_lbl = ui_make_label(pill, LV_SYMBOL_OK " SEMPURNA! +15 XP " LV_SYMBOL_CHARGE,
+                                       &lv_font_montserrat_14, lv_color_hex(0xFFFFFF));
+    lv_obj_center(pill_lbl);
+
+    // Animasi melonjak ke atas (overshoot bounce)
+    lv_anim_t ap;
+    lv_anim_init(&ap);
+    lv_anim_set_var(&ap, pill);
+    lv_anim_set_exec_cb(&ap, celebration_anim_y_cb);
+    lv_anim_set_values(&ap, 145, 116);
+    lv_anim_set_duration(&ap, 350);
+    lv_anim_set_path_cb(&ap, lv_anim_path_overshoot);
+    lv_anim_start(&ap);
+
+    // Fade out pill secara halus setelah 2.2 detik
+    lv_anim_t ap_fade;
+    lv_anim_init(&ap_fade);
+    lv_anim_set_var(&ap_fade, pill);
+    lv_anim_set_exec_cb(&ap_fade, celebration_anim_opa_cb);
+    lv_anim_set_values(&ap_fade, LV_OPA_COVER, LV_OPA_0);
+    lv_anim_set_delay(&ap_fade, 2200);
+    lv_anim_set_duration(&ap_fade, 400);
+    lv_anim_start(&ap_fade);
+  }
+
+  // 6. Notifikasi Toast & Feedback Label (Simbol Resmi Font, Bukan Emoji)
+  ui_show_toast(LV_SYMBOL_OK " Luar Biasa! Sempurna (+15 XP) " LV_SYMBOL_CHARGE);
+  if (st->feedback_lbl)
+  {
+    lv_label_set_text(st->feedback_lbl, LV_SYMBOL_OK " BENAR! (+15 XP)");
+    lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0x22C55E), 0);
+  }
+}
+
 inline void ui_trace_clear(TraceState *st)
 {
   if (!st)
     return;
+  if (st->celebration_layer)
+  {
+    lv_obj_delete(st->celebration_layer);
+    st->celebration_layer = nullptr;
+  }
+  if (st->canvas_card)
+  {
+    lv_obj_set_style_border_color(st->canvas_card, st->default_border_color, 0);
+    lv_obj_set_style_border_width(st->canvas_card, 2, 0);
+  }
   if (st->draw_layer)
   {
     lv_obj_clean(st->draw_layer);
+    lv_obj_remove_flag(st->draw_layer, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (st->guide_track)
+  {
+    lv_obj_remove_flag(st->guide_track, LV_OBJ_FLAG_HIDDEN);
+  }
+  for (int i = 0; i < st->checkpoint_count; i++)
+  {
+    if (st->checkpoints[i].marker_card)
+    {
+      lv_obj_remove_flag(st->checkpoints[i].marker_card, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
+  if (st->watermark_lbl)
+  {
+    lv_anim_del(st->watermark_lbl, celebration_watermark_bounce_cb);
+    lv_obj_set_style_text_opa(st->watermark_lbl, LV_OPA_30, 0);
+    lv_obj_set_style_text_color(st->watermark_lbl, lv_color_hex(0x38BDF8), 0);
+    lv_obj_align(st->watermark_lbl, LV_ALIGN_CENTER, 0, 29);
   }
   for (int i = 0; i < MAX_TRACE_STROKES; i++)
   {
@@ -558,6 +770,7 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
         else
         {
           st->is_completed = true;
+          ui_trace_set_completed_visuals(st);
           audio_play(SOUND_SUCCESS);
           audio_play(SOUND_REWARD);
           if (st->feedback_lbl)
@@ -584,50 +797,11 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
     }
   }
 
-  // 3. Peringatan Urutan Salah / Mundur
-  if (!st->is_completed && !st->is_failed && st->active_checkpoint_idx < st->checkpoint_count)
-  {
-    int curr_target = st->active_checkpoint_idx;
-    int32_t r2 = (int32_t)st->tolerance_r * (int32_t)st->tolerance_r;
-
-    // A. Melompati urutan
-    for (int k = curr_target + 1; k < st->checkpoint_count; k++)
-    {
-      int32_t kx = st->checkpoints[k].x;
-      int32_t ky = st->checkpoints[k].y;
-      int32_t d2_k = (rx - kx) * (rx - kx) + (ry - ky) * (ry - ky);
-      if (d2_k <= r2)
-      {
-        if (st->feedback_lbl)
-        {
-          lv_label_set_text(st->feedback_lbl, "Urutan terlewati! Ikuti alur garis");
-          lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xF59E0B), 0);
-        }
-        break;
-      }
-    }
-
-    // B. Mundur ke titik sebelumnya
-    if (curr_target > 0)
-    {
-      int prev_cp = curr_target - 1;
-      int32_t px = st->checkpoints[prev_cp].x;
-      int32_t py = st->checkpoints[prev_cp].y;
-      int32_t d2_prev = (rx - px) * (rx - px) + (ry - py) * (ry - py);
-      if (d2_prev <= r2)
-      {
-        if (st->feedback_lbl)
-        {
-          lv_label_set_text(st->feedback_lbl, "Arah terbalik! Ikuti arah goresan");
-          lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
-        }
-      }
-    }
-  }
+  // Selesai evaluasi checkpoint titik aktif (Peringatan teks "Arah terbalik" dihilangkan sesuai permintaan user)
 }
 
 // Algoritma Evaluasi Akhir untuk tombol "Cek Goresan"
-inline StrokeEvalResult ui_eval_stroke_trace(const TraceState *st)
+inline StrokeEvalResult ui_eval_stroke_trace(TraceState *st)
 {
   StrokeEvalResult res = {false, "Goresan kosong!"};
   if (!st || st->checkpoint_count == 0)
@@ -642,6 +816,7 @@ inline StrokeEvalResult ui_eval_stroke_trace(const TraceState *st)
 
   if (st->is_completed)
   {
+    ui_trace_set_completed_visuals(st);
     res.success = true;
     res.message = "BENAR! Seluruh titik dilewati berurutan & rapi (+15 XP)";
     return res;
@@ -702,6 +877,8 @@ inline void ui_trace_event_cb(lv_event_t *e)
 
   if (code == LV_EVENT_PRESSED)
   {
+    if (st->is_completed || st->is_failed)
+      return;
     if (st->stroke_count < MAX_TRACE_STROKES)
     {
       uint8_t s = st->stroke_count;
@@ -714,6 +891,8 @@ inline void ui_trace_event_cb(lv_event_t *e)
   }
   else if (code == LV_EVENT_PRESSING)
   {
+    if (st->is_completed || st->is_failed)
+      return;
     if (st->is_drawing && st->stroke_count < MAX_TRACE_STROKES)
     {
       uint8_t s = st->stroke_count;
@@ -782,6 +961,11 @@ inline void ui_trace_attach(TraceState *st, lv_obj_t *canvas_card)
   if (!st || !canvas_card)
     return;
   st->canvas_card = canvas_card;
+  st->feedback_lbl = nullptr;
+  st->watermark_lbl = nullptr;
+  st->guide_track = nullptr;
+  st->celebration_layer = nullptr;
+  st->default_border_color = lv_obj_get_style_border_color(canvas_card, LV_PART_MAIN);
   st->stroke_count = 0;
   st->is_drawing = false;
   st->checkpoint_count = 0;

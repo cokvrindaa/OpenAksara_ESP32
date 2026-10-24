@@ -262,6 +262,7 @@ static void on_check_write_click(lv_event_t* e) {
   (void)e;
   StrokeEvalResult eval = ui_eval_stroke_trace(&bali_tab_trace);
   if (eval.success) {
+    ui_trace_set_completed_visuals(&bali_tab_trace);
     audio_play(SOUND_SUCCESS);
     audio_play(SOUND_REWARD);
     if (write_feedback_lbl) {
@@ -574,6 +575,8 @@ static void build_write_view(lv_obj_t* parent) {
 
   ui_trace_attach(&bali_tab_trace, canvasCard);
   bali_tab_trace.feedback_lbl = write_feedback_lbl;
+  bali_tab_trace.watermark_lbl = write_watermark_lbl;
+  bali_tab_trace.guide_track = write_guide_track;
 
   // Tombol Bersihkan & Periksa
   lv_obj_t* btnClear = ui_make_card(view_write, 160, 174, 146, 42, C_CARD, C_CARD, 12);
