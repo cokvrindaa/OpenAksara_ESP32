@@ -1,16 +1,17 @@
 """
 Updated Script to generate 3D Printable Enclosure with:
-- 150mm (L) x 100mm (W) x 30mm (H)
-- Removable bottom with M3 countersunk screws
-- Top cutout for 3.5" ILI9488 LCD + internal mounting standoffs
-- UPDATED LCD INTEGRATION based on official MSP3520/HSD035577G6 blueprint & real module photo:
-  * Viewing window: 78.0 mm x 51.5 mm (accommodates the 2.33mm Active Area offset so all pixels & touch area are visible)
-  * Glass pocket: 86.5 mm x 56.5 mm x 1.4 mm
-  * NEW: FPC Ribbon Notch Relief Pocket (94.0 mm x 20.0 mm x 1.6 mm) specifically preventing any pinching of the touch screen ribbon cable!
-- Speaker grill on bottom lid (35 small acoustic holes + internal locator ring)
-- USB charger port cutout oriented HORIZONTALLY and CENTERED vertically (Z = 15.0 mm, Y = 0.0 mm)
-- Micro-hole array for INMP441 MEMS microphone on top face + internal mounting guide
-- Mini Slide Switch slot (8.5mm wide x 4.5mm tall)
+- Panjang: 180 mm (18 cm)
+- Lebar: 100 mm (10 cm)
+- Kedalaman / Tinggi: 50 mm (5.0 cm) -> Lebih ramping, proporsional, dan tetap sangat lega di dalam!
+- TUTUP BAWAH 100% RATA MULUS (FLAT):
+  * Tanpa bibir/pinggiran timbul keliling
+  * Tanpa cincin/pinggiran timbul speaker
+  * Dilengkapi 4 lubang baut M3 countersunk (rata permukaan)
+- Top cutout untuk 3.5" ILI9488 LCD + ceruk bezel kaca + relief notch FPC Touch
+- Speaker grill radial (35 lubang) tembus rata di pelat bawah
+- Port USB charger horizontal di tengah dinding samping kiri (X = -90 mm, Z = 25.0 mm)
+- Mini Slide Switch (saklar geser) di tengah dinding samping kanan (X = +90 mm, Z = 25.0 mm)
+- Array mikrofon INMP441 di atas layar LCD
 """
 
 import os
@@ -31,30 +32,31 @@ def create_cylinder(radius, height, segments=32):
     return Manifold.cylinder(height, radius, radius, segments)
 
 def build_top_case(switch_position='right'):
-    L = 150.0
+    # DIMENSIONS: 180mm (L) x 100mm (W) x 50mm (H)
+    L = 180.0
     W = 100.0
-    H_total = 30.0
+    H_total = 50.0
     bottom_thickness = 3.0
-    H_top = H_total - bottom_thickness # 27.0mm
+    H_top = H_total - bottom_thickness # 47.0mm
     wall_t = 2.5
     corner_r = 5.0
     
-    # 1. Outer body (from z = 3.0 to z = 30.0)
+    # 1. Outer body (from z = 3.0 to z = 50.0)
     outer_2d = create_rounded_rect(L, W, corner_r, 48)
     outer_solid = outer_2d.extrude(H_top).translate([0, 0, bottom_thickness])
     
-    # 2. Inner cavity (from z = 3.0 to z = 27.5)
-    inner_L = L - 2 * wall_t # 145.0
-    inner_W = W - 2 * wall_t # 95.0
-    inner_r = max(1.0, corner_r - wall_t) # 2.5
+    # 2. Inner cavity (from z = 3.0 to z = 47.5)
+    inner_L = L - 2 * wall_t # 175.0mm
+    inner_W = W - 2 * wall_t # 95.0mm
+    inner_r = max(1.0, corner_r - wall_t) # 2.5mm
     inner_2d = create_rounded_rect(inner_L, inner_W, inner_r, 48)
     inner_cavity = inner_2d.extrude(H_top - wall_t + 0.1).translate([0, 0, bottom_thickness - 0.05])
     
     top_shell = outer_solid - inner_cavity
     
     # 3. Corner screw bosses (M3)
-    cx = L / 2.0 - 8.5 # 66.5mm
-    cy = W / 2.0 - 8.5 # 41.5mm
+    cx = L / 2.0 - 8.5 # 180/2 - 8.5 = 81.5mm
+    cy = W / 2.0 - 8.5 # 100/2 - 8.5 = 41.5mm
     boss_r = 4.5
     screw_hole_r = 1.5 # 3.0mm diameter
     
@@ -62,9 +64,11 @@ def build_top_case(switch_position='right'):
     holes = []
     for sx in [-cx, cx]:
         for sy in [-cy, cy]:
+            # Boss from z = 3.0 to z = 47.5
             boss = create_cylinder(boss_r, H_top - wall_t, 32).translate([sx, sy, bottom_thickness])
             bosses.append(boss)
-            hole = create_cylinder(screw_hole_r, 20.0, 32).translate([sx, sy, bottom_thickness - 0.1])
+            # Pilot hole depth 25mm into the boss
+            hole = create_cylinder(screw_hole_r, 25.0, 32).translate([sx, sy, bottom_thickness - 0.1])
             holes.append(hole)
             
     for b in bosses:
@@ -72,7 +76,7 @@ def build_top_case(switch_position='right'):
     for h in holes:
         top_shell = top_shell - h
         
-    # 4. LCD Cutout Window (78.0 x 51.5 mm, accounts for Active Area offset)
+    # 4. LCD Cutout Window (78.0 x 51.5 mm, centered at X=0, Y=0)
     win_2d = create_rounded_rect(78.0, 51.5, 2.0, 32)
     win_cut = win_2d.extrude(wall_t + 2.0).translate([0, 0, H_total - wall_t - 1.0])
     top_shell = top_shell - win_cut
@@ -83,7 +87,6 @@ def build_top_case(switch_position='right'):
     top_shell = top_shell - glass_recess
     
     # 5b. Touch Screen FPC Notch Relief Pocket (94.0 x 20.0 x 1.6 mm)
-    # Provides clearance so the touch flex cable / ribbon tab on the side of the glass is never pinched!
     fpc_notch_2d = create_rounded_rect(94.0, 20.0, 2.0, 32)
     fpc_notch_cut = fpc_notch_2d.extrude(1.6).translate([0, 0, H_total - wall_t - 0.21])
     top_shell = top_shell - fpc_notch_cut
@@ -135,7 +138,9 @@ def build_top_case(switch_position='right'):
     inmp_guide = create_rounded_rect(14.5, 12.5, 1.0, 16).extrude(1.2).translate([mic_x, mic_y, H_total - wall_t - 0.01])
     top_shell = top_shell - inmp_guide
     
-    # 8. HORIZONTAL & CENTERED USB Charger Port Cutout on Side Wall (Left side X = -75mm)
+    # 8. HORIZONTAL & CENTERED USB Charger Port Cutout on Side Wall (Left side X = -90mm)
+    # Centered vertically at Z = 25.0 mm (exact middle of 50mm height)
+    z_center = H_total / 2.0 # 25.0 mm
     usb_w_y = 12.5
     usb_h_z = 6.5
     usb_r = 2.0
@@ -146,10 +151,10 @@ def build_top_case(switch_position='right'):
     c3 = CrossSection.circle(usb_r, 24).translate([dz_2d, -dy_2d])
     c4 = CrossSection.circle(usb_r, 24).translate([-dz_2d, -dy_2d])
     usb_slot_2d = CrossSection.batch_hull([c1, c2, c3, c4])
-    usb_cutter = usb_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([-85.0, 0, 15.0])
+    usb_cutter = usb_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([-(L/2.0 + 10.0), 0, z_center])
     top_shell = top_shell - usb_cutter
 
-    # 9. MINI SLIDE SWITCH
+    # 9. MINI SLIDE SWITCH (Right side X = +90mm, Centered vertically at Z = 25.0 mm)
     sw_w_y = 8.5
     sw_h_z = 4.5
     sw_r = 1.2
@@ -164,52 +169,34 @@ def build_top_case(switch_position='right'):
     pocket_2d = CrossSection.square([6.0, 10.5], center=True)
     
     if switch_position == 'right':
-        slot_cutter = slide_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([65.0, 0, 15.0])
-        pocket_cutter = pocket_2d.extrude(1.4).rotate([0, 90, 0]).translate([72.4, 0, 15.0])
-        h1 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([72.0, 7.5, 15.0])
-        h2 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([72.0, -7.5, 15.0])
+        slot_cutter = slide_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([L/2.0 - 10.0, 0, z_center])
+        pocket_cutter = pocket_2d.extrude(1.4).rotate([0, 90, 0]).translate([L/2.0 - wall_t - 0.05, 0, z_center])
+        h1 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([L/2.0 - wall_t - 0.5, 7.5, z_center])
+        h2 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([L/2.0 - wall_t - 0.5, -7.5, z_center])
         top_shell = top_shell - slot_cutter - pocket_cutter - h1 - h2
     elif switch_position == 'left':
-        slot_cutter = slide_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([-85.0, 25.0, 15.0])
-        pocket_cutter = pocket_2d.extrude(1.4).rotate([0, 90, 0]).translate([-73.8, 25.0, 15.0])
-        h1 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([-74.5, 32.5, 15.0])
-        h2 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([-74.5, 17.5, 15.0])
+        slot_cutter = slide_slot_2d.extrude(20.0).rotate([0, 90, 0]).translate([-(L/2.0 + 10.0), 25.0, z_center])
+        pocket_cutter = pocket_2d.extrude(1.4).rotate([0, 90, 0]).translate([-(L/2.0 - wall_t + 1.2), 25.0, z_center])
+        h1 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([-(L/2.0 - wall_t + 0.5), 32.5, z_center])
+        h2 = Manifold.cylinder(2.5, 0.9, 0.9, 16).rotate([0, 90, 0]).translate([-(L/2.0 - wall_t + 0.5), 17.5, z_center])
         top_shell = top_shell - slot_cutter - pocket_cutter - h1 - h2
         
     return top_shell
 
 def build_bottom_lid():
-    L = 150.0
+    # DIMENSIONS: 180mm (L) x 100mm (W) x 3mm (Thickness)
+    L = 180.0
     W = 100.0
     bottom_t = 3.0
-    wall_t = 2.5
     corner_r = 5.0
     
-    # 1. Base plate: 150 x 100 x 3mm
+    # 1. Base plate: 180 x 100 x 3mm completely flat
     base_2d = create_rounded_rect(L, W, corner_r, 48)
-    base_plate = base_2d.extrude(bottom_t)
+    lid = base_2d.extrude(bottom_t)
     
-    # 2. Interlocking Inset Lip (Rim)
-    clearance = 0.3
-    lip_t = 1.8
-    lip_outer_L = L - 2 * (wall_t + clearance)
-    lip_outer_W = W - 2 * (wall_t + clearance)
-    lip_outer_r = max(1.0, corner_r - (wall_t + clearance))
-    
-    lip_inner_L = lip_outer_L - 2 * lip_t
-    lip_inner_W = lip_outer_W - 2 * lip_t
-    lip_inner_r = max(0.5, lip_outer_r - lip_t)
-    
-    lip_outer_2d = create_rounded_rect(lip_outer_L, lip_outer_W, lip_outer_r, 48)
-    lip_inner_2d = create_rounded_rect(lip_inner_L, lip_inner_W, lip_inner_r, 48)
-    lip_rim_2d = lip_outer_2d - lip_inner_2d
-    lip_solid = lip_rim_2d.extrude(2.0).translate([0, 0, bottom_t])
-    
-    lid = base_plate + lip_solid
-    
-    # 3. Countersunk Screw Holes (M3)
-    cx = L / 2.0 - 8.5
-    cy = W / 2.0 - 8.5
+    # 2. Countersunk Screw Holes (M3)
+    cx = L / 2.0 - 8.5 # 81.5mm
+    cy = W / 2.0 - 8.5 # 41.5mm
     for sx in [-cx, cx]:
         for sy in [-cy, cy]:
             through_hole = create_cylinder(1.7, bottom_t + 3.0, 32).translate([sx, sy, -0.5])
@@ -219,8 +206,8 @@ def build_bottom_lid():
             lid = lid - cs_hole
             lid = lid - cone
             
-    # 4. Speaker Grill on Bottom Lid
-    spk_cx = 35.0
+    # 3. Speaker Grill on Bottom Lid (Clean through-holes without any raised ring)
+    spk_cx = 40.0
     spk_cy = 0.0
     spk_hole_r = 1.1 # 2.2mm diameter
     
@@ -238,18 +225,11 @@ def build_bottom_lid():
         
     for sc in spk_cutters:
         lid = lid - sc
-        
-    # Inside speaker locator ring (fits standard 28-36mm flat speaker)
-    ring_inner_r = 16.5 # 33mm inner diameter
-    ring_outer_r = 18.0 # 36mm outer diameter
-    ring_2d = CrossSection.circle(ring_outer_r, 48) - CrossSection.circle(ring_inner_r, 48)
-    spk_ring = ring_2d.extrude(1.8).translate([spk_cx, spk_cy, bottom_t])
-    lid = lid + spk_ring
 
     return lid
 
 if __name__ == '__main__':
-    print("Generating Updated 3D Models with FPC Notch Relief Pocket...")
+    print("Generating Updated 3D Models with 180mm Length, 50mm (5cm) Depth, and Flat Bottom Lid...")
     top = build_top_case(switch_position='right')
     print("Top case generated. Vertices:", top.num_vert(), "Triangles:", top.num_tri())
     

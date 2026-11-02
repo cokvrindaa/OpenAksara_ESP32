@@ -21,7 +21,7 @@ html_content = f"""<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Interactive 3D Preview - OpenAksara Enclosure</title>
+  <title>Interactive 3D Preview - OpenAksara Enclosure 18x10x5cm</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     body {{
@@ -47,9 +47,9 @@ html_content = f"""<!DOCTYPE html>
     <div>
       <h1 class="text-base font-bold text-white flex items-center gap-2">
         <span class="w-3 h-3 rounded-full bg-blue-500"></span>
-        Enclosure 3D Model: OpenAksara ESP32 (ILI9488 3.5")
+        Enclosure 3D Model: OpenAksara ESP32 (180 × 100 × 50 mm)
       </h1>
-      <p class="text-xs text-slate-400">150 mm (P) × 100 mm (L) × 30 mm (T) • Bawah Lepas-Pasang (M3 Screws)</p>
+      <p class="text-xs text-slate-400">Panjang 18 cm × Lebar 10 cm × Kedalaman 5.0 cm • Tutup Bawah Flat Rata Mulus</p>
     </div>
     <div class="flex items-center gap-2">
       <button id="btnReset" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 transition">Reset View</button>
@@ -64,15 +64,16 @@ html_content = f"""<!DOCTYPE html>
     <!-- Overlay Info & Controls -->
     <div class="absolute bottom-5 left-5 bg-slate-900/90 backdrop-blur border border-slate-800 p-4 rounded-xl shadow-xl max-w-sm text-xs space-y-2 pointer-events-auto">
       <div class="font-semibold text-slate-200 text-sm flex items-center justify-between">
-        <span>Dimensi & Fitur Utama</span>
+        <span>Dimensi & Fitur Terbaru</span>
         <span class="text-emerald-400 font-mono text-[11px] bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">100% Watertight</span>
       </div>
       <ul class="text-slate-300 space-y-1">
-        <li>• <strong class="text-white">Panjang × Lebar:</strong> 150 mm × 100 mm (R = 5mm)</li>
-        <li>• <strong class="text-white">Tinggi Total:</strong> 30 mm (Top 27mm + Base 3mm)</li>
-        <li>• <strong class="text-white">Cutout LCD 3.5":</strong> 76 mm × 51 mm + Recess 86.5×56.5mm</li>
-        <li>• <strong class="text-white">Mounting LCD:</strong> 4 Standoff M2.5/M3 (92 × 49.5 mm)</li>
-        <li>• <strong class="text-white">Bongkar-Pasang:</strong> 4 Lubang Baut M3 Countersunk</li>
+        <li>• <strong class="text-white">Panjang × Lebar:</strong> 180 mm × 100 mm (18 × 10 cm)</li>
+        <li>• <strong class="text-white">Kedalaman / Tinggi:</strong> 50 mm (5.0 cm) - Ideal & Proporsional</li>
+        <li>• <strong class="text-white">Tutup Bawah:</strong> Pelat Rata Mulus (Tanpa Bibir Keliling / Ring Speaker)</li>
+        <li>• <strong class="text-white">LCD 3.5":</strong> Window 78×51.5mm + Relief Notch Touch FPC</li>
+        <li>• <strong class="text-white">USB Charger:</strong> Horizontal di tengah (Z = 25.0 mm)</li>
+        <li>• <strong class="text-white">Saklar Geser:</strong> Mini Slide Switch (8.5 × 4.5 mm)</li>
       </ul>
       <div class="pt-2 border-t border-slate-800 text-slate-400 text-[11px] flex justify-between items-center">
         <span>🖱️ Drag: Putar | Scroll: Zoom</span>
@@ -86,7 +87,7 @@ html_content = f"""<!DOCTYPE html>
     <!-- Explode Slider Floating -->
     <div class="absolute top-5 right-5 bg-slate-900/90 backdrop-blur border border-slate-800 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs">
       <span class="text-slate-300 font-medium">Jarak Lepas Tutup:</span>
-      <input type="range" id="sliderExplode" min="0" max="60" value="0" class="w-32 accent-blue-500 cursor-pointer">
+      <input type="range" id="sliderExplode" min="0" max="70" value="0" class="w-32 accent-blue-500 cursor-pointer">
       <span id="txtExplodeVal" class="text-slate-400 font-mono w-10 text-right">0 mm</span>
     </div>
   </main>
@@ -109,15 +110,13 @@ html_content = f"""<!DOCTYPE html>
     }}
     window.addEventListener('resize', resize);
 
-    // Camera state
     let rotX = -0.55;
     let rotZ = 0.78;
-    let zoom = 3.6;
+    let zoom = 3.2;
     let panX = 0, panY = 0;
     let explodeZ = 0;
     let isWireframe = false;
 
-    // Mouse interaction
     let isDragging = false;
     let lastX = 0, lastY = 0;
 
@@ -145,11 +144,10 @@ html_content = f"""<!DOCTYPE html>
     canvas.addEventListener('wheel', (e) => {{
       e.preventDefault();
       zoom *= (e.deltaY < 0 ? 1.08 : 0.92);
-      zoom = Math.max(1.0, Math.min(12.0, zoom));
+      zoom = Math.max(1.0, Math.min(10.0, zoom));
       render();
     }}, {{ passive: false }});
 
-    // Touch support
     let lastTouchDist = 0;
     canvas.addEventListener('touchstart', (e) => {{
       if (e.touches.length === 1) {{
@@ -182,7 +180,6 @@ html_content = f"""<!DOCTYPE html>
 
     canvas.addEventListener('touchend', () => isDragging = false);
 
-    // Controls
     const slider = document.getElementById('sliderExplode');
     const txtExplode = document.getElementById('txtExplodeVal');
     slider.addEventListener('input', (e) => {{
@@ -194,7 +191,7 @@ html_content = f"""<!DOCTYPE html>
     let isExploded = false;
     document.getElementById('btnExplode').addEventListener('click', () => {{
       isExploded = !isExploded;
-      explodeZ = isExploded ? 35 : 0;
+      explodeZ = isExploded ? 40 : 0;
       slider.value = explodeZ;
       txtExplode.textContent = Math.round(explodeZ) + ' mm';
       render();
@@ -203,7 +200,7 @@ html_content = f"""<!DOCTYPE html>
     document.getElementById('btnReset').addEventListener('click', () => {{
       rotX = -0.55;
       rotZ = 0.78;
-      zoom = 3.6;
+      zoom = 3.2;
       explodeZ = 0;
       slider.value = 0;
       txtExplode.textContent = '0 mm';
@@ -215,25 +212,21 @@ html_content = f"""<!DOCTYPE html>
       render();
     }});
 
-    // 3D Math & Render
     function project(p, offsetZ) {{
       const x = p[0];
       const y = p[1];
-      const z = p[2] + offsetZ - 15; // center around z=15
+      const z = p[2] + offsetZ - 25.0;
 
-      // Rotate Z
       const cz = Math.cos(rotZ), sz = Math.sin(rotZ);
       const x1 = x * cz - y * sz;
       const y1 = x * sz + y * cz;
       const z1 = z;
 
-      // Rotate X
       const cx = Math.cos(rotX), sx = Math.sin(rotX);
       const x2 = x1;
       const y2 = y1 * cx - z1 * sx;
       const z2 = y1 * sx + z1 * cx;
 
-      // Isometric / Orthographic projection with zoom
       const sx_screen = width / 2 + x2 * zoom + panX;
       const sy_screen = height / 2 - z2 * zoom + panY;
 
@@ -243,12 +236,9 @@ html_content = f"""<!DOCTYPE html>
     function render() {{
       ctx.clearRect(0, 0, width, height);
 
-      // Light direction
       const lx = 0.577, ly = 0.577, lz = 0.577;
-
       const polygons = [];
 
-      // Process Top Case
       for (let i = 0; i < topData.faces.length; i++) {{
         const f = topData.faces[i];
         const v0 = topData.verts[f[0]];
@@ -259,11 +249,9 @@ html_content = f"""<!DOCTYPE html>
         const p1 = project(v1, 0);
         const p2 = project(v2, 0);
 
-        // Backface culling in screen space
         const cross = (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x);
         if (cross <= 0) continue;
 
-        // Normal in world space
         const ax = v1[0] - v0[0], ay = v1[1] - v0[1], az = v1[2] - v0[2];
         const bx = v2[0] - v0[0], by = v2[1] - v0[1], bz = v2[2] - v0[2];
         let nx = ay * bz - az * by;
@@ -284,7 +272,6 @@ html_content = f"""<!DOCTYPE html>
         }});
       }}
 
-      // Process Bottom Lid (with explode offset)
       for (let i = 0; i < botData.faces.length; i++) {{
         const f = botData.faces[i];
         const v0 = botData.verts[f[0]];
@@ -318,10 +305,8 @@ html_content = f"""<!DOCTYPE html>
         }});
       }}
 
-      // Sort by depth (painter's algorithm)
       polygons.sort((a, b) => a.depth - b.depth);
 
-      // Draw
       for (let i = 0; i < polygons.length; i++) {{
         const poly = polygons[i];
         ctx.beginPath();
@@ -344,7 +329,6 @@ html_content = f"""<!DOCTYPE html>
       }}
     }}
 
-    // Initial render
     setTimeout(resize, 50);
   </script>
 </body>
@@ -355,4 +339,4 @@ output_path = os.path.join(artifact_dir, "3d_viewer.html")
 with open(output_path, "w", encoding="utf-8") as f:
     f.write(html_content)
 
-print(f"Interactive 3D Viewer generated at {output_path}")
+print(f"Interactive 3D Viewer updated at {output_path}")
