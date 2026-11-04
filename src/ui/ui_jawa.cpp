@@ -225,7 +225,7 @@ static void update_jawa_write_guide() {
   lv_line_set_points(write_guide_track, jawa_guide_pts, count > 100 ? 100 : count);
 
   // Inisialisasi checkpoints urutan titik (R=20px, Koridor=24px, Batas Gagal Parah=38px)
-  ui_trace_set_checkpoints(&jawa_tab_trace, guide_pts, count, 20, 24, 38);
+  ui_trace_set_checkpoints(&jawa_tab_trace, guide_pts, count, 28, 35, 60);
   ui_trace_clear(&jawa_tab_trace);
 }
 
@@ -308,7 +308,9 @@ static void on_check_write_click(lv_event_t* e) {
   (void)e;
   StrokeEvalResult eval = ui_eval_stroke_trace(&jawa_tab_trace);
   if (eval.success) {
-    ui_trace_set_completed_visuals(&jawa_tab_trace);
+    if (!jawa_tab_trace.celebration_layer) {
+      ui_trace_set_completed_visuals(&jawa_tab_trace);
+    }
     audio_play(SOUND_SUCCESS);
     audio_play(SOUND_REWARD);
     if (write_feedback_lbl) {
