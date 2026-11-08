@@ -179,7 +179,7 @@ static void update_bali_write_guide() {
   lv_line_set_points(write_guide_track, bali_guide_pts, count > 100 ? 100 : count);
 
   // Inisialisasi checkpoints urutan titik P1 .. Pn (R=18px, Koridor=22px, Batas Gagal Parah=34px)
-  ui_trace_set_checkpoints(&bali_tab_trace, guide_pts, count, 18, 22, 34);
+  ui_trace_set_checkpoints(&bali_tab_trace, guide_pts, count, 28, 35, 60);
   ui_trace_clear(&bali_tab_trace);
 }
 
@@ -262,7 +262,9 @@ static void on_check_write_click(lv_event_t* e) {
   (void)e;
   StrokeEvalResult eval = ui_eval_stroke_trace(&bali_tab_trace);
   if (eval.success) {
-    ui_trace_set_completed_visuals(&bali_tab_trace);
+    if (!bali_tab_trace.celebration_layer) {
+      ui_trace_set_completed_visuals(&bali_tab_trace);
+    }
     audio_play(SOUND_SUCCESS);
     audio_play(SOUND_REWARD);
     if (write_feedback_lbl) {

@@ -413,7 +413,7 @@ inline void ui_trace_set_completed_visuals(TraceState *st)
     }
 
     // 5. Floating Badge Perayaan Kejutan: Lencana Emas Berpendar (Menggunakan Simbol Resmi Font)
-    lv_obj_t* pill = ui_make_card(st->celebration_layer, 44, 145, 220, 32,
+    lv_obj_t* pill = ui_make_card(st->celebration_layer, 44, 115, 220, 32,
                                   lv_color_hex(0xF59E0B), lv_color_hex(0xD97706), 16);
     lv_obj_set_style_border_color(pill, lv_color_hex(0xFEF08A), 0);
     lv_obj_set_style_border_width(pill, 2, 0);
@@ -429,7 +429,7 @@ inline void ui_trace_set_completed_visuals(TraceState *st)
     lv_anim_init(&ap);
     lv_anim_set_var(&ap, pill);
     lv_anim_set_exec_cb(&ap, celebration_anim_y_cb);
-    lv_anim_set_values(&ap, 145, 116);
+    lv_anim_set_values(&ap, 115, 90);
     lv_anim_set_duration(&ap, 350);
     lv_anim_set_path_cb(&ap, lv_anim_path_overshoot);
     lv_anim_start(&ap);
@@ -539,7 +539,7 @@ inline void ui_trace_detach(TraceState *st)
 }
 
 inline void ui_trace_set_checkpoints(TraceState *st, const StrokeWaypoint *pts, uint8_t count,
-                                     uint8_t tolerance_r = 18, uint8_t corridor_r = 20, uint8_t fatal_corridor_r = 32)
+                                     uint8_t tolerance_r = 28, uint8_t corridor_r = 35, uint8_t fatal_corridor_r = 60)
 {
   if (!st || !st->canvas_card)
     return;
@@ -557,9 +557,9 @@ inline void ui_trace_set_checkpoints(TraceState *st, const StrokeWaypoint *pts, 
   if (count > MAX_CHECKPOINTS)
     count = MAX_CHECKPOINTS;
   st->checkpoint_count = count;
-  st->tolerance_r = tolerance_r > 0 ? tolerance_r : 18;
-  st->corridor_r = corridor_r > 0 ? corridor_r : 20;
-  st->fatal_corridor_r = fatal_corridor_r > 0 ? fatal_corridor_r : 32;
+  st->tolerance_r = tolerance_r > 0 ? tolerance_r : 28;
+  st->corridor_r = corridor_r > 0 ? corridor_r : 35;
+  st->fatal_corridor_r = fatal_corridor_r > 0 ? fatal_corridor_r : 60;
 
   for (uint8_t i = 0; i < count; i++)
   {
@@ -609,7 +609,7 @@ inline void ui_trace_set_checkpoints(TraceState *st, const StrokeWaypoint *pts, 
   ui_trace_reset_checkpoints(st);
 }
 
-// Pemrosesan sentuhan stylus dengan penjagaan koridor batas garis & deteksi gagal fatal
+// Pemrosesan sentuhan stylus dengan penjagaan koridor batas garis & deteksi alur aksara cerdas
 inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32_t prev_x, int32_t prev_y, bool has_prev)
 {
   if (!st || st->is_completed || st->is_failed || st->checkpoint_count == 0)
@@ -618,34 +618,101 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
     return;
 
   int curr = st->active_checkpoint_idx;
-  int prev = curr > 0 ? curr - 1 : 0;
+  int32_t r2 = (int32_t)st->tolerance_r * (int32_t)st->tolerance_r;
+  int32_t max_corridor_d2 = (int32_t)st->corridor_r * (int32_t)st->corridor_r;
+  int32_t fatal_corridor_d2 = (int32_t)st->fatal_corridor_r * (int32_t)st->fatal_corridor_r;
 
-  // 1. Cek Batas Koridor Garis (Corridor Boundary Enforcement)
-  if (curr == 0)
+  // 1. Cek Checkpoint Target dengan Lookahead Adaptif (Mencegah macet jika ada 1 titik terlewat di tikungan rapat)
+  int best_target = -1;
+  int max_lookahead = 4; // Boleh menjangkau hingga 4 titik ke depan
+  int end_look = curr + max_lookahead;
+  if (end_look >= st->checkpoint_count)
+    end_look = st->checkpoint_count - 1;
+
+  for (int target = curr; target <= end_look; target++)
   {
-    // Titik awal P1
-    int32_t d2_start = (rx - st->checkpoints[0].x) * (rx - st->checkpoints[0].x) +
-                       (ry - st->checkpoints[0].y) * (ry - st->checkpoints[0].y);
-    int32_t r2 = (int32_t)st->tolerance_r * (int32_t)st->tolerance_r;
-    int32_t fatal_r2 = (int32_t)st->fatal_corridor_r * (int32_t)st->fatal_corridor_r;
+    int32_t tx = st->checkpoints[target].x;
+    int32_t ty = st->checkpoints[target].y;
+    int32_t d2 = (rx - tx) * (rx - tx) + (ry - ty) * (ry - ty);
 
-    // Jika mulai terlalu jauh dari P1 dan sudah menyeret stylus: GAGAL!
-    if (has_prev && d2_start > fatal_r2)
+    bool reached = (d2 <= r2);
+    if (!reached && has_prev)
     {
-      st->is_failed = true;
-      audio_play(SOUND_ERROR);
+      if (dist_sq_point_to_segment(tx, ty, prev_x, prev_y, rx, ry) <= r2)
+      {
+        reached = true;
+      }
+    }
+
+    if (reached)
+    {
+      best_target = target;
+    }
+  }
+
+  // Jika checkpoint terdeteksi tercapai
+  if (best_target >= curr)
+  {
+    for (int k = curr; k <= best_target; k++)
+    {
+      st->checkpoints[k].reached = true;
+      ui_trace_style_checkpoint(st, k);
+    }
+    st->active_checkpoint_idx = best_target + 1;
+    st->segment_out_of_bounds = false;
+    st->offtrack_samples = 0;
+    if (st->stray_points > 0)
+      st->stray_points--;
+    audio_play(SOUND_CLICK);
+
+    // Cek apakah seluruh alur aksara selesai
+    if (st->active_checkpoint_idx >= st->checkpoint_count)
+    {
+      st->is_completed = true;
+      ui_trace_set_completed_visuals(st);
+      audio_play(SOUND_SUCCESS);
+      audio_play(SOUND_REWARD);
       if (st->feedback_lbl)
       {
-        lv_label_set_text(st->feedback_lbl, "GAGAL! Mulai dari titik awal (hijau)");
-        lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
+        lv_label_set_text(st->feedback_lbl, "BENAR! Sempurna (+15 XP)");
+        lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0x22C55E), 0);
       }
       return;
     }
+    else
+    {
+      ui_trace_style_checkpoint(st, st->active_checkpoint_idx);
+      if (st->feedback_lbl)
+      {
+        lv_label_set_text(st->feedback_lbl, "Bagus! Teruskan goresan...");
+        lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0x38BDF8), 0);
+      }
+    }
+  }
+
+  // 2. Cek Batas Koridor Garis (Corridor Boundary Check)
+  curr = st->active_checkpoint_idx;
+  if (curr == 0)
+  {
+    // Jika belum mulai di titik hijau P1
+    int32_t d2_start = (rx - st->checkpoints[0].x) * (rx - st->checkpoints[0].x) +
+                       (ry - st->checkpoints[0].y) * (ry - st->checkpoints[0].y);
 
     if (d2_start > r2)
     {
       st->segment_out_of_bounds = true;
       st->stray_points++;
+      if (st->stray_points > 40)
+      {
+        st->is_failed = true;
+        audio_play(SOUND_ERROR);
+        if (st->feedback_lbl)
+        {
+          lv_label_set_text(st->feedback_lbl, "GAGAL! Mulai dari titik awal (hijau)");
+          lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
+        }
+        return;
+      }
       if (st->feedback_lbl)
       {
         lv_label_set_text(st->feedback_lbl, "Mulai dari titik hijau!");
@@ -660,40 +727,40 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
   }
   else
   {
-    // Segmen aktif antara P(prev) -> P(curr)
-    int32_t d2_corridor = dist_sq_point_to_segment(rx, ry,
-                                                   st->checkpoints[prev].x, st->checkpoints[prev].y,
-                                                   st->checkpoints[curr].x, st->checkpoints[curr].y);
-    int32_t max_corridor_d2 = (int32_t)st->corridor_r * (int32_t)st->corridor_r;
-    int32_t fatal_corridor_d2 = (int32_t)st->fatal_corridor_r * (int32_t)st->fatal_corridor_r;
-
-    // A. KELUAR GARIS PARAH: GAGAL TOTAL! HENTIKAN PENULISAN!
-    if (d2_corridor > fatal_corridor_d2)
+    // Segmen aktif: periksa jarak ke segmen terdekat di sekitar titik aktif (prev -> curr atau curr -> next)
+    int prev = curr > 0 ? curr - 1 : 0;
+    int32_t min_d2 = dist_sq_point_to_segment(rx, ry,
+                                              st->checkpoints[prev].x, st->checkpoints[prev].y,
+                                              st->checkpoints[curr].x, st->checkpoints[curr].y);
+    if (curr + 1 < st->checkpoint_count)
     {
-      st->is_failed = true;
-      st->segment_out_of_bounds = true;
-      audio_play(SOUND_ERROR);
-      if (st->feedback_lbl)
-      {
-        lv_label_set_text(st->feedback_lbl, "GAGAL! Keluar garis terlalu jauh");
-        lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
-      }
-      return;
+      int32_t d2_next = dist_sq_point_to_segment(rx, ry,
+                                                 st->checkpoints[curr].x, st->checkpoints[curr].y,
+                                                 st->checkpoints[curr + 1].x, st->checkpoints[curr + 1].y);
+      if (d2_next < min_d2)
+        min_d2 = d2_next;
+    }
+    if (curr + 2 < st->checkpoint_count)
+    {
+      int32_t d2_next2 = dist_sq_point_to_segment(rx, ry,
+                                                  st->checkpoints[curr + 1].x, st->checkpoints[curr + 1].y,
+                                                  st->checkpoints[curr + 2].x, st->checkpoints[curr + 2].y);
+      if (d2_next2 < min_d2)
+        min_d2 = d2_next2;
     }
 
-    // B. Keluar batas koridor toleransi sedang
-    if (d2_corridor > max_corridor_d2)
+    // Keluar koridor batas
+    if (min_d2 > fatal_corridor_d2)
     {
       st->segment_out_of_bounds = true;
-      st->stray_points++;
-      if (st->stray_points > 5)
+      st->stray_points += 2;
+      if (st->stray_points > 35)
       {
-        // Terlalu banyak titik di luar garis secara kontinu -> GAGAL!
         st->is_failed = true;
         audio_play(SOUND_ERROR);
         if (st->feedback_lbl)
         {
-          lv_label_set_text(st->feedback_lbl, "GAGAL! Coretan di luar jalur");
+          lv_label_set_text(st->feedback_lbl, "GAGAL! Keluar garis terlalu jauh");
           lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
         }
         return;
@@ -704,100 +771,28 @@ inline void ui_trace_process_point(TraceState *st, int32_t rx, int32_t ry, int32
         lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
       }
     }
+    else if (min_d2 > max_corridor_d2)
+    {
+      st->segment_out_of_bounds = true;
+      st->stray_points++;
+      if (st->feedback_lbl)
+      {
+        lv_label_set_text(st->feedback_lbl, "Mendekat ke alur biru!");
+        lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xF59E0B), 0);
+      }
+    }
     else
     {
-      // Pemulihan jika stylus kembali mendekat ke titik awal segmen
-      int32_t d2_origin = (rx - st->checkpoints[prev].x) * (rx - st->checkpoints[prev].x) +
-                          (ry - st->checkpoints[prev].y) * (ry - st->checkpoints[prev].y);
-      if (d2_origin <= ((int32_t)st->tolerance_r * (int32_t)st->tolerance_r))
-      {
-        st->segment_out_of_bounds = false;
-      }
-      else if (d2_corridor <= ((int32_t)(st->corridor_r - 4) * (int32_t)(st->corridor_r - 4)))
-      {
-        st->segment_out_of_bounds = false;
-      }
-    }
-  }
-
-  // Jika sedang keluar garis atau gagal: Pi DIKUNCI! Tidak bisa menempel/loncat dari luar batas
-  if (st->segment_out_of_bounds || st->is_failed)
-  {
-    return;
-  }
-
-  // 2. Evaluasi apakah target checkpoint Pi tercapai secara sah
-  while (st->active_checkpoint_idx < st->checkpoint_count)
-  {
-    int target = st->active_checkpoint_idx;
-    int32_t tx = st->checkpoints[target].x;
-    int32_t ty = st->checkpoints[target].y;
-    int32_t d2 = (rx - tx) * (rx - tx) + (ry - ty) * (ry - ty);
-    int32_t r2 = (int32_t)st->tolerance_r * (int32_t)st->tolerance_r;
-    bool reached = (d2 <= r2);
-
-    if (!reached && has_prev)
-    {
-      if (dist_sq_point_to_segment(tx, ty, prev_x, prev_y, rx, ry) <= r2)
-      {
-        reached = true;
-      }
-    }
-
-    if (reached)
-    {
-      st->checkpoints[target].reached = true;
-      ui_trace_style_checkpoint(st, target);
-      audio_play(SOUND_CLICK);
-
-      st->active_checkpoint_idx++;
       st->segment_out_of_bounds = false;
-      st->offtrack_samples = 0;
-
-      if (st->active_checkpoint_idx >= st->checkpoint_count)
+      if (st->stray_points > 0)
+        st->stray_points--;
+      if (st->feedback_lbl)
       {
-        // Verifikasi apakah siswa membuat coretan liar keluar garis
-        if (st->stray_points > 5)
-        {
-          st->is_failed = true;
-          audio_play(SOUND_ERROR);
-          if (st->feedback_lbl)
-          {
-            lv_label_set_text(st->feedback_lbl, "GAGAL! Garis tidak rapi");
-            lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0xEF4444), 0);
-          }
-        }
-        else
-        {
-          st->is_completed = true;
-          ui_trace_set_completed_visuals(st);
-          audio_play(SOUND_SUCCESS);
-          audio_play(SOUND_REWARD);
-          if (st->feedback_lbl)
-          {
-            lv_label_set_text(st->feedback_lbl, "BENAR! Sempurna (+15 XP)");
-            lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0x22C55E), 0);
-          }
-        }
-        return;
+        lv_label_set_text(st->feedback_lbl, "Bagus! Teruskan goresan...");
+        lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0x38BDF8), 0);
       }
-      else
-      {
-        ui_trace_style_checkpoint(st, st->active_checkpoint_idx);
-        if (st->feedback_lbl)
-        {
-          lv_label_set_text(st->feedback_lbl, "Bagus! Teruskan goresan...");
-          lv_obj_set_style_text_color(st->feedback_lbl, lv_color_hex(0x38BDF8), 0);
-        }
-      }
-    }
-    else
-    {
-      break;
     }
   }
-
-  // Selesai evaluasi checkpoint titik aktif (Peringatan teks "Arah terbalik" dihilangkan sesuai permintaan user)
 }
 
 // Algoritma Evaluasi Akhir untuk tombol "Cek Goresan"
@@ -807,6 +802,17 @@ inline StrokeEvalResult ui_eval_stroke_trace(TraceState *st)
   if (!st || st->checkpoint_count == 0)
     return res;
 
+  if (st->is_completed)
+  {
+    if (!st->celebration_layer)
+    {
+      ui_trace_set_completed_visuals(st);
+    }
+    res.success = true;
+    res.message = "BENAR! Sempurna (+15 XP)";
+    return res;
+  }
+
   if (st->is_failed)
   {
     res.success = false;
@@ -814,15 +820,24 @@ inline StrokeEvalResult ui_eval_stroke_trace(TraceState *st)
     return res;
   }
 
-  if (st->is_completed)
+  int required = (st->checkpoint_count * 70) / 100;
+  if (required < 2) required = st->checkpoint_count;
+
+  if (st->active_checkpoint_idx >= required && st->stray_points <= 25)
   {
+    st->is_completed = true;
+    for (int i = 0; i < st->checkpoint_count; i++)
+    {
+      st->checkpoints[i].reached = true;
+      ui_trace_style_checkpoint(st, i);
+    }
     ui_trace_set_completed_visuals(st);
     res.success = true;
-    res.message = "BENAR! Seluruh titik dilewati berurutan & rapi (+15 XP)";
+    res.message = "BENAR! Aksara berhasil ditulis dengan rapi (+15 XP)";
     return res;
   }
 
-  if (st->stray_points > 5)
+  if (st->stray_points > 25)
   {
     res.success = false;
     res.message = "Goresan keluar garis! Bersihkan dan ikuti alur biru.";
@@ -832,12 +847,12 @@ inline StrokeEvalResult ui_eval_stroke_trace(TraceState *st)
   if (st->active_checkpoint_idx == 0)
   {
     res.success = false;
-    res.message = "Goresan belum dimulai! Ikuti dari P1.";
+    res.message = "Goresan belum dimulai! Ikuti dari titik hijau.";
     return res;
   }
 
   static char msg_buf[64];
-  snprintf(msg_buf, sizeof(msg_buf), "Progres P%d dari P%d titik! Lanjutkan alur.",
+  snprintf(msg_buf, sizeof(msg_buf), "Progres %d/%d titik! Lanjutkan goresan.",
            st->active_checkpoint_idx, st->checkpoint_count);
   res.success = false;
   res.message = msg_buf;
@@ -952,6 +967,26 @@ inline void ui_trace_event_cb(lv_event_t *e)
       }
       st->stroke_count++;
       st->is_drawing = false;
+
+      // Evaluasi otomatis saat jari/stylus diangkat:
+      // Jika goresan mencapai minimal 75% titik tanpa coretan liar berlebihan, otomatis sukses!
+      if (!st->is_completed && !st->is_failed && st->checkpoint_count > 0)
+      {
+        int required = (st->checkpoint_count * 75) / 100;
+        if (required < 2) required = st->checkpoint_count;
+        if (st->active_checkpoint_idx >= required && st->stray_points <= 20)
+        {
+          st->is_completed = true;
+          for (int i = 0; i < st->checkpoint_count; i++)
+          {
+            st->checkpoints[i].reached = true;
+            ui_trace_style_checkpoint(st, i);
+          }
+          ui_trace_set_completed_visuals(st);
+          audio_play(SOUND_SUCCESS);
+          audio_play(SOUND_REWARD);
+        }
+      }
     }
   }
 }
