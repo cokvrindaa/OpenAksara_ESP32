@@ -1,1020 +1,2103 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OpenAksara EduCloud - Sistem Pemantauan Nilai Siswa IoT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AksaraBuddy - Platform Monitoring Sabak Cerdas ESP32</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter & Unicode Aksara Jawa / Bali -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Balinese:wght@400;600;700&family=Noto+Sans+Javanese:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           colors: {
             brand: {
-              50: '#F0F9FF',
-              100: '#E0F2FE',
-              400: '#38BDF8',
-              500: '#0EA5E9',
-              600: '#0284C7',
-              700: '#0369A1'
-            },
-            darkbg: {
-              900: '#0B0F19',
-              800: '#111827',
-              700: '#1F2937',
-              600: '#374151'
+              primary: '#1F6F5C',
+              hover: '#175647',
+              soft: '#DDEFE8',
+              accent: '#F3A953',
+              dark: '#14201C',
+              muted: '#5C6B66',
+              bg: '#F5F7F6',
+              card: '#FFFFFF',
+              border: '#D8DFDC',
             }
           },
           fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-            bali: ['BaliNative', 'Noto Sans Balinese', 'sans-serif'],
-            jawa: ['JawaNative', 'Noto Sans Javanese', 'sans-serif']
+            sans: ['Inter', 'sans-serif'],
+            jawa: ['Noto Sans Javanese', 'sans-serif'],
+            bali: ['Noto Sans Balinese', 'sans-serif'],
           }
         }
       }
     }
   </script>
 
-  <!-- Fonts & Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
   <style>
-    @font-face {
-      font-family: 'BaliNative';
-      src: url('fonts/NotoSansBalinese-Regular.ttf') format('truetype');
-    }
-    @font-face {
-      font-family: 'JawaNative';
-      src: url('fonts/NotoSansJavanese-Regular.ttf') format('truetype');
-    }
-
     body {
-      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      background-color: #F5F7F6;
+      color: #14201C;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
     }
-
-    .aksara-bali-glyph {
-      font-family: 'BaliNative', sans-serif;
-    }
-    .aksara-jawa-glyph {
-      font-family: 'JawaNative', sans-serif;
-    }
-
-    /* Custom Glassmorphism */
-    .glass-card {
-      background: rgba(17, 24, 39, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(55, 65, 81, 0.4);
-    }
-    .light .glass-card {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(229, 231, 235, 0.8);
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
+    .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
-    ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
     }
-    ::-webkit-scrollbar-thumb {
-      background: #374151;
-      border-radius: 4px;
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
     }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #4B5563;
-    }
-
-    /* Pulse animation */
     @keyframes pulse-subtle {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.85; transform: scale(1.02); }
+      50% { opacity: 0.88; transform: scale(1.02); }
     }
-    .live-pulse {
-      animation: pulse-subtle 2s infinite ease-in-out;
+    .mascot-float {
+      animation: pulse-subtle 3.5s ease-in-out infinite;
     }
-
-    /* Print styles for Rapor */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printArea, #printArea * {
-        visibility: visible;
-      }
-      #printArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        background: white !important;
-        color: black !important;
-      }
+    .donut-slice {
+      transition: all 0.25s ease-out;
+      transform-origin: center;
+    }
+    .donut-slice:hover {
+      stroke-width: 28;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+      cursor: pointer;
+    }
+    .chart-bar-col {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .chart-bar-col:hover {
+      filter: brightness(1.12);
+      transform: scaleY(1.03);
+      cursor: pointer;
     }
   </style>
 </head>
-<body class="bg-[#0B0F19] text-gray-100 min-h-screen transition-colors duration-200">
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-brand-bg text-brand-dark antialiased">
 
-  <!-- Header / Navigation Bar -->
-  <header class="sticky top-0 z-40 bg-[#0F172A]/90 backdrop-blur-md border-b border-gray-800 px-4 lg:px-8 py-3.5 transition-colors duration-200">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+  <!-- ============================================================== -->
+  <!-- 1. HALAMAN LOGIN (AKSARABUDDY LOGIN - FULLPAGE STANDALONE)    -->
+  <!-- ============================================================== -->
+  <div id="view-login" class="h-screen w-screen flex items-center justify-center bg-gradient-to-br from-[#EAF4F0] via-[#F5F7F6] to-[#E2ECE8] p-4 sm:p-8 overflow-y-auto">
+    <div class="w-full max-w-4xl bg-white rounded-3xl shadow-2xl border border-brand-border/80 overflow-hidden flex flex-col md:flex-row my-auto shadow-brand-dark/5">
       
-      <!-- Brand & Status -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-bold text-lg">
-          <i data-lucide="book-open-check" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-lg font-bold text-white tracking-tight">OpenAksara <span class="text-sky-400">EduCloud</span></h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">v2.4 IoT</span>
-          </div>
-          <p class="text-xs text-gray-400 flex items-center gap-1.5">
-            <span id="connectionBadge" class="inline-block w-2 h-2 rounded-full bg-emerald-400 live-pulse"></span>
-            <span id="connectionText">Menghubungkan ke Server IoT...</span>
-          </p>
-        </div>
-      </div>
-
-      <!-- Quick Action Toolbar -->
-      <div class="flex items-center flex-wrap gap-2.5">
-        <!-- Search bar -->
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          <input 
-            type="text" 
-            id="searchInput" 
-            placeholder="Cari siswa, NISN..." 
-            class="pl-9 pr-4 py-1.5 text-xs rounded-lg bg-gray-900 border border-gray-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-gray-200 placeholder-gray-500 w-48 sm:w-60 outline-none transition-all"
-            oninput="handleSearch()"
-          >
-        </div>
-
-        <!-- Filter Kelas Dropdown -->
-        <select 
-          id="classFilter" 
-          onchange="filterByClass()" 
-          class="text-xs py-1.5 px-3 rounded-lg bg-gray-900 border border-gray-700 text-gray-200 focus:border-sky-500 outline-none cursor-pointer"
-        >
-          <option value="ALL">Semua Kelas (4A, 4B, 5A)</option>
-          <option value="4A">Kelas 4A (SDN 1 Tuban)</option>
-          <option value="4B">Kelas 4B (SDN 1 Tuban)</option>
-          <option value="5A">Kelas 5A (SDN 1 Tuban)</option>
-        </select>
-
-        <!-- ESP32 Live Simulator Button -->
-        <button 
-          onclick="openSimulatorModal()" 
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all shadow-sm"
-          title="Simulasi pengiriman skor langsung dari tablet ESP32"
-        >
-          <i data-lucide="radio" class="w-3.5 h-3.5 animate-pulse"></i>
-          <span>Simulasi ESP32</span>
-        </button>
-
-        <!-- Telegram Bot Button -->
-        <button 
-          onclick="openTelegramModal()" 
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 border border-sky-400/30 text-sky-400 hover:bg-sky-500/20 transition-all shadow-sm"
-          title="Buka Pusat Notifikasi Telegram Bot (Dummy Data & Real)"
-        >
-          <i data-lucide="send" class="w-3.5 h-3.5"></i>
-          <span>Telegram Bot</span>
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        </button>
-
-        <!-- Tambah Siswa Button -->
-        <button 
-          onclick="openAddStudentModal()" 
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 transition-all"
-        >
-          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
-          <span>+ Siswa Baru</span>
-        </button>
-
-        <!-- Export CSV Button -->
-        <button 
-          onclick="exportToCSV()" 
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition-all"
-          title="Unduh rekapitulasi nilai ke format CSV/Excel"
-        >
-          <i data-lucide="download" class="w-3.5 h-3.5"></i>
-          <span class="hidden md:inline">Ekspor CSV</span>
-        </button>
-
-        <!-- Dark / Light toggle -->
-        <button 
-          onclick="toggleTheme()" 
-          id="themeToggleBtn" 
-          class="p-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:text-white transition-all"
-          title="Ganti Tema Gelap / Terang"
-        >
-          <i data-lucide="sun" id="themeIcon" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-    </div>
-  </header>
-
-  <!-- Main Container -->
-  <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
-
-    <!-- Hero / Class Banner -->
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-900/50 via-indigo-900/40 to-slate-900/70 border border-sky-500/20 p-5 lg:p-6 shadow-xl">
-      <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none select-none text-[120px] aksara-bali-glyph">
-        ᬳᬦᬘᬭᬓ
-      </div>
-      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30">
-              🏫 Tahun Ajaran 2026/2027 • Semester Genap
-            </span>
-            <span class="text-xs text-gray-400">Pembaruan: <strong id="lastUpdatedClock" class="text-gray-200">Live</strong></span>
-          </div>
-          <h2 class="text-xl md:text-2xl font-extrabold text-white tracking-tight">
-            Dashboard Pemantauan Menulis Aksara Daerah
-          </h2>
-          <p class="text-xs md:text-sm text-gray-300 mt-1 max-w-2xl leading-relaxed">
-            Memantau interaktivitas goresan stylus, toleransi checkpoints lintasan (sequential checkpoints), akurasi sandhangan/pengangge suara, dan hasil evaluasi perangkat OpenAksara ESP32.
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="text-right">
-            <div class="text-xs text-gray-400">Target KKM</div>
-            <div class="text-xl font-bold text-emerald-400">75.0 Poin</div>
-          </div>
-          <div class="h-10 w-[1px] bg-gray-700"></div>
-          <div class="text-right">
-            <div class="text-xs text-gray-400">Akurasi Minimal</div>
-            <div class="text-xl font-bold text-sky-400">80.0%</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4 KPI Overview Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      
-      <!-- Card 1: Rata-Rata Nilai Keseluruhan -->
-      <div class="glass-card rounded-2xl p-5 relative overflow-hidden transition-all hover:border-sky-500/50">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Rata-Rata Nilai</span>
-          <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
-            <i data-lucide="award" class="w-4 h-4"></i>
-          </div>
-        </div>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span id="statAvgScore" class="text-3xl font-extrabold text-white">88.2</span>
-          <span class="text-xs text-gray-400">/ 100</span>
-          <span id="statScoreBadge" class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            +3.5% Di Atas KKM
-          </span>
-        </div>
-        <div class="mt-3 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-          <div id="statAvgScoreBar" class="bg-gradient-to-r from-sky-500 to-indigo-500 h-1.5 rounded-full" style="width: 88%"></div>
-        </div>
-      </div>
-
-      <!-- Card 2: Akurasi Goresan Rata-Rata -->
-      <div class="glass-card rounded-2xl p-5 relative overflow-hidden transition-all hover:border-emerald-500/50">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Akurasi Goresan</span>
-          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-            <i data-lucide="pen-tool" class="w-4 h-4"></i>
-          </div>
-        </div>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span id="statAvgAccuracy" class="text-3xl font-extrabold text-white">91.4%</span>
-          <span class="text-xs text-gray-400">presisi</span>
-          <span class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            Toleransi 18px
-          </span>
-        </div>
-        <div class="mt-3 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-          <div id="statAvgAccBar" class="bg-emerald-500 h-1.5 rounded-full" style="width: 91%"></div>
-        </div>
-      </div>
-
-      <!-- Card 3: Kelulusan / Ketuntasan Belajar -->
-      <div class="glass-card rounded-2xl p-5 relative overflow-hidden transition-all hover:border-indigo-500/50">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Tingkat Ketuntasan</span>
-          <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-            <i data-lucide="check-circle" class="w-4 h-4"></i>
-          </div>
-        </div>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span id="statPassRate" class="text-3xl font-extrabold text-white">91.7%</span>
-          <span id="statPassRatio" class="text-xs text-gray-400">11 / 12 Siswa</span>
-          <span id="statRemedialBadge" class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-            1 Remedial
-          </span>
-        </div>
-        <div class="mt-3 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
-          <div id="statPassBar" class="bg-indigo-500 h-1.5 rounded-full" style="width: 92%"></div>
-        </div>
-      </div>
-
-      <!-- Card 4: Perangkat OpenAksara Online -->
-      <div class="glass-card rounded-2xl p-5 relative overflow-hidden transition-all hover:border-amber-500/50">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Perangkat IoT Aktif</span>
-          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
-            <i data-lucide="tablet" class="w-4 h-4"></i>
-          </div>
-        </div>
-        <div class="mt-3 flex items-baseline gap-2">
-          <span id="statActiveDevices" class="text-3xl font-extrabold text-white">12</span>
-          <span class="text-xs text-gray-400">ESP32 Unit</span>
-          <span class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> 100% Online
-          </span>
-        </div>
-        <div class="mt-3 flex items-center justify-between text-[11px] text-gray-400">
-          <span>Baterai Rata-rata: <strong>88%</strong></span>
-          <span>WiFi: <strong>-58 dBm</strong></span>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Live Classroom Activity Feed (Real-time telemetry strip) -->
-    <div class="glass-card rounded-2xl p-4 border border-sky-500/20">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 live-pulse"></span>
-          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-300">Aktivitas Langsung Kelas (Live Telemetry Feed)</h3>
-        </div>
-        <span class="text-[11px] text-gray-400">Pembaruan instan tiap kali siswa menyelesaikan goresan di ESP32</span>
-      </div>
-      <div id="liveActivityFeed" class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-        <!-- Diisi secara dinamis via JavaScript -->
-      </div>
-    </div>
-
-    <!-- Analytics Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- Chart 1: Perbandingan Performa Pembelajaran (Aksara Bali vs Jawa) -->
-      <div class="glass-card rounded-2xl p-5 lg:col-span-2">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-400"></i>
-              Perbandingan Rata-Rata Nilai (Aksara Bali vs Aksara Jawa)
-            </h3>
-            <p class="text-xs text-gray-400">Evaluasi penguasaan huruf konsonan dasar vs tanda vokal panjang & pendek</p>
-          </div>
-          <span class="text-xs px-2.5 py-1 rounded-lg bg-gray-800 text-gray-300 border border-gray-700">Modul 1 s/d 4</span>
-        </div>
-        <div class="h-64">
-          <canvas id="comparisonChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Chart 2: Distribusi Predikat Nilai -->
-      <div class="glass-card rounded-2xl p-5">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-400"></i>
-              Distribusi Predikat Nilai
-            </h3>
-            <p class="text-xs text-gray-400">Proporsi capaian kompetensi</p>
-          </div>
-          <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">KKM 75</span>
-        </div>
-        <div class="h-56 relative flex items-center justify-center">
-          <canvas id="gradeDistributionChart"></canvas>
-        </div>
-        <div class="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-gray-800 text-xs">
-          <div class="flex items-center gap-2 text-gray-300">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Sangat Baik (A): <strong id="countA">6</strong>
-          </div>
-          <div class="flex items-center gap-2 text-gray-300">
-            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Baik (B): <strong id="countB">4</strong>
-          </div>
-          <div class="flex items-center gap-2 text-gray-300">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Cukup (C): <strong id="countC">1</strong>
-          </div>
-          <div class="flex items-center gap-2 text-gray-300">
-            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Remedial (D): <strong id="countD">1</strong>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Script Difficulty Heatmap & Focus Ranking -->
-    <div class="glass-card rounded-2xl p-5">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-        <div>
-          <h3 class="text-sm font-bold text-white flex items-center gap-2">
-            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
-            Analisis Tingkat Kesulitan Aksara (Rekomendasi Fokus Pembelajaran Guru)
-          </h3>
-          <p class="text-xs text-gray-400">Huruf-huruf dengan persentase kesalahan goresan atau deviasi koordinat tertinggi</p>
-        </div>
-        <span class="text-xs text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-lg">
-          🔍 Diurutkan dari yang paling sering salah
-        </span>
-      </div>
-      <div id="difficultyRankingContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-        <!-- Diisi otomatis oleh JavaScript -->
-      </div>
-    </div>
-
-    <!-- Student Gradebook Table Section -->
-    <div class="glass-card rounded-2xl overflow-hidden border border-gray-800">
-      
-      <!-- Table Header & Controls -->
-      <div class="p-5 border-b border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h3 class="text-base font-bold text-white flex items-center gap-2">
-            <i data-lucide="table" class="w-4 h-4 text-sky-400"></i>
-            Daftar Nilai & Rapor Belajar Siswa
-          </h3>
-          <p class="text-xs text-gray-400 mt-0.5">
-            Total <strong id="filteredCountText" class="text-gray-200">12 Siswa</strong> terdata dalam sistem
-          </p>
-        </div>
-
-        <!-- Quick Filter Tabs -->
-        <div class="flex items-center gap-1.5 bg-gray-900 p-1 rounded-xl border border-gray-800 text-xs">
-          <button onclick="setFilterStatus('ALL')" id="tabFilterAll" class="px-3 py-1.5 rounded-lg font-semibold bg-sky-600 text-white transition-all">Semua Siswa</button>
-          <button onclick="setFilterStatus('Tuntas')" id="tabFilterTuntas" class="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition-all">Tuntas (≥75)</button>
-          <button onclick="setFilterStatus('Remedial')" id="tabFilterRemedial" class="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition-all">Perlu Remedial (<75)</button>
-        </div>
-      </div>
-
-      <!-- Table Body -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-gray-900/60 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">
-              <th class="py-3.5 px-4 cursor-pointer hover:text-white" onclick="sortTable('nisn')">No / NISN</th>
-              <th class="py-3.5 px-4 cursor-pointer hover:text-white" onclick="sortTable('name')">Nama Siswa</th>
-              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('score_bali')">Aksara Bali</th>
-              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('score_jawa')">Aksara Jawa</th>
-              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('score_quiz')">Kuis Teori</th>
-              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('accuracy')">Akurasi Goresan</th>
-              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('speed_sec')">Rata-Rata Waktu</th>
-              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('final_score')">Nilai Akhir</th>
-              <th class="py-3.5 px-4 text-center">Status</th>
-              <th class="py-3.5 px-4 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="studentTableBody" class="divide-y divide-gray-800/60 text-xs">
-            <!-- Diisi secara dinamis melalui app.js -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Table Footer / Summary -->
-      <div class="px-5 py-3.5 bg-gray-900/40 border-t border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-400 gap-2">
-        <span>Menampilkan <strong id="showingCount" class="text-gray-200">12</strong> siswa dari total <strong id="totalCount" class="text-gray-200">12</strong></span>
-        <div class="flex items-center gap-3">
-          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Nilai A: 90-100</span>
-          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Nilai B: 80-89</span>
-          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Nilai C: 75-79</span>
-          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Remedial: <75</span>
-        </div>
-      </div>
-
-    </div>
-
-  </main>
-
-  <!-- ==================== MODALS ==================== -->
-
-  <!-- Modal 1: Detail Rapor Siswa & Analisis Kompetensi -->
-  <div id="studentDetailModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200" id="printArea">
-      
-      <!-- Modal Header -->
-      <div class="bg-gradient-to-r from-sky-900/60 to-indigo-900/60 p-6 border-b border-gray-700 flex items-start justify-between">
-        <div class="flex items-center gap-4">
-          <div id="modalAvatar" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xl shadow-lg">
-            --
-          </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h2 id="modalStudentName" class="text-lg md:text-xl font-bold text-white">Nama Siswa</h2>
-              <span id="modalStudentGender" class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-400">L</span>
+      <!-- Sisi Kiri: Maskot & Pengenalan Visual -->
+      <div class="md:w-5/12 bg-gradient-to-b from-[#DDEFE8] via-[#EBF5F1] to-[#DDEFE8] p-8 md:p-10 flex flex-col justify-between border-b md:border-b-0 md:border-r border-brand-border/70 relative">
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-white p-1.5 shadow-sm border border-brand-border/50 flex items-center justify-center">
+              <img src="./aksarabuddy-mascot.png" alt="AksaraBuddy Mascot" class="w-full h-full object-contain">
             </div>
-            <p class="text-xs text-gray-300 mt-0.5">
-              NISN: <span id="modalStudentNisn" class="font-mono text-gray-200">--</span> • Kelas: <strong id="modalStudentClass" class="text-sky-400">--</strong> • Device: <span id="modalStudentDevice" class="font-mono text-amber-300">--</span>
-            </p>
+            <div>
+              <h2 class="text-xl font-extrabold text-brand-dark tracking-tight">
+                AksaraBuddy
+              </h2>
+              <p class="text-xs text-brand-muted font-medium">Sabak Cerdas Tracing ESP32</p>
+            </div>
+          </div>
+
+          <h3 class="text-xl font-bold text-brand-dark leading-snug mb-2">
+            Belajar Aksara Nusantara Lebih Interaktif & Presisi
+          </h3>
+          <p class="text-xs text-brand-muted leading-relaxed">
+            Evaluasi checkpoints goresan stylus toleransi 18px, akumulasi poin akhir & XP materi, dan integrasi audio hardware DFPlayer real-time.
+          </p>
+        </div>
+
+        <!-- Maskot Center Graphic -->
+        <div class="relative z-10 my-6 flex flex-col items-center justify-center">
+          <div class="w-44 h-44 rounded-full bg-white/80 backdrop-blur-xs p-3 shadow-inner border border-white flex items-center justify-center relative">
+            <img src="./aksarabuddy-mascot.png" alt="AksaraBuddy Mascot" class="w-full h-full object-contain mascot-float drop-shadow-md">
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <button onclick="sendCurrentStudentTelegram()" class="p-2 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/40 text-sky-300 text-xs flex items-center gap-1.5 transition-all shadow-sm" title="Kirim Rapor ke Telegram Orang Tua">
-            <i data-lucide="send" class="w-4 h-4"></i>
-            <span class="hidden sm:inline">Kirim ke Telegram</span>
-          </button>
-          <button onclick="printStudentReport()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-200 text-xs flex items-center gap-1.5 transition-all" title="Cetak Rapor Siswa">
-            <i data-lucide="printer" class="w-4 h-4"></i>
-            <span class="hidden sm:inline">Cetak</span>
-          </button>
-          <button onclick="closeDetailModal()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-all">
+
+        <!-- Fitur Badge Bawah -->
+        <div class="relative z-10 pt-4 border-t border-brand-border/60 flex items-center justify-between text-[11px] text-brand-muted font-medium">
+          <span class="flex items-center gap-1"><i data-lucide="cpu" class="w-3.5 h-3.5 text-brand-primary"></i> ESP32 COM3</span>
+          <span class="flex items-center gap-1"><i data-lucide="award" class="w-3.5 h-3.5 text-brand-primary"></i> Poin & XP</span>
+          <span class="flex items-center gap-1"><i data-lucide="music" class="w-3.5 h-3.5 text-brand-primary"></i> DFPlayer</span>
+        </div>
+      </div>
+
+      <!-- Sisi Kanan: Form Login Guru & Demo Login -->
+      <div class="md:w-7/12 p-8 md:p-10 flex flex-col justify-between bg-white">
+        <div>
+          <div class="mb-6">
+            <h3 class="text-2xl font-bold text-brand-dark">Selamat Datang, Bapak/Ibu Guru! 👋</h3>
+            <p class="text-xs text-brand-muted mt-1">Masuk untuk memantau nilai akhir, perolehan XP, dan akurasi goresan siswa.</p>
+          </div>
+
+          <!-- Form Login -->
+          <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-brand-dark mb-1.5" for="login-email">Email / NIP / Akun Guru</label>
+              <div class="relative">
+                <i data-lucide="user" class="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="login-email" value="guru.yoga@aksarabuddy.id" required class="w-full pl-10 pr-4 py-2.5 bg-brand-bg rounded-xl border border-brand-border text-sm text-brand-dark font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-semibold text-brand-dark" for="login-password">Kata Sandi</label>
+                <a href="javascript:void(0)" onclick="showToast('Tautan reset kata sandi telah dikirimkan ke email guru.')" class="text-xs text-brand-primary font-semibold hover:underline">Lupa sandi?</a>
+              </div>
+              <div class="relative">
+                <i data-lucide="lock" class="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="password" id="login-password" value="aksara123" required class="w-full pl-10 pr-10 py-2.5 bg-brand-bg rounded-xl border border-brand-border text-sm text-brand-dark font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark">
+                  <i data-lucide="eye" id="icon-toggle-password" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <label class="flex items-center gap-2 cursor-pointer text-xs text-brand-muted select-none">
+                <input type="checkbox" checked class="w-4 h-4 rounded border-brand-border text-brand-primary focus:ring-brand-primary/30">
+                <span>Ingat saya di perangkat ini</span>
+              </label>
+              <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Port COM3 Ready
+              </span>
+            </div>
+
+            <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 rounded-xl bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm shadow-md shadow-brand-primary/20 flex items-center justify-center gap-2 transition duration-200">
+              <span id="btn-login-text">Masuk ke Dashboard Guru</span>
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-brand-border"></div></div>
+            <div class="relative flex justify-center text-[10px] uppercase tracking-wider text-brand-muted font-bold"><span class="bg-white px-3">Atau Masuk Cepat (Akun Demo)</span></div>
+          </div>
+
+          <!-- Pilihan Demo Login Sekali Klik -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button onclick="loginAs('Pak Guru Yoga', 'Wali Kelas 5A & 5B', 'PG')" class="p-3 rounded-xl border border-brand-border hover:border-brand-primary bg-brand-bg/50 hover:bg-brand-soft/40 transition flex items-center gap-3 text-left">
+              <div class="w-9 h-9 rounded-xl bg-brand-primary text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">PG</div>
+              <div class="overflow-hidden">
+                <p class="text-xs font-bold text-brand-dark truncate leading-tight">Pak Guru Yoga</p>
+                <p class="text-[10px] text-brand-muted truncate">Wali Kelas 5A & 5B</p>
+              </div>
+            </button>
+
+            <button onclick="loginAs('Bu Guru Desak', 'Guru Bahasa Bali', 'BD')" class="p-3 rounded-xl border border-brand-border hover:border-brand-primary bg-brand-bg/50 hover:bg-brand-soft/40 transition flex items-center gap-3 text-left">
+              <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">BD</div>
+              <div class="overflow-hidden">
+                <p class="text-xs font-bold text-brand-dark truncate leading-tight">Bu Guru Desak</p>
+                <p class="text-[10px] text-brand-muted truncate">Guru Bahasa Bali</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-brand-border/60 flex items-center justify-between text-[11px] text-brand-muted">
+          <span>OpenAksara EduCloud v2.4</span>
+          <span>Status Port: COM3 (9600 bps)</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- 2. APLIKASI UTAMA DASHBOARD AKSARABUDDY                       -->
+  <!-- ============================================================== -->
+  <div id="view-dashboard" class="hidden h-screen w-screen overflow-hidden flex flex-col md:flex-row relative">
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 z-40 bg-brand-dark/50 backdrop-blur-xs hidden md:hidden transition-opacity"></div>
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-brand-border flex flex-col justify-between shrink-0 select-none transform -translate-x-full md:translate-x-0 md:static transition-transform duration-300 ease-in-out shadow-xl md:shadow-none">
+      <div class="p-5 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
+        
+        <!-- Logo AksaraBuddy & Close Button Mobile -->
+        <div class="flex items-center justify-between px-1">
+          <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('overview'); toggleMobileSidebar(false);">
+            <div class="w-10 h-10 rounded-xl bg-brand-soft flex items-center justify-center p-1 overflow-hidden shadow-sm border border-brand-border/60">
+              <img src="./aksarabuddy-mascot.png" alt="AksaraBuddy Mascot" class="w-full h-full object-contain">
+            </div>
+            <div>
+              <h1 class="text-base font-bold tracking-tight text-brand-dark">
+                AksaraBuddy
+              </h1>
+              <p class="text-[11px] text-brand-muted">ESP32 Tracing Hub</p>
+            </div>
+          </div>
+          <!-- Close Mobile Button -->
+          <button onclick="toggleMobileSidebar(false)" class="md:hidden p-1.5 text-brand-muted hover:text-brand-dark rounded-lg">
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
         </div>
+
+        <!-- Navigasi Menu Sesuai FigCraft + Tab Baru Penilaian Materi -->
+        <nav class="flex flex-col gap-1 text-sm font-medium">
+          <button onclick="switchTab('overview'); toggleMobileSidebar(false);" id="nav-overview" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-primary bg-brand-soft/80 font-bold transition-all">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Overview</span>
+          </button>
+
+          <button onclick="switchTab('submissions'); toggleMobileSidebar(false);" id="nav-submissions" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="file-check-2" class="w-4 h-4"></i>
+            <span class="flex-1 text-left">Submission Siswa</span>
+            <span class="text-[10px] bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded-full font-bold">12 Baru</span>
+          </button>
+
+          <!-- MENU BARU: PENILAIAN MATERI (POIN AKHIR & XP) -->
+          <button onclick="switchTab('assessments'); toggleMobileSidebar(false);" id="nav-assessments" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="award" class="w-4 h-4"></i>
+            <span class="flex-1 text-left">Penilaian Materi</span>
+            <span class="text-[10px] bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+              ⚡ XP
+            </span>
+          </button>
+
+          <button onclick="switchTab('curriculum'); toggleMobileSidebar(false);" id="nav-curriculum" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="book-open" class="w-4 h-4"></i>
+            <span>Materi Aksara</span>
+          </button>
+
+          <button onclick="switchTab('students'); toggleMobileSidebar(false);" id="nav-students" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="users" class="w-4 h-4"></i>
+            <span>Kelas & Siswa</span>
+          </button>
+
+          <button onclick="switchTab('feedback'); toggleMobileSidebar(false);" id="nav-feedback" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="message-square" class="w-4 h-4"></i>
+            <span>Feedback Guru</span>
+          </button>
+
+          <button onclick="switchTab('settings'); toggleMobileSidebar(false);" id="nav-settings" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="sliders" class="w-4 h-4"></i>
+            <span class="flex-1 text-left">Setelan ESP32</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          </button>
+        </nav>
       </div>
 
-      <!-- Modal Body -->
-      <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-        
-        <!-- Nilai Cards Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-            <span class="text-[11px] text-gray-400 uppercase">Aksara Bali</span>
-            <div id="modalScoreBali" class="text-2xl font-black text-sky-400 mt-1">--</div>
-            <div id="modalBestBali" class="text-[10px] text-gray-400 mt-0.5 truncate">Terbaik: --</div>
+      <!-- User Profile, Hardware Status & Tombol Logout -->
+      <div class="p-4 border-t border-brand-border flex flex-col gap-3 bg-gray-50/70 shrink-0">
+        <div class="flex items-center justify-between px-1 text-xs text-brand-muted">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>ESP32: <strong class="text-brand-dark">Online (COM3)</strong></span>
           </div>
-          <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-            <span class="text-[11px] text-gray-400 uppercase">Aksara Jawa</span>
-            <div id="modalScoreJawa" class="text-2xl font-black text-indigo-400 mt-1">--</div>
-            <div id="modalBestJawa" class="text-[10px] text-gray-400 mt-0.5 truncate">Terbaik: --</div>
-          </div>
-          <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-            <span class="text-[11px] text-gray-400 uppercase">Kuis Teori</span>
-            <div id="modalScoreQuiz" class="text-2xl font-black text-amber-400 mt-1">--</div>
-            <div class="text-[10px] text-gray-400 mt-0.5">Pemahaman Bunyi</div>
-          </div>
-          <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
-            <span class="text-[11px] text-gray-400 uppercase">Nilai Akhir</span>
-            <div id="modalFinalScore" class="text-2xl font-black text-emerald-400 mt-1">--</div>
-            <span id="modalFinalBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400">TUNTAS</span>
-          </div>
+          <span class="font-mono text-[10px] text-brand-muted">4.98V</span>
         </div>
 
-        <!-- Radar Kompetensi & Indikator -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-gray-800/40 p-4 rounded-xl border border-gray-700">
-          <div>
-            <h4 class="text-xs font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <i data-lucide="compass" class="w-3.5 h-3.5 text-sky-400"></i>
-              Grafik Radar Kompetensi Menulis
-            </h4>
-            <div class="h-52 flex items-center justify-center">
-              <canvas id="studentRadarChart"></canvas>
+        <div class="flex items-center justify-between p-2 bg-white rounded-xl border border-brand-border shadow-sm">
+          <div class="flex items-center gap-2.5 overflow-hidden">
+            <div id="user-avatar" class="w-8 h-8 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
+              PG
+            </div>
+            <div class="overflow-hidden">
+              <p id="user-name" class="text-xs font-bold text-brand-dark truncate leading-tight">Pak Guru Yoga</p>
+              <p id="user-role" class="text-[10px] text-brand-muted truncate">Wali Kelas 5A & 5B</p>
             </div>
           </div>
-          <div class="space-y-3 text-xs">
-            <div>
-              <div class="flex justify-between text-gray-300 mb-1">
-                <span>Akurasi Titik Checkpoints (P1..Pn)</span>
-                <strong id="modalRadarAcc" class="text-emerald-400">--%</strong>
-              </div>
-              <div class="w-full bg-gray-700 rounded-full h-1.5"><div id="modalBarAcc" class="bg-emerald-400 h-1.5 rounded-full" style="width: 90%"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-gray-300 mb-1">
-                <span>Kecepatan Menulis Rata-rata</span>
-                <strong id="modalRadarSpeed" class="text-sky-400">-- detik</strong>
-              </div>
-              <div class="w-full bg-gray-700 rounded-full h-1.5"><div id="modalBarSpeed" class="bg-sky-400 h-1.5 rounded-full" style="width: 85%"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-gray-300 mb-1">
-                <span>Konsistensi Bentuk (Form Fit)</span>
-                <strong class="text-indigo-400">92%</strong>
-              </div>
-              <div class="w-full bg-gray-700 rounded-full h-1.5"><div class="bg-indigo-400 h-1.5 rounded-full" style="width: 92%"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-gray-300 mb-1">
-                <span>Penguasaan Sandhangan / Pengangge</span>
-                <strong class="text-amber-400">88%</strong>
-              </div>
-              <div class="w-full bg-gray-700 rounded-full h-1.5"><div class="bg-amber-400 h-1.5 rounded-full" style="width: 88%"></div></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Riwayat Sesi Terakhir dari ESP32 -->
-        <div>
-          <h4 class="text-xs font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-            <i data-lucide="history" class="w-3.5 h-3.5 text-sky-400"></i>
-            Riwayat 5 Sesi Terakhir (Log IoT Hardware)
-          </h4>
-          <div class="overflow-x-auto rounded-xl border border-gray-700">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-gray-800 text-gray-400 text-[10px] uppercase">
-                <tr>
-                  <th class="p-2.5">Waktu</th>
-                  <th class="p-2.5">Naskah</th>
-                  <th class="p-2.5">Huruf / Tanda</th>
-                  <th class="p-2.5 text-center">Skor</th>
-                  <th class="p-2.5 text-center">Akurasi</th>
-                  <th class="p-2.5 text-center">Waktu</th>
-                </tr>
-              </thead>
-              <tbody id="modalHistoryTable" class="divide-y divide-gray-800">
-                <!-- Diisi via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Catatan & Rekomendasi Guru (Editable) -->
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
-              <i data-lucide="message-square" class="w-3.5 h-3.5 text-indigo-400"></i>
-              Catatan & Evaluasi Guru
-            </h4>
-            <span class="text-[10px] text-gray-400">Tersimpan otomatis saat diedit</span>
-          </div>
-          <textarea 
-            id="modalStudentNotes" 
-            rows="3" 
-            class="w-full p-3 rounded-xl bg-gray-800/80 border border-gray-700 text-gray-200 text-xs focus:border-sky-500 outline-none"
-            placeholder="Ketik catatan evaluasi atau instruksi perbaikan khusus untuk siswa ini..."
-            onchange="saveStudentNotes()"
-          ></textarea>
-        </div>
-
-      </div>
-
-      <!-- Modal Footer -->
-      <div class="p-4 bg-gray-950 border-t border-gray-800 flex justify-end">
-        <button onclick="closeDetailModal()" class="px-5 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300">
-          Tutup
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Modal 2: Tambah / Edit Siswa -->
-  <div id="addStudentModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-      <div class="p-5 border-b border-gray-800 flex items-center justify-between">
-        <h3 id="formModalTitle" class="text-sm font-bold text-white flex items-center gap-2">
-          <i data-lucide="user-plus" class="w-4 h-4 text-sky-400"></i>
-          Tambah Siswa Baru
-        </h3>
-        <button onclick="closeAddStudentModal()" class="text-gray-400 hover:text-white">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-      <form id="studentForm" onsubmit="handleSaveStudent(event)" class="p-5 space-y-3.5 text-xs">
-        <input type="hidden" id="formStudentId">
-        
-        <div>
-          <label class="block text-gray-400 mb-1">Nama Lengkap Siswa *</label>
-          <input type="text" id="formName" required placeholder="Contoh: I Gede Bagus Wijaya" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-gray-400 mb-1">NISN *</label>
-            <input type="text" id="formNisn" required placeholder="20260413" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
-          </div>
-          <div>
-            <label class="block text-gray-400 mb-1">Kelas *</label>
-            <select id="formClass" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
-              <option value="4A">Kelas 4A</option>
-              <option value="4B">Kelas 4B</option>
-              <option value="5A">Kelas 5A</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-gray-400 mb-1">Jenis Kelamin</label>
-            <select id="formGender" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
-              <option value="L">Laki-Laki (L)</option>
-              <option value="P">Perempuan (P)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-400 mb-1">ID Perangkat ESP32</label>
-            <input type="text" id="formDeviceId" placeholder="ESP32-BALI-08" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-gray-800">
-          <div>
-            <label class="block text-gray-400 mb-1">Nilai Bali (0-100)</label>
-            <input type="number" id="formScoreBali" min="0" max="100" value="85" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center font-bold">
-          </div>
-          <div>
-            <label class="block text-gray-400 mb-1">Nilai Jawa (0-100)</label>
-            <input type="number" id="formScoreJawa" min="0" max="100" value="85" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center font-bold">
-          </div>
-          <div>
-            <label class="block text-gray-400 mb-1">Nilai Kuis (0-100)</label>
-            <input type="number" id="formScoreQuiz" min="0" max="100" value="88" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center font-bold">
-          </div>
-        </div>
-
-        <div class="pt-3 border-t border-gray-800 flex justify-end gap-2">
-          <button type="button" onclick="closeAddStudentModal()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300">Batal</button>
-          <button type="submit" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold">Simpan Data Siswa</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 3: Simulasi Telemetri ESP32 (Live Tester) -->
-  <div id="simulatorModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-amber-500/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-      <div class="bg-gradient-to-r from-amber-950/60 to-gray-900 p-5 border-b border-amber-500/30 flex items-center justify-between">
-        <div>
-          <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
-            <i data-lucide="radio" class="w-4 h-4 animate-pulse"></i>
-            Simulator Pengiriman Skor ESP32 IoT
-          </h3>
-          <p class="text-xs text-gray-400 mt-0.5">Uji coba aliran data langsung seolah-olah dikirimkan dari stylus tablet OpenAksara</p>
-        </div>
-        <button onclick="closeSimulatorModal()" class="text-gray-400 hover:text-white">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <div class="p-5 space-y-4 text-xs">
-        <div>
-          <label class="block text-gray-400 mb-1">Pilih Siswa yang Sedang Menulis di Tablet:</label>
-          <select id="simStudentSelect" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white font-semibold">
-            <!-- Diisi opsi siswa via JS -->
-          </select>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-gray-400 mb-1">Jenis Naskah:</label>
-            <select id="simScript" onchange="updateSimLetters()" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white">
-              <option value="bali">Aksara Bali</option>
-              <option value="jawa">Aksara Jawa</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-400 mb-1">Huruf yang Digores:</label>
-            <select id="simLetter" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white font-bold">
-              <!-- Diisi via JS -->
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <div class="flex justify-between text-gray-300 mb-1">
-            <span>Skor Evaluasi Goresan:</span>
-            <strong id="simScoreVal" class="text-amber-400 font-bold text-sm">96</strong>
-          </div>
-          <input type="range" id="simScore" min="50" max="100" value="96" oninput="document.getElementById('simScoreVal').textContent = this.value" class="w-full accent-amber-500">
-        </div>
-
-        <div>
-          <div class="flex justify-between text-gray-300 mb-1">
-            <span>Akurasi Checkpoints Lintasan (%):</span>
-            <strong id="simAccVal" class="text-sky-400 font-bold text-sm">94.5%</strong>
-          </div>
-          <input type="range" id="simAccuracy" min="60" max="100" value="95" oninput="document.getElementById('simAccVal').textContent = this.value + '%'" class="w-full accent-sky-500">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-gray-400 mb-1">Waktu Selesai (Detik):</label>
-            <input type="number" id="simDuration" value="12" min="5" max="60" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center">
-          </div>
-          <div>
-            <label class="block text-gray-400 mb-1">Baterai Tablet (%):</label>
-            <input type="number" id="simBattery" value="88" min="10" max="100" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center">
-          </div>
-        </div>
-
-        <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 text-[11px] text-gray-400 space-y-1">
-          <div class="text-gray-300 font-bold flex items-center gap-1">
-            <i data-lucide="code" class="w-3.5 h-3.5 text-sky-400"></i> Format HTTP Payload ESP32:
-          </div>
-          <pre class="text-[10px] text-emerald-400 font-mono overflow-x-auto">POST /api/telemetry
-{"device_id":"ESP32_01","script":"bali","letter":"Ca","score":96,"accuracy":94.5,"duration_sec":12}</pre>
-        </div>
-
-        <div class="pt-2 flex justify-end gap-2">
-          <button type="button" onclick="closeSimulatorModal()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300">Tutup</button>
-          <button type="button" onclick="executeSimulation()" class="px-5 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-amber-600/30">
-            <i data-lucide="send" class="w-3.5 h-3.5"></i>
-            <span>⚡ Kirim Data Telemetri Sekarang!</span>
+          <button onclick="handleLogout()" title="Keluar / Logout" class="p-2 text-brand-muted hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
           </button>
         </div>
       </div>
-    </div>
-  </div>
+    </aside>
 
-  <!-- Modal 4: Telegram Bot Notification Center -->
-  <div id="telegramModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden flex items-center justify-center p-4">
-    <div class="bg-[#111827] border border-sky-500/40 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-      
-      <!-- Modal Header -->
-      <div class="bg-gradient-to-r from-sky-950 via-[#17212B] to-[#0F172A] p-4 px-6 border-b border-gray-700 flex items-center justify-between">
+    <!-- ==================== MAIN CONTENT AREA ==================== -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-brand-bg w-full">
+
+      <!-- Top Header (Fully Responsive) -->
+      <header class="min-h-16 bg-white border-b border-brand-border px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <!-- Title & Mobile Menu Hamburger -->
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-[#2AABEE] text-white flex items-center justify-center shadow-lg shadow-sky-500/30">
-            <i data-lucide="send" class="w-5 h-5"></i>
-          </div>
+          <button onclick="toggleMobileSidebar(true)" class="md:hidden p-2 rounded-xl border border-brand-border hover:bg-brand-bg text-brand-dark transition">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
           <div>
-            <div class="flex items-center gap-2">
-              <h3 class="text-sm md:text-base font-bold text-white tracking-tight">OpenAksara Telegram Bot</h3>
-              <span id="tgModeBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                Mode Dummy / Proposal
-              </span>
-            </div>
-            <p class="text-xs text-gray-400">Notifikasi otomatis nilai & perkembangan menulis ke orang tua dan wali kelas</p>
+            <h2 id="page-title" class="text-lg sm:text-xl font-bold text-brand-dark leading-tight">Dashboard AksaraBuddy</h2>
+            <p id="page-subtitle" class="text-[11px] text-brand-muted hidden sm:block">Monitoring hasil belajar dan presisi goresan aksara siswa secara real-time</p>
           </div>
         </div>
-        <button onclick="closeTelegramModal()" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-all">
+
+        <!-- Search & Actions -->
+        <div class="flex items-center gap-2.5 sm:gap-3 flex-1 sm:flex-initial justify-end">
+          <div class="relative w-full sm:w-60 md:w-72">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-muted"></i>
+            <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Cari siswa atau aksara..." class="w-full pl-9 pr-3 py-1.5 bg-brand-bg rounded-xl border border-brand-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+          </div>
+
+          <button onclick="showToast('Notifikasi: 3 submission baru masuk dari Kelas 5A!')" class="p-2 rounded-xl border border-brand-border text-brand-muted hover:text-brand-dark hover:bg-brand-bg relative transition shrink-0">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full animate-ping"></span>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+          </button>
+
+          <button onclick="downloadCSVReport()" class="flex items-center gap-1.5 px-3 py-1.5 bg-brand-primary hover:bg-brand-hover text-white rounded-xl text-xs font-bold shadow-sm transition shrink-0">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Unduh Rekap</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Container Dinamis Tab Konten -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+
+        <!-- ============================================================== -->
+        <!-- TAB 1: OVERVIEW                                                -->
+        <!-- ============================================================== -->
+        <div id="tab-overview" class="tab-pane flex flex-col gap-6">
+          
+          <!-- 4 Kartu KPI Metrik (Responsive: 1 col on mobile, 2 on tablet, 4 on desktop) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            <!-- KPI 1 -->
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <span class="text-xs font-semibold text-brand-muted">Nilai Paling Banyak</span>
+              <div class="flex items-baseline justify-between mt-3">
+                <span class="text-3xl font-extrabold text-brand-dark">88</span>
+                <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">38 Siswa</span>
+              </div>
+            </div>
+
+            <!-- KPI 2 -->
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <span class="text-xs font-semibold text-brand-muted">Rata-rata Nilai</span>
+              <div class="flex items-baseline justify-between mt-3">
+                <span class="text-3xl font-extrabold text-brand-dark">82.4</span>
+                <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">+4.6 poin</span>
+              </div>
+            </div>
+
+            <!-- KPI 3 -->
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <span class="text-xs font-semibold text-brand-muted">Paling Sering Salah</span>
+              <div class="flex items-baseline justify-between mt-3">
+                <span class="text-2xl font-extrabold text-brand-dark">Dha (ꦝ)</span>
+                <span class="text-xs font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">42% Salah</span>
+              </div>
+            </div>
+
+            <!-- KPI 4 -->
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <span class="text-xs font-semibold text-brand-muted">Sesi Latihan Siswa</span>
+              <div class="flex items-baseline justify-between mt-3">
+                <span class="text-3xl font-extrabold text-brand-dark">1,420</span>
+                <span class="text-xs font-bold text-brand-primary bg-brand-soft px-2 py-0.5 rounded-full">96% Tuntas</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bagian Tengah: DIAGRAM INTERAKTIF LENGKAP DETAILNYA -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Line Chart Interaktif dengan Tooltip Real-time & Mode Filter -->
+            <div class="lg:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between relative">
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div>
+                  <h4 class="text-base font-bold text-brand-dark">Aktivitas Belajar Aksara</h4>
+                  <p class="text-xs text-brand-muted">Arahkan kursor / sentuh titik untuk melihat detail sesi & akurasi</p>
+                </div>
+                
+                <!-- Toggle Filter Interaktif -->
+                <div class="flex items-center gap-1.5 bg-brand-bg p-1 rounded-xl border border-brand-border text-[11px] font-semibold">
+                  <button onclick="setChartFilter('all')" id="btn-chart-all" class="px-2.5 py-1 rounded-lg bg-brand-primary text-white shadow-xs">Semua</button>
+                  <button onclick="setChartFilter('jawa')" id="btn-chart-jawa" class="px-2.5 py-1 rounded-lg text-brand-muted hover:text-brand-dark">Jawa</button>
+                  <button onclick="setChartFilter('bali')" id="btn-chart-bali" class="px-2.5 py-1 rounded-lg text-brand-muted hover:text-brand-dark">Bali</button>
+                </div>
+              </div>
+
+              <!-- Interactive Floating Tooltip Box -->
+              <div id="chart-tooltip" class="absolute z-30 pointer-events-none opacity-0 transition-opacity duration-150 bg-brand-dark/95 text-white p-3 rounded-xl shadow-xl text-xs border border-white/10 backdrop-blur-xs min-w-[190px]">
+                <p id="tooltip-date" class="font-bold text-amber-300 text-[11px] mb-1.5 pb-1 border-b border-white/10">12 Apr 2026</p>
+                <div class="space-y-1">
+                  <div class="flex justify-between items-center"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Carakan Jawa:</span><strong id="tooltip-jawa">142 sesi</strong></div>
+                  <div class="flex justify-between items-center"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#F3A953]"></span> Wreastra Bali:</span><strong id="tooltip-bali">98 sesi</strong></div>
+                  <div class="flex justify-between items-center pt-1 border-t border-white/10 text-[10px] text-gray-300"><span>Rata-rata Skor:</span><strong id="tooltip-score" class="text-emerald-300">86.4</strong></div>
+                </div>
+              </div>
+
+              <!-- SVG Interactive Line Chart Visual -->
+              <div class="h-56 w-full relative">
+                <svg id="activity-svg" viewBox="0 0 650 200" class="w-full h-full overflow-visible" onmousemove="handleChartHover(event)" onmouseleave="hideChartTooltip()">
+                  <!-- Horizontal Grid Lines -->
+                  <line x1="0" y1="40" x2="650" y2="40" stroke="#E2E8F0" stroke-dasharray="4" />
+                  <line x1="0" y1="90" x2="650" y2="90" stroke="#E2E8F0" stroke-dasharray="4" />
+                  <line x1="0" y1="140" x2="650" y2="140" stroke="#E2E8F0" stroke-dasharray="4" />
+                  <line x1="0" y1="190" x2="650" y2="190" stroke="#CBD5E1" />
+
+                  <!-- Crosshair line (dynamic) -->
+                  <line id="svg-crosshair" x1="0" y1="0" x2="0" y2="190" stroke="#1F6F5C" stroke-width="1.5" stroke-dasharray="3" opacity="0" />
+
+                  <!-- Area fill Jawa -->
+                  <polygon id="svg-area-jawa" points="0,150 90,140 180,120 275,135 365,100 455,80 545,95 635,60 635,190 0,190" fill="#1F6F5C" fill-opacity="0.08" />
+
+                  <!-- Trend Line Jawa (Green) -->
+                  <polyline id="svg-line-jawa" points="0,150 90,140 180,120 275,135 365,100 455,80 545,95 635,60" fill="none" stroke="#1F6F5C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+
+                  <!-- Trend Line Bali (Accent Orange) -->
+                  <polyline id="svg-line-bali" points="0,165 90,155 180,145 275,120 365,130 455,115 545,105 635,85" fill="none" stroke="#F3A953" stroke-width="2.5" stroke-dasharray="4" stroke-linecap="round" stroke-linejoin="round" />
+
+                  <!-- Interactive Data Point Circles -->
+                  <g id="svg-points">
+                    <circle cx="90" cy="140" r="5" fill="#1F6F5C" stroke="#fff" stroke-width="2" class="cursor-pointer" />
+                    <circle cx="180" cy="120" r="5" fill="#1F6F5C" stroke="#fff" stroke-width="2" class="cursor-pointer" />
+                    <circle cx="275" cy="135" r="5" fill="#1F6F5C" stroke="#fff" stroke-width="2" class="cursor-pointer" />
+                    <circle cx="365" cy="100" r="5" fill="#1F6F5C" stroke="#fff" stroke-width="2" class="cursor-pointer" />
+                    <circle cx="455" cy="80" r="5" fill="#1F6F5C" stroke="#fff" stroke-width="2" class="cursor-pointer" />
+                    <circle cx="545" cy="95" r="5" fill="#1F6F5C" stroke="#fff" stroke-width="2" class="cursor-pointer" />
+                    <circle cx="635" cy="60" r="6" fill="#1F6F5C" stroke="#fff" stroke-width="2.5" class="cursor-pointer" />
+                  </g>
+                </svg>
+              </div>
+
+              <div class="flex justify-between text-[11px] text-brand-muted font-medium mt-3 pt-2 border-t border-brand-border/60">
+                <span>1 Mar</span>
+                <span>15 Mar</span>
+                <span>29 Mar</span>
+                <span>12 Apr</span>
+                <span>26 Apr</span>
+                <span>10 May</span>
+                <span>24 May</span>
+              </div>
+            </div>
+
+            <!-- Donut Chart: Komposisi Latihan Interaktif dengan Dynamic Central Drill-Down -->
+            <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div>
+                <h4 class="text-base font-bold text-brand-dark">Komposisi Latihan Aksara</h4>
+                <p class="text-xs text-brand-muted">Arahkan kursor ke segmen untuk mengecek detail</p>
+              </div>
+
+              <!-- Visual Donut Chart Interaktif -->
+              <div class="my-4 flex items-center justify-center relative">
+                <svg viewBox="0 0 160 160" class="w-44 h-44 -rotate-90">
+                  <!-- Carakan Jawa: 54% -->
+                  <circle cx="80" cy="80" r="58" fill="transparent" stroke="#1F6F5C" stroke-width="22" stroke-dasharray="197 364" stroke-dashoffset="0" class="donut-slice" onmouseenter="updateDonutInfo('Carakan Jawa', '768 Sesi (54%)', '#1F6F5C')" onmouseleave="resetDonutInfo()" />
+                  <!-- Wreastra Bali: 31% -->
+                  <circle cx="80" cy="80" r="58" fill="transparent" stroke="#F3A953" stroke-width="22" stroke-dasharray="113 364" stroke-dashoffset="-197" class="donut-slice" onmouseenter="updateDonutInfo('Wreastra Bali', '440 Sesi (31%)', '#F3A953')" onmouseleave="resetDonutInfo()" />
+                  <!-- Sandhangan: 15% -->
+                  <circle cx="80" cy="80" r="58" fill="transparent" stroke="#A7D7C5" stroke-width="22" stroke-dasharray="54 364" stroke-dashoffset="-310" class="donut-slice" onmouseenter="updateDonutInfo('Sandhangan & Pasangan', '212 Sesi (15%)', '#1F6F5C')" onmouseleave="resetDonutInfo()" />
+                </svg>
+                
+                <!-- Dynamic Center Text -->
+                <div class="absolute flex flex-col items-center text-center px-4 pointer-events-none">
+                  <span id="donut-center-title" class="text-xl font-extrabold text-brand-dark">1,420</span>
+                  <span id="donut-center-sub" class="text-[10px] text-brand-muted font-bold">Total Latihan</span>
+                </div>
+              </div>
+
+              <!-- Legends Interaktif -->
+              <div class="space-y-2 text-xs font-semibold pt-2 border-t border-brand-border/60">
+                <div class="flex items-center justify-between p-1 rounded-lg hover:bg-brand-bg transition cursor-pointer" onmouseenter="updateDonutInfo('Carakan Jawa', '768 Sesi (54%)', '#1F6F5C')" onmouseleave="resetDonutInfo()">
+                  <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-brand-primary"></span> Carakan Jawa</span>
+                  <span class="font-bold text-brand-dark">54% (768)</span>
+                </div>
+                <div class="flex items-center justify-between p-1 rounded-lg hover:bg-brand-bg transition cursor-pointer" onmouseenter="updateDonutInfo('Wreastra Bali', '440 Sesi (31%)', '#F3A953')" onmouseleave="resetDonutInfo()">
+                  <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-brand-accent"></span> Wreastra Bali</span>
+                  <span class="font-bold text-brand-dark">31% (440)</span>
+                </div>
+                <div class="flex items-center justify-between p-1 rounded-lg hover:bg-brand-bg transition cursor-pointer" onmouseenter="updateDonutInfo('Sandhangan & Pasangan', '212 Sesi (15%)', '#1F6F5C')" onmouseleave="resetDonutInfo()">
+                  <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#A7D7C5]"></span> Pasangan</span>
+                  <span class="font-bold text-brand-dark">15% (212)</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bagian Bawah: Bar Chart Hari Paling Aktif & Tabel Submission Terbaru -->
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            
+            <!-- Bar Chart: Hari Paling Aktif dengan Tooltip Hover Detail -->
+            <div class="lg:col-span-1 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between">
+                  <h4 class="text-base font-bold text-brand-dark">Hari Paling Aktif</h4>
+                  <span id="active-day-badge" class="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold">Sabtu: Puncak</span>
+                </div>
+                <p class="text-xs text-brand-muted mt-0.5">Sentuh kolom untuk mengecek sesi harian</p>
+              </div>
+
+              <!-- Visual Bar Chart Interaktif -->
+              <div class="h-44 flex items-end justify-between gap-2 px-1 pt-4">
+                <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end chart-bar-col" onclick="showDayDetail('Senin', '112 Sesi • Rata-rata 81.2')">
+                  <div class="w-full bg-[#1F6F5C]/40 rounded-t-lg" style="height: 35%"></div>
+                  <span class="text-[10px] text-brand-muted font-semibold">Mon</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end chart-bar-col" onclick="showDayDetail('Selasa', '98 Sesi • Rata-rata 82.0')">
+                  <div class="w-full bg-[#1F6F5C]/40 rounded-t-lg" style="height: 28%"></div>
+                  <span class="text-[10px] text-brand-muted font-semibold">Tue</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end chart-bar-col" onclick="showDayDetail('Rabu', '164 Sesi • Rata-rata 83.5')">
+                  <div class="w-full bg-[#1F6F5C]/50 rounded-t-lg" style="height: 48%"></div>
+                  <span class="text-[10px] text-brand-muted font-semibold">Wed</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end chart-bar-col" onclick="showDayDetail('Kamis', '192 Sesi • Rata-rata 84.1')">
+                  <div class="w-full bg-[#1F6F5C]/60 rounded-t-lg" style="height: 56%"></div>
+                  <span class="text-[10px] text-brand-muted font-semibold">Thu</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end chart-bar-col" onclick="showDayDetail('Jumat', '245 Sesi • Rata-rata 85.0')">
+                  <div class="w-full bg-[#1F6F5C]/80 rounded-t-lg" style="height: 72%"></div>
+                  <span class="text-[10px] text-brand-muted font-semibold">Fri</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end chart-bar-col" onclick="showDayDetail('Sabtu', '284 Sesi (Puncak!) • 48 Siswa • 4,200 XP')">
+                  <div class="w-full bg-brand-accent rounded-t-lg shadow-sm" style="height: 98%"></div>
+                  <span class="text-[10px] font-bold text-brand-accent">Sat</span>
+                </div>
+                <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end chart-bar-col" onclick="showDayDetail('Minggu', '235 Sesi • Rata-rata 83.8')">
+                  <div class="w-full bg-brand-primary rounded-t-lg" style="height: 82%"></div>
+                  <span class="text-[10px] text-brand-muted font-semibold">Sun</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabel Submission Terbaru Siswa (3 Kolom) -->
+            <div class="lg:col-span-3 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-3">
+                <div>
+                  <h4 class="text-base font-bold text-brand-dark">Submission Terbaru Siswa</h4>
+                  <p class="text-xs text-brand-muted">Goresan stylus terverifikasi oleh hardware ESP32</p>
+                </div>
+                <button onclick="switchTab('submissions')" class="text-xs text-brand-primary font-bold hover:underline flex items-center gap-1">
+                  <span>Lihat Semua</span>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <!-- Tabel Ringkas Responsive -->
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs min-w-[550px]">
+                  <thead>
+                    <tr class="border-b border-brand-border text-brand-muted uppercase text-[10px] tracking-wider font-semibold">
+                      <th class="pb-2.5">Nama Siswa</th>
+                      <th class="pb-2.5">Aksara & Sabak</th>
+                      <th class="pb-2.5">Akurasi</th>
+                      <th class="pb-2.5">Waktu</th>
+                      <th class="pb-2.5">Status</th>
+                      <th class="pb-2.5 text-right">Nilai Akhir</th>
+                      <th class="pb-2.5 text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-submissions-tbody" class="divide-y divide-brand-border/60">
+                    <!-- Dynamic rendering from JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- TAB 2: SUBMISSION SISWA (BERSIH & FULL WIDTH)                  -->
+        <!-- ============================================================== -->
+        <div id="tab-submissions" class="tab-pane hidden flex-col gap-6">
+          
+          <!-- Filter Controls Responsive -->
+          <div class="bg-white p-4 rounded-2xl border border-brand-border shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-brand-muted">Kelas:</span>
+                <select id="filter-class" onchange="filterSubmissions()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                  <option value="all">Semua Kelas</option>
+                  <option value="5A">Kelas 5A</option>
+                  <option value="5B">Kelas 5B</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-brand-muted">Aksara:</span>
+                <select id="filter-script" onchange="filterSubmissions()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                  <option value="all">Semua Jenis</option>
+                  <option value="Jawa">Carakan Jawa</option>
+                  <option value="Bali">Wreastra Bali</option>
+                </select>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-brand-muted">Status:</span>
+                <select id="filter-status" onchange="filterSubmissions()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                  <option value="all">Semua Status</option>
+                  <option value="Sempurna">Sempurna</option>
+                  <option value="Lulus">Lulus</option>
+                  <option value="Remedial">Remedial</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="text-xs text-brand-muted font-medium">
+              Menampilkan <span id="submission-count-label" class="font-bold text-brand-dark">12</span> hasil evaluasi
+            </div>
+          </div>
+
+          <!-- Tabel Rekam Jejak Tracing Siswa (Full Width Bersih) -->
+          <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+                <div>
+                  <h4 class="text-base font-bold text-brand-dark mb-0.5">Daftar Rekam Jejak Tracing Siswa</h4>
+                  <p class="text-xs text-brand-muted">Data penilaian dan akurasi goresan yang dikirimkan oleh tablet ESP32</p>
+                </div>
+                <button onclick="downloadCSVReport()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-brand-border hover:border-brand-primary text-xs font-semibold text-brand-dark transition">
+                  <i data-lucide="download" class="w-3.5 h-3.5 text-brand-primary"></i>
+                  <span>Ekspor Data CSV</span>
+                </button>
+              </div>
+
+              <div class="overflow-x-auto mt-3">
+                <table class="w-full text-left text-xs min-w-[700px]">
+                  <thead>
+                    <tr class="border-b border-brand-border text-brand-muted uppercase text-[10px] tracking-wider font-semibold">
+                      <th class="pb-3">Siswa</th>
+                      <th class="pb-3">Kelas</th>
+                      <th class="pb-3">Aksara & Naskah</th>
+                      <th class="pb-3">Akurasi Presisi</th>
+                      <th class="pb-3">Status Kelulusan</th>
+                      <th class="pb-3">Waktu Latihan</th>
+                      <th class="pb-3 text-right">Nilai Akhir</th>
+                      <th class="pb-3 text-center">Aksi Evaluasi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="all-submissions-tbody" class="divide-y divide-brand-border/60">
+                    <!-- Rendered via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- TAB BARU: PENILAIAN MATERI (POINT AKHIR & XP SISWA)            -->
+        <!-- ============================================================== -->
+        <div id="tab-assessments" class="tab-pane hidden flex-col gap-6">
+          
+          <!-- Ringkasan Statistik Penilaian Materi -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <span class="text-xs font-semibold text-brand-muted">Rata-rata Point Akhir</span>
+              <div class="flex items-baseline justify-between mt-2">
+                <span class="text-3xl font-extrabold text-brand-dark">89.2</span>
+                <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">KKM: 75.0</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <span class="text-xs font-semibold text-brand-muted">Total XP Didistribusikan</span>
+              <div class="mt-2">
+                <span class="text-2xl sm:text-3xl font-extrabold text-brand-primary">124,500 XP</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <span class="text-xs font-semibold text-brand-muted">Siswa Tuntas Materi</span>
+              <div class="flex items-baseline justify-between mt-2">
+                <span class="text-3xl font-extrabold text-brand-dark">48</span>
+                <span class="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">88.8% Tuntas</span>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <span class="text-xs font-semibold text-brand-muted">Siswa Perlu Remedial</span>
+              <div class="flex items-baseline justify-between mt-2">
+                <span class="text-3xl font-extrabold text-rose-600">6</span>
+                <button onclick="switchTab('feedback')" class="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 hover:bg-rose-100 transition">Beri Tugas</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Materi -->
+          <div class="bg-white p-4 rounded-2xl border border-brand-border shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <select id="assessment-filter-script" onchange="filterAssessments()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none">
+                <option value="all">Semua Naskah (Jawa & Bali)</option>
+                <option value="Jawa">Hanya Carakan Jawa</option>
+                <option value="Bali">Hanya Wreastra Bali</option>
+              </select>
+
+              <select id="assessment-filter-status" onchange="filterAssessments()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none">
+                <option value="all">Semua Status Kelulusan</option>
+                <option value="TUNTAS">Status: Tuntas Materi</option>
+                <option value="REMEDIAL">Status: Remedial</option>
+              </select>
+            </div>
+
+            <div class="text-xs text-brand-muted font-medium">
+              Sistem Penilaian: <strong class="text-brand-dark">Akurasi (50%) + Kecepatan (25%) + Stabilitas (25%)</strong>
+            </div>
+          </div>
+
+          <!-- Tabel Penilaian Materi & XP Siswa (Full Width) -->
+          <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h4 class="text-base font-bold text-brand-dark">Rekap Penilaian Materi Selesai & Perolehan XP</h4>
+                  <p class="text-xs text-brand-muted">Hasil evaluasi akhir setiap siswa setelah menyelesaikan modul materi menulis</p>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs min-w-[880px]">
+                  <thead>
+                    <tr class="border-b border-brand-border text-brand-muted uppercase text-[10px] tracking-wider font-semibold">
+                      <th class="pb-3 whitespace-nowrap min-w-[150px]">Siswa & Kelas</th>
+                      <th class="pb-3 whitespace-nowrap min-w-[230px]">Materi Selesai</th>
+                      <th class="pb-3 whitespace-nowrap min-w-[110px]">Waktu Selesai</th>
+                      <th class="pb-3 text-center whitespace-nowrap min-w-[170px]">Komponen Nilai</th>
+                      <th class="pb-3 text-right whitespace-nowrap min-w-[90px]">Point Akhir</th>
+                      <th class="pb-3 text-center whitespace-nowrap min-w-[110px]">XP Diperoleh</th>
+                      <th class="pb-3 text-center whitespace-nowrap min-w-[100px]">Status Materi</th>
+                      <th class="pb-3 text-center whitespace-nowrap min-w-[110px]">Rapor Modul</th>
+                    </tr>
+                  </thead>
+                  <tbody id="assessment-tbody" class="divide-y divide-brand-border/60">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- TAB 3: MATERI AKSARA                                           -->
+        <!-- ============================================================== -->
+        <div id="tab-curriculum" class="tab-pane hidden flex-col gap-6">
+          
+          <!-- Board Header & Switcher Wreastra Bali / Carakan Jawa -->
+          <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h4 class="text-base font-bold text-brand-dark">Katalog Materi Aksara Nusantara</h4>
+              <p class="text-xs text-brand-muted">Daftar aksara, tingkat kesulitan, dan panduan arah goresan stylus</p>
+            </div>
+
+            <!-- Tab Toggle -->
+            <div class="flex items-center bg-brand-bg p-1 rounded-xl border border-brand-border">
+              <button onclick="switchScriptView('jawa')" id="btn-script-jawa" class="px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-sm transition">
+                Carakan Jawa (20)
+              </button>
+              <button onclick="switchScriptView('bali')" id="btn-script-bali" class="px-4 py-2 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition">
+                Wreastra Bali (18)
+              </button>
+            </div>
+          </div>
+
+          <!-- Aksara Grid Cards (Responsive Grid) -->
+          <div id="aksara-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4">
+            <!-- Populated via JS -->
+          </div>
+
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- TAB 4: KELAS & SISWA                                           -->
+        <!-- ============================================================== -->
+        <div id="tab-students" class="tab-pane hidden flex-col gap-6">
+          
+          <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            
+            <!-- Top Maestro Leaderboard (3 Kolom) -->
+            <div class="lg:col-span-3 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 class="text-base font-bold text-brand-dark">Peringkat Maestro Aksara</h4>
+                    <p class="text-xs text-brand-muted">Berdasarkan akumulasi XP latihan materi dan presisi goresan</p>
+                  </div>
+                  <span class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5">
+                    <i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-600"></i> Musim 2026/2027
+                  </span>
+                </div>
+
+                <div id="students-leaderboard" class="divide-y divide-brand-border/60">
+                  <!-- Rendered via JS -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Class Breakdown Panel (1 Kolom) -->
+            <div class="lg:col-span-1 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div>
+                <h4 class="text-base font-bold text-brand-dark mb-1">Distribusi Kelas</h4>
+                <p class="text-xs text-brand-muted mb-4">Statistik Kelas 5A & 5B</p>
+
+                <div class="space-y-4">
+                  <!-- Kelas 5A -->
+                  <div class="p-3.5 rounded-xl border border-brand-border bg-brand-bg/50">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="text-xs font-bold text-brand-dark">Kelas 5A</span>
+                      <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">92% Tuntas</span>
+                    </div>
+                    <p class="text-[11px] text-brand-muted">26 Siswa • Rata-rata 84.8</p>
+                    <div class="w-full bg-gray-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                      <div class="bg-brand-primary h-full rounded-full" style="width: 92%"></div>
+                    </div>
+                  </div>
+
+                  <!-- Kelas 5B -->
+                  <div class="p-3.5 rounded-xl border border-brand-border bg-brand-bg/50">
+                    <div class="flex items-center justify-between mb-1">
+                      <span class="text-xs font-bold text-brand-dark">Kelas 5B</span>
+                      <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">85% Tuntas</span>
+                    </div>
+                    <p class="text-[11px] text-brand-muted">28 Siswa • Rata-rata 80.2</p>
+                    <div class="w-full bg-gray-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                      <div class="bg-brand-accent h-full rounded-full" style="width: 85%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tombol Aksi Siarkan Remedial -->
+              <div class="mt-6 pt-4 border-t border-brand-border/60">
+                <button onclick="prefillFeedback('Siaran Remedial Kelas 5A & 5B', 'Perhatian untuk siswa remedial: silakan buka modul latihan aksara Dha dan ulangi 3 kali.')" class="w-full py-2.5 px-4 bg-brand-primary hover:bg-brand-hover text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-2">
+                  <i data-lucide="radio" class="w-3.5 h-3.5"></i>
+                  <span>Siarkan Remedial Massal</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- TAB 5: FEEDBACK GURU                                           -->
+        <!-- ============================================================== -->
+        <div id="tab-feedback" class="tab-pane hidden flex-col gap-6">
+          
+          <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col gap-6">
+            <div>
+              <h4 class="text-base font-bold text-brand-dark">Pusat Umpan Balik Guru (Feedback Console)</h4>
+              <p class="text-xs text-brand-muted">Kirimkan catatan motivasi dan panduan evaluasi langsung ke layar LCD Sabak ESP32 siswa</p>
+            </div>
+
+            <!-- Target Siswa Dropdown -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-brand-dark">Pilih Sabak ESP32 Siswa Sasaran:</label>
+              <select id="feedback-target-select" class="w-full max-w-md bg-brand-bg border border-brand-border text-sm rounded-xl px-4 py-2.5 font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary">
+                <option value="Sabak #03 - Ahmad Rizki (Remedial Aksara Dha)">Perangkat #03 (Ahmad Rizki - Remedial Aksara Dha)</option>
+                <option value="Sabak #01 - I Putu Raditya (Aksara Ha)">Perangkat #01 (I Putu Raditya - Aksara Ha Sempurna)</option>
+                <option value="Sabak #02 - Ni Kadek Ayu (Aksara Na)">Perangkat #02 (Ni Kadek Ayu - Aksara Na Lulus)</option>
+                <option value="Siaran Seluruh Kelas 5A">📢 Siaran Seluruh Kelas 5A</option>
+                <option value="Siaran Seluruh Kelas 5B">📢 Siaran Seluruh Kelas 5B</option>
+              </select>
+            </div>
+
+            <!-- Preset Pesan Cepat -->
+            <div class="space-y-2">
+              <span class="text-xs font-semibold text-brand-muted">Templat Pesan Cepat:</span>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="setFeedbackText('Hebat sekali! Lekukan goresanmu sangat rapi dan presisi!')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary text-xs font-medium bg-brand-bg hover:bg-brand-soft/40 transition">
+                  🌟 Hebat & Presisi
+                </button>
+                <button type="button" onclick="setFeedbackText('Perhatikan lengkungan pada checkpoint, jangan terburu-buru!')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary text-xs font-medium bg-brand-bg hover:bg-brand-soft/40 transition">
+                  ⚠️ Koreksi Lekukan
+                </button>
+                <button type="button" onclick="setFeedbackText('Tinggal sedikit lagi! Ulangi modul materi aksara Dha ini 2 kali lagi ya.')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary text-xs font-medium bg-brand-bg hover:bg-brand-soft/40 transition">
+                  🔁 Dorongan Remedial
+                </button>
+                <button type="button" onclick="setFeedbackText('Nilai materi sempurna 100! Kamu dapat bonus +100 XP!')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary text-xs font-medium bg-brand-bg hover:bg-brand-soft/40 transition">
+                  ⚡ Bonus XP Sempurna
+                </button>
+              </div>
+            </div>
+
+            <!-- Kotak Teks Feedback -->
+            <div class="space-y-1.5">
+              <label class="block text-xs font-bold text-brand-dark">Pesan Evaluasi:</label>
+              <textarea id="feedback-message" rows="3" placeholder="Tulis catatan evaluasi untuk siswa di sini..." class="w-full bg-brand-bg border border-brand-border text-sm rounded-xl p-4 font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">Perhatikan lengkungan aksara Dha. Ulangi goresan dengan gerakan lebih stabil untuk mendapat nilai tuntas!</textarea>
+            </div>
+
+            <!-- Tombol Kirim -->
+            <div>
+              <button onclick="sendFeedbackToESP32()" class="py-3 px-6 bg-brand-primary hover:bg-brand-hover text-white rounded-xl text-xs font-bold shadow-md shadow-brand-primary/20 transition flex items-center gap-2">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>🚀 Kirim Feedback ke Sabak ESP32</span>
+              </button>
+            </div>
+
+            <!-- Riwayat Pengiriman Terakhir -->
+            <div class="mt-4 pt-6 border-t border-brand-border">
+              <h5 class="text-xs font-bold uppercase tracking-wider text-brand-muted mb-3">Log Riwayat Feedback Terkirim</h5>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs min-w-[500px]">
+                  <thead>
+                    <tr class="border-b border-brand-border text-brand-muted text-[10px] uppercase font-semibold">
+                      <th class="pb-2">Waktu</th>
+                      <th class="pb-2">Target</th>
+                      <th class="pb-2">Isi Pesan</th>
+                      <th class="pb-2 text-right">Status Transmisi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="feedback-logs-tbody" class="divide-y divide-brand-border/60">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ============================================================== -->
+        <!-- TAB 6: SETELAN ESP32                                           -->
+        <!-- ============================================================== -->
+        <div id="tab-settings" class="tab-pane hidden flex-col gap-6">
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Hardware Specs Panel -->
+            <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-4">
+                  <h4 class="text-base font-bold text-brand-dark">Hardware Diagnostic Monitor</h4>
+                  <span class="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Terhubung
+                  </span>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-brand-bg">
+                    <span class="text-brand-muted">Port Serial UART:</span>
+                    <span class="font-mono font-bold text-brand-dark">COM3 (9600 baud, 8-N-1)</span>
+                  </div>
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-brand-bg">
+                    <span class="text-brand-muted">Tegangan VCC ESP32:</span>
+                    <span class="font-bold text-emerald-700">4.98 V (Optimal / Normal)</span>
+                  </div>
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-brand-bg">
+                    <span class="text-brand-muted">Modul DFPlayer Mini:</span>
+                    <span class="font-mono font-bold text-brand-dark">UART Pin 16/17 (0x3F) OK</span>
+                  </div>
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-brand-bg">
+                    <span class="text-brand-muted">TFT Display ST7789:</span>
+                    <span class="font-bold text-brand-dark">320x240 px SPI (Aktif)</span>
+                  </div>
+                  <div class="flex items-center justify-between p-3 rounded-xl bg-brand-bg">
+                    <span class="text-brand-muted">Stylus Resistive Sensor:</span>
+                    <span class="font-bold text-emerald-700">ADC Calibrated (Radius 18px)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-4 border-t border-brand-border/60 flex flex-wrap items-center justify-between gap-3">
+                <button onclick="showToast('Sinyal PING terkirim ke ESP32! Respon: PONG 12ms')" class="px-3.5 py-2 rounded-xl border border-brand-border hover:border-brand-primary text-xs font-semibold text-brand-dark transition">
+                  ⚡ Ping Hardware ESP32
+                </button>
+                <button onclick="showToast('Firmware versi v2.4 sudah mutakhir.')" class="px-3.5 py-2 rounded-xl bg-brand-soft text-brand-primary text-xs font-bold transition">
+                  Cek Pembaruan Firmware
+                </button>
+              </div>
+            </div>
+
+            <!-- Audio Controller Panel -->
+            <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div>
+                <h4 class="text-base font-bold text-brand-dark mb-1">Audio Controller (DFPlayer Mini)</h4>
+                <p class="text-xs text-brand-muted mb-4">Pengaturan suara instruksi pelafalan aksara dan notifikasi sabak</p>
+
+                <!-- Slider Volume -->
+                <div class="p-4 rounded-xl border border-brand-border bg-brand-bg mb-4">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-brand-dark flex items-center gap-2">
+                      <i data-lucide="volume-2" class="w-4 h-4 text-brand-primary"></i>
+                      <span>Volume Speaker Sabak</span>
+                    </span>
+                    <span id="volume-display" class="text-xs font-extrabold text-brand-primary font-mono">24 / 30</span>
+                  </div>
+                  <input type="range" id="volume-slider" min="0" max="30" value="24" oninput="handleVolumeChange(this.value)" class="w-full accent-brand-primary cursor-pointer">
+                  <div class="flex justify-between text-[10px] text-brand-muted mt-1">
+                    <span>Mute (0)</span>
+                    <span>Sedang (15)</span>
+                    <span>Maksimum (30)</span>
+                  </div>
+                </div>
+
+                <span class="text-xs font-semibold text-brand-muted block mb-2">Uji Coba Putar Trek Audio:</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button onclick="testAudioSound('Trek #01: Mulai Belajar')" class="p-2.5 rounded-xl border border-brand-border hover:border-brand-primary bg-white text-xs font-medium text-left flex items-center gap-2 transition">
+                    <i data-lucide="play-circle" class="w-4 h-4 text-brand-primary"></i>
+                    <span>Trek #01 - Mulai Latihan</span>
+                  </button>
+                  <button onclick="testAudioSound('Trek #02: Bagus Sekali!')" class="p-2.5 rounded-xl border border-brand-border hover:border-brand-primary bg-white text-xs font-medium text-left flex items-center gap-2 transition">
+                    <i data-lucide="play-circle" class="w-4 h-4 text-brand-primary"></i>
+                    <span>Trek #02 - Bagus Sekali!</span>
+                  </button>
+                  <button onclick="testAudioSound('Trek #03: Coba Lagi ya!')" class="p-2.5 rounded-xl border border-brand-border hover:border-brand-primary bg-white text-xs font-medium text-left flex items-center gap-2 transition">
+                    <i data-lucide="play-circle" class="w-4 h-4 text-brand-primary"></i>
+                    <span>Trek #03 - Coba Lagi!</span>
+                  </button>
+                  <button onclick="testAudioSound('Trek #04: Sempurna! (100)')" class="p-2.5 rounded-xl border border-brand-border hover:border-brand-primary bg-brand-soft/60 text-brand-primary text-xs font-bold text-left flex items-center gap-2 transition">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-brand-primary"></i>
+                    <span>Trek #04 - Sempurna!</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tombol Utama Uji Coba -->
+              <button onclick="testAudioSound('Trek #04: Sempurna!')" class="mt-4 w-full py-3 px-4 bg-brand-primary hover:bg-brand-hover text-white rounded-xl text-xs font-bold shadow-md shadow-brand-primary/20 transition flex items-center justify-center gap-2">
+                <i data-lucide="volume-2" class="w-4 h-4"></i>
+                <span>🔊 Uji Coba Suara DFPlayer (Trek #04 - 'Sempurna!')</span>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- 3. MODAL DETAIL RAPOR MATERI & XP SISWA                       -->
+  <!-- ============================================================== -->
+  <div id="assessment-modal" class="fixed inset-0 z-50 bg-brand-dark/50 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border border-brand-border w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="p-5 border-b border-brand-border flex items-center justify-between">
+        <div>
+          <h4 id="rapor-student-name" class="text-base font-bold text-brand-dark">Rapor Capaian Materi</h4>
+          <p id="rapor-materi-title" class="text-xs text-brand-muted">Carakan Jawa - Konsonan Dasar</p>
+        </div>
+        <button onclick="closeAssessmentModal()" class="p-1 rounded-lg hover:bg-gray-100 text-brand-muted hover:text-brand-dark transition">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <!-- Navigation Tabs -->
-      <div class="flex border-b border-gray-800 bg-[#0E1621] px-6 text-xs font-semibold">
-        <button onclick="switchTelegramTab('preview')" id="tgTabBtnPreview" class="py-3 px-4 border-b-2 border-sky-400 text-sky-400 flex items-center gap-2 transition-all">
-          <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
-          <span>Live Chat Simulator</span>
-        </button>
-        <button onclick="switchTelegramTab('logs')" id="tgTabBtnLogs" class="py-3 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 transition-all">
-          <i data-lucide="history" class="w-3.5 h-3.5"></i>
-          <span>Riwayat Pesan (<span id="tgLogsCount">1</span>)</span>
-        </button>
-        <button onclick="switchTelegramTab('settings')" id="tgTabBtnSettings" class="py-3 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 transition-all">
-          <i data-lucide="settings" class="w-3.5 h-3.5"></i>
-          <span>Pengaturan Bot</span>
-        </button>
-      </div>
-
-      <!-- Tab 1: Live Chat Simulator -->
-      <div id="tgTabPreview" class="p-5 space-y-4">
-        
-        <!-- Telegram Chat Mockup Box -->
-        <div class="rounded-xl overflow-hidden border border-gray-700 bg-[#0E1621] shadow-inner">
-          <!-- Chat Window Header -->
-          <div class="bg-[#17212B] px-4 py-2.5 flex items-center justify-between border-b border-[#232E3C]">
-            <div class="flex items-center gap-2.5">
-              <div class="w-7 h-7 rounded-full bg-[#2AABEE] text-white flex items-center justify-center font-bold text-xs">
-                OA
-              </div>
-              <div>
-                <div class="text-xs font-bold text-white flex items-center gap-1.5">
-                  <span>OpenAksara EduCloud Bot</span>
-                  <span class="text-[9px] px-1 rounded bg-[#2B5278] text-[#70B4E8] font-mono">bot</span>
-                </div>
-                <div class="text-[10px] text-emerald-400 flex items-center gap-1">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span>online • bot siap mengirim</span>
-                </div>
-              </div>
+      <div class="p-6 flex flex-col overflow-y-auto custom-scrollbar">
+        <!-- Badge Nilai Akhir & XP -->
+        <div class="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-brand-soft/80 to-brand-soft/20 border border-brand-border mb-5">
+          <div>
+            <span class="text-xs font-semibold text-brand-muted">Point Akhir Materi</span>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span id="rapor-final-score" class="text-3xl font-extrabold text-brand-dark">97</span>
+              <span id="rapor-grade-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Grade A+</span>
             </div>
-            <span class="text-[10px] text-gray-400 font-mono" id="tgChatTime">Hari ini</span>
           </div>
-
-          <!-- Chat Messages Scroll Area -->
-          <div class="p-4 space-y-3 min-h-[220px] max-h-[260px] overflow-y-auto bg-gradient-to-b from-[#0E1621] to-[#121B26]" id="tgChatBubbleContainer">
-            <div class="max-w-[90%] bg-[#182533] border border-[#2B5278]/60 rounded-2xl rounded-tl-sm p-3.5 text-xs text-gray-200 shadow-md relative">
-              <div class="text-[11px] font-bold text-sky-400 mb-1 flex items-center justify-between">
-                <span>🤖 @OpenAksaraBot</span>
-                <span class="text-[10px] text-gray-400 font-mono">12:30 WIB</span>
-              </div>
-              <div id="tgMessageBody" class="space-y-1 leading-relaxed font-sans text-gray-100">
-                <!-- Diisi via JS -->
-              </div>
-              <!-- Simulated Inline Buttons -->
-              <div class="mt-3 pt-2 border-t border-gray-700/60 flex flex-wrap gap-1.5">
-                <button onclick="showToast('Membuka tautan rapor digital siswa...', 'info')" class="text-[10px] py-1 px-2.5 rounded-lg bg-[#2B5278]/70 hover:bg-[#2B5278] text-sky-200 font-semibold transition-all">
-                  📊 Lihat Rapor Online
-                </button>
-                <button onclick="showToast('Jadwal bimbingan remedial dicatat di kalender.', 'success')" class="text-[10px] py-1 px-2.5 rounded-lg bg-gray-700/70 hover:bg-gray-700 text-gray-200 font-semibold transition-all">
-                  📝 Jadwalkan Bimbingan
-                </button>
-              </div>
-              <div class="text-right text-[10px] text-gray-400 mt-1 flex items-center justify-end gap-1 font-mono">
-                <span>Terkirim</span>
-                <span class="text-sky-400 font-bold">✓✓</span>
-              </div>
+          <div class="text-right">
+            <span class="text-xs font-semibold text-brand-muted">Total XP Didapat</span>
+            <div class="text-2xl font-black text-amber-600 mt-1 flex items-center justify-end gap-1">
+              <span>⚡</span>
+              <span id="rapor-xp-earned">+400 XP</span>
             </div>
           </div>
         </div>
 
-        <!-- Trigger Controls -->
-        <div class="space-y-3">
-          <div class="flex items-center gap-3">
-            <label class="text-xs text-gray-300 font-medium shrink-0">Target Siswa:</label>
-            <select id="tgTargetStudent" class="w-full text-xs p-2 rounded-lg bg-gray-800 border border-gray-700 text-white font-semibold">
-              <!-- Diisi via JS -->
-            </select>
+        <!-- Komponen Penilaian 3 Aspek -->
+        <h5 class="text-xs font-bold uppercase tracking-wider text-brand-muted mb-3">Distribusi Komponen Penilaian:</h5>
+        <div class="space-y-3 mb-5">
+          <div class="p-3 rounded-xl bg-brand-bg border border-brand-border">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span class="text-brand-dark">Presisi Checkpoints (Bobot 50%)</span>
+              <span id="rapor-accuracy-score" class="text-emerald-700">98 / 100</span>
+            </div>
+            <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+              <div id="rapor-accuracy-bar" class="bg-brand-primary h-full rounded-full" style="width: 98%"></div>
+            </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-            <button onclick="triggerTelegramAction('student_score')" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-sky-600/20 transition-all">
-              <i data-lucide="send" class="w-3.5 h-3.5"></i>
-              <span>Kirim Nilai Siswa</span>
-            </button>
-            <button onclick="triggerTelegramAction('class_summary')" class="py-2.5 px-3 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
-              <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-sky-400"></i>
-              <span>Rekap Harian Kelas</span>
-            </button>
-            <button onclick="triggerTelegramAction('remedial_alert')" class="py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
-              <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-400"></i>
-              <span>Peringatan Remedial</span>
-            </button>
+          <div class="p-3 rounded-xl bg-brand-bg border border-brand-border">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span class="text-brand-dark">Kecepatan & Kelancaran Menulis (Bobot 25%)</span>
+              <span id="rapor-speed-score" class="text-brand-dark">94 / 100</span>
+            </div>
+            <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+              <div id="rapor-speed-bar" class="bg-brand-accent h-full rounded-full" style="width: 94%"></div>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-brand-bg border border-brand-border">
+            <div class="flex justify-between text-xs font-bold mb-1">
+              <span class="text-brand-dark">Stabilitas Tekanan Stylus (Bobot 25%)</span>
+              <span id="rapor-stability-score" class="text-brand-dark">96 / 100</span>
+            </div>
+            <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+              <div id="rapor-stability-bar" class="bg-emerald-600 h-full rounded-full" style="width: 96%"></div>
+            </div>
           </div>
         </div>
 
-      </div>
-
-      <!-- Tab 2: Logs Table -->
-      <div id="tgTabLogs" class="p-5 hidden space-y-3 max-h-[360px] overflow-y-auto">
-        <div class="text-xs text-gray-400 flex items-center justify-between">
-          <span>Riwayat Pesan Notifikasi yang Dikirimkan:</span>
-          <button onclick="clearTelegramLogs()" class="text-rose-400 hover:underline text-[11px]">Bersihkan Log</button>
-        </div>
-        <div class="overflow-x-auto rounded-xl border border-gray-800">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-gray-800/80 text-gray-400 text-[10px] uppercase">
-              <tr>
-                <th class="p-2.5">Waktu</th>
-                <th class="p-2.5">Tipe Notifikasi</th>
-                <th class="p-2.5">Penerima</th>
-                <th class="p-2.5 text-center">Mode</th>
-                <th class="p-2.5 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody id="tgLogsTableBody" class="divide-y divide-gray-800">
-              <!-- Diisi via JS -->
-            </tbody>
-          </table>
+        <!-- Catatan Evaluasi -->
+        <div class="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200/60 text-xs">
+          <span class="font-bold text-amber-900 block mb-0.5">Catatan Evaluasi Guru / Sistem:</span>
+          <p id="rapor-feedback-text" class="text-amber-800 italic">"Sangat istimewa, lekukan goresan stabil dan presisi konsisten."</p>
         </div>
       </div>
 
-      <!-- Tab 3: Settings -->
-      <div id="tgTabSettings" class="p-5 hidden space-y-4 text-xs">
-        <div class="p-3.5 rounded-xl bg-gray-800/60 border border-gray-700 space-y-2">
-          <div class="font-bold text-white flex items-center gap-2">
-            <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
-            Pilihan Mode Pengiriman:
-          </div>
-          <div class="space-y-2 pt-1">
-            <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-800 cursor-pointer">
-              <input type="radio" name="tgModeRadio" value="dummy" checked onchange="toggleTgModeRadio(true)" class="mt-0.5 accent-sky-500">
-              <div>
-                <span class="font-bold text-white">Mode Dummy / Demo Proposal (Direkomendasikan)</span>
-                <p class="text-[11px] text-gray-400">Pesan disimulasikan 100% dengan audio chime & live preview chat di dashboard. Tidak memerlukan akun atau token Telegram riil.</p>
-              </div>
-            </label>
-            <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-800 cursor-pointer">
-              <input type="radio" name="tgModeRadio" value="live" onchange="toggleTgModeRadio(false)" class="mt-0.5 accent-sky-500">
-              <div>
-                <span class="font-bold text-white">Mode Bot Telegram Riil (Live API)</span>
-                <p class="text-[11px] text-gray-400">Pesan benar-benar dikirimkan ke grup/chat Telegram orang tua via HTTP API Telegram (memerlukan Bot Token).</p>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <div id="tgRealConfigSection" class="space-y-3 opacity-60 pointer-events-none transition-opacity">
-          <div>
-            <label class="block text-gray-400 mb-1">Telegram Bot Token (dari @BotFather):</label>
-            <input type="text" id="tgInputToken" placeholder="Contoh: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white font-mono">
-          </div>
-          <div>
-            <label class="block text-gray-400 mb-1">Chat ID / Grup ID Tujuan:</label>
-            <input type="text" id="tgInputChatId" placeholder="Contoh: -1001234567890 atau @nama_channel" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white font-mono">
-          </div>
-        </div>
-
-        <div class="pt-2 flex justify-end gap-2 border-t border-gray-800">
-          <button type="button" onclick="closeTelegramModal()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300">Tutup</button>
-          <button type="button" onclick="saveTelegramSettings()" class="px-5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold">Simpan Pengaturan</button>
-        </div>
+      <div class="p-4 bg-gray-50 border-t border-brand-border flex items-center justify-end gap-3">
+        <button onclick="closeAssessmentModal()" class="px-4 py-2 border border-brand-border bg-white rounded-xl text-xs font-semibold hover:bg-gray-100 transition">Tutup</button>
+        <button onclick="printOrShareRapor()" class="px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold hover:bg-brand-hover shadow-sm transition flex items-center gap-1.5">
+          <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+          <span>Kirim Rapor ke Orang Tua</span>
+        </button>
       </div>
-
-      <!-- Modal Footer -->
-      <div class="p-3 bg-gray-950 border-t border-gray-800 flex items-center justify-between text-[11px] text-gray-400 px-6">
-        <span>Teknologi: <strong>Telegram Bot API Webhook & REST Relay</strong></span>
-        <span>Integrasi: <strong>OpenAksara ESP32 IoT</strong></span>
-      </div>
-
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- Script Dashboard Logic -->
-  <script src="app.js"></script>
+  <!-- ============================================================== -->
+  <!-- 4. MODAL REVIEW TRACING SISWA                                 -->
+  <!-- ============================================================== -->
+  <div id="submission-modal" class="fixed inset-0 z-50 bg-brand-dark/50 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border border-brand-border w-full max-w-md overflow-hidden flex flex-col">
+      <div class="p-5 border-b border-brand-border flex items-center justify-between">
+        <div>
+          <h4 id="modal-student-name" class="text-base font-bold text-brand-dark">Review Tracing</h4>
+          <p id="modal-details" class="text-xs text-brand-muted">Kelas • Aksara • Waktu</p>
+        </div>
+        <button onclick="closeModal()" class="p-1 rounded-lg hover:bg-gray-100 text-brand-muted hover:text-brand-dark transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 flex flex-col items-center">
+        <!-- Glyph Viewer -->
+        <div class="w-28 h-28 rounded-2xl bg-brand-bg flex items-center justify-center border border-brand-border mb-4 shadow-inner">
+          <span id="modal-glyph" class="text-5xl font-bold font-jawa text-brand-primary">ꦲ</span>
+        </div>
+
+        <div class="flex items-center gap-3 mb-5">
+          <span id="modal-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Sempurna</span>
+          <span class="text-sm font-semibold text-brand-muted">Presisi: <strong id="modal-precision" class="text-brand-dark">96%</strong></span>
+          <span class="text-sm font-semibold text-brand-muted">Point: <strong id="modal-score" class="text-brand-dark">98</strong></span>
+        </div>
+
+        <div class="w-full bg-brand-bg rounded-xl p-3.5 space-y-2 text-xs">
+          <div class="flex justify-between">
+            <span class="text-brand-muted">Kelengkapan Checkpoints:</span>
+            <span class="font-bold text-emerald-700">6 / 6 Titik Terpenuhi (100%)</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-brand-muted">Stabilitas Tekanan Stylus:</span>
+            <span class="font-bold text-brand-dark">Stabil (0.4 - 0.7 bar)</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-brand-muted">Bonus XP Diperoleh:</span>
+            <span class="font-bold text-amber-600">+150 XP ⚡</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-gray-50 border-t border-brand-border flex items-center justify-end gap-3">
+        <button onclick="closeModal()" class="px-4 py-2 border border-brand-border bg-white rounded-xl text-xs font-semibold hover:bg-gray-100 transition">Tutup</button>
+        <button onclick="closeModal(); switchTab('feedback');" class="px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold hover:bg-brand-hover shadow-sm transition">Kirim Catatan Guru</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- 5. FLOATING TOAST NOTIFICATION                                -->
+  <!-- ============================================================== -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-brand-dark text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-white/10">
+      <div class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
+      <span id="toast-text" class="font-medium">Pemberitahuan</span>
+    </div>
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- 6. LOGIKA SCRIPT (JAVASCRIPT LENGKAP & RESPONSIF)              -->
+  <!-- ============================================================== -->
+  <script>
+    // DATA MASTER PENILAIAN MATERI (POINT AKHIR & XP)
+    const MATERI_ASSESSMENTS = [
+      {
+        id: "MTR-001",
+        studentName: "I Putu Raditya",
+        class: "5A",
+        avatar: "PR",
+        materiTitle: "Carakan Jawa - Konsonan Dasar (Ha-Na-Ca-Ra-Ka)",
+        script: "Jawa",
+        completedDate: "Hari ini, 14:15",
+        accuracyScore: 98,
+        speedScore: 94,
+        strokeStability: 96,
+        finalScore: 97,
+        grade: "Grade A+",
+        xpEarned: 350,
+        bonusStreakXp: 50,
+        totalXp: 400,
+        status: "TUNTAS",
+        feedback: "Sangat istimewa, goresan mantap dan stabil melewati seluruh checkpoints."
+      },
+      {
+        id: "MTR-002",
+        studentName: "Ni Kadek Ayu",
+        class: "5B",
+        avatar: "KA",
+        materiTitle: "Wreastra Bali - Aksara Swalalita & Wianjana",
+        script: "Bali",
+        completedDate: "Hari ini, 13:40",
+        accuracyScore: 94,
+        speedScore: 90,
+        strokeStability: 92,
+        finalScore: 93,
+        grade: "Grade A",
+        xpEarned: 300,
+        bonusStreakXp: 40,
+        totalXp: 340,
+        status: "TUNTAS",
+        feedback: "Lekukan aksara Bali sangat luwes dan proporsional."
+      },
+      {
+        id: "MTR-003",
+        studentName: "Siti Rahmawati",
+        class: "5B",
+        avatar: "SR",
+        materiTitle: "Carakan Jawa - Pasangan & Sandhangan Swara",
+        script: "Jawa",
+        completedDate: "Kemarin, 16:10",
+        accuracyScore: 90,
+        speedScore: 86,
+        strokeStability: 88,
+        finalScore: 89,
+        grade: "Grade B+",
+        xpEarned: 270,
+        bonusStreakXp: 20,
+        totalXp: 290,
+        status: "TUNTAS",
+        feedback: "Penempatan pasangan aksara Da dan Ta sudah sangat tepat."
+      },
+      {
+        id: "MTR-004",
+        studentName: "Made Wijaya",
+        class: "5B",
+        avatar: "MW",
+        materiTitle: "Wreastra Bali - Gantungan & Gempelan",
+        script: "Bali",
+        completedDate: "Kemarin, 15:20",
+        accuracyScore: 96,
+        speedScore: 92,
+        strokeStability: 94,
+        finalScore: 95,
+        grade: "Grade A",
+        xpEarned: 320,
+        bonusStreakXp: 30,
+        totalXp: 350,
+        status: "TUNTAS",
+        feedback: "Gantungan terpasang rapi di bawah garis dasar aksara."
+      },
+      {
+        id: "MTR-005",
+        studentName: "Budi Santoso",
+        class: "5A",
+        avatar: "BS",
+        materiTitle: "Carakan Jawa - Dha, Ja, Ya, Nya, Ma",
+        script: "Jawa",
+        completedDate: "23 Mei, 11:30",
+        accuracyScore: 82,
+        speedScore: 80,
+        strokeStability: 84,
+        finalScore: 82,
+        grade: "Grade B",
+        xpEarned: 220,
+        bonusStreakXp: 0,
+        totalXp: 220,
+        status: "TUNTAS",
+        feedback: "Aksara Dha sedikit kaku, namun tuntas di atas KKM."
+      },
+      {
+        id: "MTR-006",
+        studentName: "Ahmad Rizki",
+        class: "5A",
+        avatar: "AR",
+        materiTitle: "Carakan Jawa - Konsonan Khusus (Dha & Tha)",
+        script: "Jawa",
+        completedDate: "Hari ini, 11:05",
+        accuracyScore: 62,
+        speedScore: 68,
+        strokeStability: 64,
+        finalScore: 64,
+        grade: "Remedial",
+        xpEarned: 80,
+        bonusStreakXp: 0,
+        totalXp: 80,
+        status: "REMEDIAL",
+        feedback: "Perlu latihan ulang checkpoint P2-P3 aksara Dha. Ulangi modul."
+      },
+      {
+        id: "MTR-007",
+        studentName: "Gede Surya",
+        class: "5A",
+        avatar: "GS",
+        materiTitle: "Wreastra Bali - Pengangge Tengenan",
+        script: "Bali",
+        completedDate: "22 Mei, 13:00",
+        accuracyScore: 68,
+        speedScore: 70,
+        strokeStability: 66,
+        finalScore: 68,
+        grade: "Remedial",
+        xpEarned: 100,
+        bonusStreakXp: 0,
+        totalXp: 100,
+        status: "REMEDIAL",
+        feedback: "Perhatikan bentuk bisah dan surang agar tidak tertukar."
+      }
+    ];
+
+    // DATA MASTER SUBMISSION HARIAN
+    const ALL_SUBMISSIONS = [
+      { name: "I Putu Raditya", class: "5A", script: "Jawa", aksara: "Ha (ꦲ)", precision: 96, score: 98, status: "Sempurna", time: "Hari ini, 14:20" },
+      { name: "Ni Kadek Ayu", class: "5B", script: "Bali", aksara: "Na (ᬦ)", precision: 91, score: 92, status: "Lulus", time: "Hari ini, 13:45" },
+      { name: "Ahmad Rizki", class: "5A", script: "Jawa", aksara: "Dha (ꦝ)", precision: 64, score: 65, status: "Remedial", time: "Hari ini, 11:10" },
+      { name: "Siti Rahmawati", class: "5B", script: "Jawa", aksara: "Ka (ꦏ)", precision: 88, score: 88, status: "Lulus", time: "Kemarin, 16:05" },
+      { name: "Budi Santoso", class: "5A", script: "Bali", aksara: "Ca (ᬘ)", precision: 82, score: 80, status: "Lulus", time: "Kemarin, 14:30" },
+      { name: "Made Wijaya", class: "5B", script: "Bali", aksara: "Ra (ᬭ)", precision: 95, score: 96, status: "Sempurna", time: "23 Mei, 10:15" },
+      { name: "Dewi Lestari", class: "5A", script: "Jawa", aksara: "Da (ꦢ)", precision: 78, score: 76, status: "Lulus", time: "23 Mei, 09:40" },
+      { name: "Ketut Artawan", class: "5B", script: "Bali", aksara: "Ta (ᬢ)", precision: 93, score: 94, status: "Sempurna", time: "22 Mei, 15:20" },
+      { name: "Gede Surya", class: "5A", script: "Bali", aksara: "Sa (ᬲ)", precision: 70, score: 68, status: "Remedial", time: "22 Mei, 13:10" },
+      { name: "Anisa Putri", class: "5B", script: "Jawa", aksara: "Wa (ꦮ)", precision: 86, score: 85, status: "Lulus", time: "21 Mei, 11:30" },
+      { name: "Komang Bagus", class: "5A", script: "Bali", aksara: "La (ᬮ)", precision: 90, score: 90, status: "Lulus", time: "21 Mei, 10:05" },
+      { name: "Fajar Nugraha", class: "5B", script: "Jawa", aksara: "Pa (ꦥ)", precision: 84, score: 82, status: "Lulus", time: "20 Mei, 14:50" }
+    ];
+
+    // DATA MINGGUAN CHART (DETAIL LENGKAP)
+    const WEEKLY_CHART_DATA = [
+      { x: 90,  date: "15 Mar 2026", jawa: 110, bali: 75,  score: 80.5 },
+      { x: 180, date: "29 Mar 2026", jawa: 125, bali: 90,  score: 82.0 },
+      { x: 275, date: "12 Apr 2026", jawa: 142, bali: 98,  score: 83.5 },
+      { x: 365, date: "26 Apr 2026", jawa: 175, bali: 120, score: 85.0 },
+      { x: 455, date: "10 May 2026", jawa: 195, bali: 135, score: 86.8 },
+      { x: 545, date: "17 May 2026", jawa: 180, bali: 140, score: 86.2 },
+      { x: 635, date: "24 May 2026", jawa: 220, bali: 165, score: 89.4 }
+    ];
+
+    // DATA KATALOG AKSARA
+    const JAWA_DATA = [
+      { glyph: "ꦲ", latin: "Ha", desc: "Hana caraka - Huruf pembuka nafas", acc: "92%" },
+      { glyph: "ꦤ", latin: "Na", desc: "Titah Gusti Kang Murbeng Dumadi", acc: "89%" },
+      { glyph: "ꦕ", latin: "Ca", desc: "Cipta rasa karsa manungsa", acc: "84%" },
+      { glyph: "ꦫ", latin: "Ra", desc: "Rasa sejati rasa manunggal", acc: "88%" },
+      { glyph: "ꦏ", latin: "Ka", desc: "Kasedan pungkasaning urip", acc: "90%" },
+      { glyph: "ꦢ", latin: "Da", desc: "Datan serik lamun ketaman", acc: "81%" },
+      { glyph: "ꦠ", latin: "Ta", desc: "Tetep tatag tanggon", acc: "85%" },
+      { glyph: "ꦱ", latin: "Sa", desc: "Sabar sareh sumarah", acc: "87%" },
+      { glyph: "ꦮ", latin: "Wa", desc: "Waspada marang bebaya", acc: "86%" },
+      { glyph: "ꦭ", latin: "La", desc: "Lila lamun kelangan", acc: "91%" },
+      { glyph: "ꦥ", latin: "Pa", desc: "Papan padhang patembayan", acc: "83%" },
+      { glyph: "ꦝ", latin: "Dha", desc: "Madhep mantep marang Gusti", acc: "58%" }
+    ];
+
+    const BALI_DATA = [
+      { glyph: "ᬳ", latin: "Ha", desc: "Aksara Wreastra pembuka", acc: "90%" },
+      { glyph: "ᬦ", latin: "Na", desc: "Aksara swalalita sandhangan", acc: "88%" },
+      { glyph: "ᬘ", latin: "Ca", desc: "Ciptaning Hyang Widhi", acc: "82%" },
+      { glyph: "ᬭ", latin: "Ra", desc: "Rasa suci ning ati", acc: "86%" },
+      { glyph: "ᬓ", latin: "Ka", desc: "Karmaphala hukum jagat", acc: "89%" },
+      { glyph: "ᬤ", latin: "Da", desc: "Dharma pamargi luhur", acc: "84%" },
+      { glyph: "ᬢ", latin: "Ta", desc: "Tatwa kasunyatan", acc: "85%" },
+      { glyph: "ᬲ", latin: "Sa", desc: "Satya marang sesana", acc: "83%" },
+      { glyph: "ᬯ", latin: "Wa", desc: "Weda suluh idup", acc: "87%" },
+      { glyph: "ᬮ", latin: "La", desc: "Laksana sane becik", acc: "92%" },
+      { glyph: "ᬫ", latin: "Ma", desc: "Moksa pamuputing suksma", acc: "85%" },
+      { glyph: "ᬕ", latin: "Ga", desc: "Guru bakti utama", acc: "89%" }
+    ];
+
+    const STUDENTS_LEADERBOARD = [
+      { name: "I Putu Raditya", class: "5A", xp: 4850, acc: "96.2%", badge: "Maestro Emas" },
+      { name: "Ni Kadek Ayu", class: "5B", xp: 4620, acc: "94.8%", badge: "Maestro Perak" },
+      { name: "Siti Rahmawati", class: "5B", xp: 4410, acc: "91.5%", badge: "Maestro Perunggu" },
+      { name: "Made Wijaya", class: "5B", xp: 4290, acc: "95.0%", badge: "Bintang Aksara" },
+      { name: "Ketut Artawan", class: "5B", xp: 4180, acc: "93.4%", badge: "Bintang Aksara" },
+      { name: "Budi Santoso", class: "5A", xp: 3950, acc: "89.0%", badge: "Pelajar Teladan" },
+      { name: "Ahmad Rizki", class: "5A", xp: 3120, acc: "64.2%", badge: "Perlu Bimbingan" }
+    ];
+
+    let FEEDBACK_LOGS = [
+      { time: "14:22", target: "Sabak #01 (I Putu Raditya)", text: "Hebat sekali! Lekukan goresanmu sangat rapi dan presisi!", status: "Terkirim (COM3)" },
+      { time: "11:15", target: "Sabak #03 (Ahmad Rizki)", text: "Perhatikan lekukan aksara Dha ya! Ulangi modulnya.", status: "Terkirim (COM3)" },
+      { time: "Kemarin", target: "📢 Siaran Kelas 5A", text: "Selamat berlatih modul aksara Jawa hari ini!", status: "Broadcast Selesai" }
+    ];
+
+    // ==============================================================
+    // LOGIKA LOGIN, LOGOUT & MOBILE DRAWER
+    // ==============================================================
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      executeLogin("Pak Guru Yoga", "Wali Kelas 5A & 5B", "PG");
+    }
+
+    function loginAs(name, role, avatar) {
+      executeLogin(name, role, avatar);
+    }
+
+    function executeLogin(name, role, avatar) {
+      document.getElementById('user-name').innerText = name;
+      document.getElementById('user-role').innerText = role;
+      document.getElementById('user-avatar').innerText = avatar;
+
+      // Hide login screen completely, display dashboard
+      document.getElementById('view-login').classList.add('hidden');
+      const dashboard = document.getElementById('view-dashboard');
+      dashboard.classList.remove('hidden');
+      dashboard.classList.add('flex');
+
+      showToast(`Selamat datang kembali, ${name}!`);
+      playMascotChime();
+      lucide.createIcons();
+    }
+
+    function handleLogout() {
+      // Hide dashboard completely, display login screen
+      const dashboard = document.getElementById('view-dashboard');
+      dashboard.classList.add('hidden');
+      dashboard.classList.remove('flex');
+      document.getElementById('view-login').classList.remove('hidden');
+
+      showToast("Anda telah keluar dari sesi guru.");
+      lucide.createIcons();
+    }
+
+    function togglePasswordVisibility() {
+      const pwd = document.getElementById('login-password');
+      pwd.type = pwd.type === 'password' ? 'text' : 'password';
+    }
+
+    function toggleMobileSidebar(open) {
+      const sidebar = document.getElementById('app-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (open) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    // ==============================================================
+    // NAVIGASI TAB DASHBOARD
+    // ==============================================================
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('bg-brand-soft/80', 'text-brand-primary', 'font-bold');
+        item.classList.add('text-brand-muted');
+      });
+
+      document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('flex');
+        pane.classList.add('hidden');
+      });
+
+      const activeNav = document.getElementById('nav-' + tabId);
+      const activePane = document.getElementById('tab-' + tabId);
+
+      if (activePane) {
+        activePane.classList.remove('hidden');
+        activePane.classList.add('flex');
+      }
+      if (activeNav) {
+        activeNav.classList.add('bg-brand-soft/80', 'text-brand-primary', 'font-bold');
+        activeNav.classList.remove('text-brand-muted');
+      }
+
+      const titles = {
+        overview: { title: "Dashboard AksaraBuddy", sub: "Monitoring hasil belajar dan presisi goresan aksara siswa secara real-time" },
+        submissions: { title: "Daftar Submission Siswa", sub: "Hasil penilaian goresan otomatis dari hardware OpenAksara ESP32" },
+        assessments: { title: "Penilaian Materi & Perolehan XP", sub: "Rekap point akhir modul dan akumulasi XP setiap siswa menyelesaikan materi" },
+        curriculum: { title: "Katalog Materi & Titik Checkpoints", sub: "Panduan arah goresan P1-Pn dan evaluasi batas toleransi goresan radius 18px" },
+        students: { title: "Data Kelas & Siswa", sub: "Peringkat keaktifan, total XP, dan daftar siswa yang memerlukan bimbingan remedial" },
+        feedback: { title: "Pusat Umpan Balik Guru", sub: "Kirim pesan motivasi langsung ke layar LCD Sabak ESP32 siswa saat latihan" },
+        settings: { title: "Setelan & Integrasi Hardware ESP32", sub: "Konfigurasi audio DFPlayer, volume, koneksi serial COM3, dan sensor stylus" }
+      };
+
+      if (titles[tabId]) {
+        document.getElementById('page-title').innerText = titles[tabId].title;
+        document.getElementById('page-subtitle').innerText = titles[tabId].sub;
+      }
+
+      lucide.createIcons();
+    }
+
+    // ==============================================================
+    // RENDERING TABEL PENILAIAN MATERI (BARU)
+    // ==============================================================
+    function renderAssessments(data) {
+      const tbody = document.getElementById('assessment-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      data.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-brand-bg/50 cursor-pointer transition text-xs";
+        tr.onclick = () => openAssessmentModal(item);
+
+        const statusBadge = item.status === 'TUNTAS' 
+          ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+          : 'bg-rose-50 text-rose-800 border-rose-200';
+
+        tr.innerHTML = `
+          <td class="py-3 font-bold text-brand-dark flex items-center gap-2.5">
+            <span class="w-7 h-7 rounded-full bg-brand-soft text-brand-primary font-bold text-[10px] flex items-center justify-center shrink-0 shadow-xs">${item.avatar}</span>
+            <div>
+              <p class="font-bold text-brand-dark leading-tight">${item.studentName}</p>
+              <p class="text-[10px] text-brand-muted font-normal">Kelas ${item.class}</p>
+            </div>
+          </td>
+          <td class="py-3 font-semibold text-brand-dark">${item.materiTitle}</td>
+          <td class="py-3 text-brand-muted">${item.completedDate}</td>
+          <td class="py-3 text-center">
+            <span class="text-[10px] text-brand-muted">Presisi: <strong>${item.accuracyScore}%</strong> • Kecepatan: <strong>${item.speedScore}%</strong></span>
+          </td>
+          <td class="py-3 text-right">
+            <span class="text-sm font-black text-brand-dark">${item.finalScore}</span>
+            <span class="text-[10px] text-brand-muted block">${item.grade}</span>
+          </td>
+          <td class="py-3 text-center whitespace-nowrap font-bold text-amber-600 text-xs">
+            +${item.totalXp} XP
+          </td>
+          <td class="py-3 text-center">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusBadge} border">
+              ${item.status}
+            </span>
+          </td>
+          <td class="py-3 text-center">
+            <button onclick="event.stopPropagation(); openAssessmentModalById('${item.id}');" class="px-3 py-1 bg-white hover:bg-brand-soft text-brand-primary border border-brand-border rounded-xl font-bold text-[11px] transition shadow-2xs">
+              Buka Rapor
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterAssessments() {
+      const scriptVal = document.getElementById('assessment-filter-script').value;
+      const statusVal = document.getElementById('assessment-filter-status').value;
+
+      const filtered = MATERI_ASSESSMENTS.filter(i => {
+        const matchScript = scriptVal === 'all' || i.script === scriptVal;
+        const matchStatus = statusVal === 'all' || i.status === statusVal;
+        return matchScript && matchStatus;
+      });
+
+      renderAssessments(filtered);
+    }
+
+    function openAssessmentModalById(id) {
+      const item = MATERI_ASSESSMENTS.find(a => a.id === id);
+      if (item) openAssessmentModal(item);
+    }
+
+    function openAssessmentModal(item) {
+      document.getElementById('rapor-student-name').innerText = `${item.studentName} (Kelas ${item.class})`;
+      document.getElementById('rapor-materi-title').innerText = item.materiTitle;
+      document.getElementById('rapor-final-score').innerText = item.finalScore;
+      document.getElementById('rapor-grade-badge').innerText = item.grade;
+      document.getElementById('rapor-xp-earned').innerText = `+${item.totalXp} XP`;
+
+      document.getElementById('rapor-accuracy-score').innerText = `${item.accuracyScore} / 100`;
+      document.getElementById('rapor-accuracy-bar').style.width = `${item.accuracyScore}%`;
+
+      document.getElementById('rapor-speed-score').innerText = `${item.speedScore} / 100`;
+      document.getElementById('rapor-speed-bar').style.width = `${item.speedScore}%`;
+
+      document.getElementById('rapor-stability-score').innerText = `${item.strokeStability} / 100`;
+      document.getElementById('rapor-stability-bar').style.width = `${item.strokeStability}%`;
+
+      document.getElementById('rapor-feedback-text').innerText = `"${item.feedback}"`;
+
+      document.getElementById('assessment-modal').classList.remove('hidden');
+      document.getElementById('assessment-modal').classList.add('flex');
+    }
+
+    function closeAssessmentModal() {
+      document.getElementById('assessment-modal').classList.add('hidden');
+      document.getElementById('assessment-modal').classList.remove('flex');
+    }
+
+    function printOrShareRapor() {
+      showToast("Laporan hasil penilaian materi berhasil disiapkan untuk dikirim ke wali murid!");
+      closeAssessmentModal();
+    }
+
+    // ==============================================================
+    // DIAGRAM INTERAKTIF LENGKAP & DETAIL
+    // ==============================================================
+    function handleChartHover(e) {
+      const svg = document.getElementById('activity-svg');
+      const rect = svg.getBoundingClientRect();
+      const mouseX = ((e.clientX - rect.left) / rect.width) * 650;
+
+      // Find closest point
+      let closest = WEEKLY_CHART_DATA[0];
+      let minDiff = Math.abs(mouseX - closest.x);
+      WEEKLY_CHART_DATA.forEach(pt => {
+        const diff = Math.abs(mouseX - pt.x);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closest = pt;
+        }
+      });
+
+      // Update crosshair line
+      const crosshair = document.getElementById('svg-crosshair');
+      crosshair.setAttribute('x1', closest.x);
+      crosshair.setAttribute('x2', closest.x);
+      crosshair.setAttribute('opacity', '1');
+
+      // Update tooltip
+      const tooltip = document.getElementById('chart-tooltip');
+      document.getElementById('tooltip-date').innerText = closest.date;
+      document.getElementById('tooltip-jawa').innerText = `${closest.jawa} sesi`;
+      document.getElementById('tooltip-bali').innerText = `${closest.bali} sesi`;
+      document.getElementById('tooltip-score').innerText = `${closest.score} rata-rata`;
+
+      // Position tooltip relative to container
+      const containerRect = svg.parentElement.getBoundingClientRect();
+      let left = (closest.x / 650) * containerRect.width - 95;
+      if (left < 10) left = 10;
+      if (left > containerRect.width - 200) left = containerRect.width - 200;
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `20px`;
+      tooltip.style.opacity = '1';
+    }
+
+    function hideChartTooltip() {
+      document.getElementById('chart-tooltip').style.opacity = '0';
+      document.getElementById('svg-crosshair').setAttribute('opacity', '0');
+    }
+
+    function setChartFilter(mode) {
+      const btnAll = document.getElementById('btn-chart-all');
+      const btnJawa = document.getElementById('btn-chart-jawa');
+      const btnBali = document.getElementById('btn-chart-bali');
+
+      const lineJawa = document.getElementById('svg-line-jawa');
+      const areaJawa = document.getElementById('svg-area-jawa');
+      const lineBali = document.getElementById('svg-line-bali');
+
+      [btnAll, btnJawa, btnBali].forEach(b => b.className = "px-2.5 py-1 rounded-lg text-brand-muted hover:text-brand-dark");
+
+      if (mode === 'all') {
+        btnAll.className = "px-2.5 py-1 rounded-lg bg-brand-primary text-white shadow-xs font-bold";
+        lineJawa.style.opacity = '1';
+        areaJawa.style.opacity = '1';
+        lineBali.style.opacity = '1';
+      } else if (mode === 'jawa') {
+        btnJawa.className = "px-2.5 py-1 rounded-lg bg-brand-primary text-white shadow-xs font-bold";
+        lineJawa.style.opacity = '1';
+        areaJawa.style.opacity = '1';
+        lineBali.style.opacity = '0.15';
+      } else {
+        btnBali.className = "px-2.5 py-1 rounded-lg bg-brand-accent text-white shadow-xs font-bold";
+        lineJawa.style.opacity = '0.15';
+        areaJawa.style.opacity = '0.02';
+        lineBali.style.opacity = '1';
+      }
+    }
+
+    function updateDonutInfo(title, sub, color) {
+      document.getElementById('donut-center-title').innerText = sub.split(' ')[0];
+      document.getElementById('donut-center-sub').innerText = title;
+      document.getElementById('donut-center-title').style.color = color;
+    }
+
+    function resetDonutInfo() {
+      document.getElementById('donut-center-title').innerText = "1,420";
+      document.getElementById('donut-center-sub').innerText = "Total Latihan";
+      document.getElementById('donut-center-title').style.color = "#14201C";
+    }
+
+    function showDayDetail(day, info) {
+      document.getElementById('active-day-badge').innerText = `${day}: ${info.split('•')[0].trim()}`;
+      showToast(`Hari ${day}: ${info}`);
+    }
+
+    // ==============================================================
+    // RENDERING TABEL SUBMISSIONS & MATERI
+    // ==============================================================
+    function renderOverviewSubmissions() {
+      const tbody = document.getElementById('overview-submissions-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      ALL_SUBMISSIONS.slice(0, 4).forEach(item => {
+        const badgeColor = item.status === 'Sempurna' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                           item.status === 'Lulus' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                           'bg-rose-50 text-rose-800 border-rose-200';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-brand-bg/50 cursor-pointer transition";
+        tr.onclick = () => openSubmissionDetail(item.name, 'Kelas ' + item.class, item.aksara, item.precision, item.score, item.status, item.time);
+
+        tr.innerHTML = `
+          <td class="py-2.5 font-bold text-brand-dark flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-brand-soft text-brand-primary font-bold text-[10px] flex items-center justify-center shrink-0">${item.name.substring(0, 2).toUpperCase()}</span>
+            <span class="truncate">${item.name}</span>
+          </td>
+          <td class="py-2.5 text-brand-dark font-medium">${item.aksara}</td>
+          <td class="py-2.5 font-semibold ${item.precision >= 80 ? 'text-emerald-700' : 'text-rose-700'}">${item.precision}%</td>
+          <td class="py-2.5 text-brand-muted">${item.time}</td>
+          <td class="py-2.5">
+            <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor} border">
+              ${item.status}
+            </span>
+          </td>
+          <td class="py-2.5 text-right font-bold text-sm ${item.score >= 80 ? 'text-brand-dark' : 'text-rose-700'}">${item.score}</td>
+          <td class="py-2.5 text-center">
+            <button class="px-2.5 py-1 bg-white hover:bg-brand-soft text-brand-primary border border-brand-border rounded-lg font-bold text-[10px] transition">
+              Review
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderSubmissions(data) {
+      const tbody = document.getElementById('all-submissions-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      document.getElementById('submission-count-label').innerText = data.length;
+
+      data.forEach(item => {
+        const badgeColor = item.status === 'Sempurna' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+                           item.status === 'Lulus' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                           'bg-rose-50 text-rose-800 border-rose-200';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-brand-bg/50 cursor-pointer transition";
+        tr.onclick = () => openSubmissionDetail(item.name, 'Kelas ' + item.class, item.aksara, item.precision, item.score, item.status, item.time);
+
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-brand-dark flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-brand-soft text-brand-primary font-bold text-[10px] flex items-center justify-center shrink-0">${item.name.substring(0, 2).toUpperCase()}</span>
+            ${item.name}
+          </td>
+          <td class="p-3 font-semibold text-brand-dark">Kelas ${item.class}</td>
+          <td class="p-3 text-brand-dark">${item.aksara}</td>
+          <td class="p-3 font-bold ${item.precision >= 80 ? 'text-emerald-700' : 'text-rose-700'}">${item.precision}% Presisi</td>
+          <td class="p-3">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badgeColor} border">
+              ${item.status}
+            </span>
+          </td>
+          <td class="p-3 text-brand-muted">${item.time}</td>
+          <td class="p-3 text-right font-extrabold text-sm ${item.score >= 80 ? 'text-brand-dark' : 'text-rose-700'}">${item.score}</td>
+          <td class="p-3 text-center">
+            <button class="px-3 py-1 bg-white hover:bg-brand-soft text-brand-primary border border-brand-border rounded-lg font-bold text-[11px] transition">
+              Review
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterSubmissions() {
+      const classVal = document.getElementById('filter-class').value;
+      const scriptVal = document.getElementById('filter-script').value;
+      const statusVal = document.getElementById('filter-status').value;
+
+      const filtered = ALL_SUBMISSIONS.filter(item => {
+        const matchClass = classVal === 'all' || item.class === classVal;
+        const matchScript = scriptVal === 'all' || item.script === scriptVal;
+        const matchStatus = statusVal === 'all' || item.status === statusVal;
+        return matchClass && matchScript && matchStatus;
+      });
+
+      renderSubmissions(filtered);
+    }
+
+    function handleGlobalSearch(val) {
+      const q = val.toLowerCase().trim();
+      if (!q) {
+        renderSubmissions(ALL_SUBMISSIONS);
+        renderAssessments(MATERI_ASSESSMENTS);
+        return;
+      }
+      const filtered = ALL_SUBMISSIONS.filter(s =>
+        s.name.toLowerCase().includes(q) ||
+        s.aksara.toLowerCase().includes(q) ||
+        s.class.toLowerCase().includes(q)
+      );
+      renderSubmissions(filtered);
+
+      const filteredAssessments = MATERI_ASSESSMENTS.filter(a =>
+        a.studentName.toLowerCase().includes(q) ||
+        a.materiTitle.toLowerCase().includes(q) ||
+        a.class.toLowerCase().includes(q)
+      );
+      renderAssessments(filteredAssessments);
+    }
+
+    function renderAksaraGrid(data, isJawa = true) {
+      const grid = document.getElementById('aksara-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = "bg-white p-4 rounded-2xl border border-brand-border shadow-sm hover:shadow-md hover:border-brand-primary transition flex flex-col items-center text-center group cursor-pointer";
+        card.onclick = () => {
+          showToast(`Aksara ${item.latin}: "${item.desc}" (Akurasi: ${item.acc})`);
+          playMascotChime();
+        };
+
+        const fontClass = isJawa ? "font-jawa" : "font-bali";
+        const isRemedial = parseInt(item.acc) < 70;
+        const accentBadge = isRemedial ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200';
+
+        card.innerHTML = `
+          <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-brand-bg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform border border-brand-border/60">
+            <span class="${fontClass} text-3xl sm:text-4xl font-bold text-brand-primary">${item.glyph}</span>
+          </div>
+          <h5 class="text-sm font-bold text-brand-dark">${item.latin}</h5>
+          <p class="text-[10px] text-brand-muted line-clamp-1 mt-0.5">${item.desc}</p>
+          <div class="mt-3 w-full pt-2 border-t border-brand-border/60 flex items-center justify-between text-[10px]">
+            <span class="text-brand-muted">Akurasi:</span>
+            <span class="font-extrabold px-1.5 py-0.5 rounded-full border ${accentBadge}">${item.acc}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function switchScriptView(type) {
+      const btnJawa = document.getElementById('btn-script-jawa');
+      const btnBali = document.getElementById('btn-script-bali');
+
+      if (type === 'jawa') {
+        btnJawa.className = "px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-sm transition";
+        btnBali.className = "px-4 py-2 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition";
+        renderAksaraGrid(JAWA_DATA, true);
+      } else {
+        btnBali.className = "px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-sm transition";
+        btnJawa.className = "px-4 py-2 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition";
+        renderAksaraGrid(BALI_DATA, false);
+      }
+    }
+
+    function renderLeaderboard() {
+      const container = document.getElementById('students-leaderboard');
+      if (!container) return;
+      container.innerHTML = '';
+
+      STUDENTS_LEADERBOARD.forEach((s, idx) => {
+        const item = document.createElement('div');
+        item.className = "py-3 flex items-center justify-between hover:bg-brand-bg/60 px-3 rounded-xl transition";
+        item.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-6 text-center font-extrabold text-xs ${idx === 0 ? 'text-amber-500 text-sm' : idx === 1 ? 'text-slate-400 text-sm' : idx === 2 ? 'text-amber-700 text-sm' : 'text-brand-muted'}">
+              #${idx + 1}
+            </span>
+            <div class="w-9 h-9 rounded-full bg-brand-soft text-brand-primary font-bold text-xs flex items-center justify-center shadow-inner shrink-0">
+              ${s.name.substring(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <p class="text-xs font-bold text-brand-dark">${s.name} <span class="text-[10px] text-brand-muted font-normal">(${s.class})</span></p>
+              <span class="inline-block text-[10px] px-2 py-0.2 rounded-full font-semibold ${s.badge.includes('Perlu') ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800'}">${s.badge}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-xs font-extrabold text-brand-primary">${s.xp.toLocaleString()} XP</p>
+            <p class="text-[10px] text-brand-muted">Akurasi: ${s.acc}</p>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderFeedbackLogs() {
+      const tbody = document.getElementById('feedback-logs-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      FEEDBACK_LOGS.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.className = "text-xs";
+        tr.innerHTML = `
+          <td class="py-2 text-brand-muted">${log.time}</td>
+          <td class="py-2 font-bold text-brand-dark">${log.target}</td>
+          <td class="py-2 text-brand-dark italic truncate max-w-xs">"${log.text}"</td>
+          <td class="py-2 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">${log.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function setFeedbackText(txt) {
+      document.getElementById('feedback-message').value = txt;
+    }
+
+    function prefillFeedback(target, text) {
+      switchTab('feedback');
+      const select = document.getElementById('feedback-target-select');
+      for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].text.includes(target) || select.options[i].value.includes(target)) {
+          select.selectedIndex = i;
+          break;
+        }
+      }
+      document.getElementById('feedback-message').value = text;
+      showToast(`Form feedback dimuat untuk: ${target}`);
+    }
+
+    function sendFeedbackToESP32() {
+      const target = document.getElementById('feedback-target-select').value;
+      const msg = document.getElementById('feedback-message').value.trim();
+
+      if (!msg) {
+        showToast("Tulis pesan feedback terlebih dahulu!");
+        return;
+      }
+
+      FEEDBACK_LOGS.unshift({
+        time: "Baru saja",
+        target: target.split('-')[0].trim(),
+        text: msg,
+        status: "Terkirim (COM3)"
+      });
+
+      renderFeedbackLogs();
+      showToast(`Pesan terkirim ke ESP32: "${msg.substring(0, 30)}..."`);
+      playMascotChime();
+    }
+
+    function handleVolumeChange(val) {
+      document.getElementById('volume-display').innerText = `${val} / 30`;
+    }
+
+    function testAudioSound(soundName) {
+      showToast(`Mengirim sinyal audio ke ESP32: ${soundName}`);
+      playBeep(soundName.includes('Sempurna') ? 784 : 440);
+    }
+
+    function playMascotChime() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.35);
+      } catch (e) {}
+    }
+
+    function playBeep(freq = 440) {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      } catch (e) {}
+    }
+
+    function openSubmissionDetail(name, cls, aksara, precision, score, status, time) {
+      document.getElementById('modal-student-name').innerText = name;
+      document.getElementById('modal-details').innerText = `${cls} • ${aksara} • ${time}`;
+      document.getElementById('modal-precision').innerText = `${precision}%`;
+      document.getElementById('modal-score').innerText = `${score} / 100`;
+
+      const badge = document.getElementById('modal-badge');
+      badge.innerText = status;
+      badge.className = `px-3 py-1 rounded-full text-xs font-bold ${
+        status === 'Sempurna' ? 'bg-emerald-100 text-emerald-800' :
+        status === 'Lulus' ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+      }`;
+
+      const glyphEl = document.getElementById('modal-glyph');
+      if (aksara.includes('Ha')) glyphEl.innerText = "ꦲ";
+      else if (aksara.includes('Na')) glyphEl.innerText = "ᬦ";
+      else if (aksara.includes('Dha')) glyphEl.innerText = "ꦝ";
+      else if (aksara.includes('Ka')) glyphEl.innerText = "ꦏ";
+      else glyphEl.innerText = "ꦲ";
+
+      document.getElementById('submission-modal').classList.remove('hidden');
+      document.getElementById('submission-modal').classList.add('flex');
+    }
+
+    function closeModal() {
+      document.getElementById('submission-modal').classList.add('hidden');
+      document.getElementById('submission-modal').classList.remove('flex');
+    }
+
+    function downloadCSVReport() {
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + "Nama Siswa,Kelas,Aksara,Presisi,Status,Waktu,Skor\n"
+        + ALL_SUBMISSIONS.map(e => `"${e.name}","${e.class}","${e.aksara}","${e.precision}%","${e.status}","${e.time}",${e.score}`).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "AksaraBuddy_Rekap_Nilai_Siswa.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Berkas CSV rekap nilai berhasil diunduh!");
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      text.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2800);
+    }
+
+    // Inisialisasi awal saat halaman termuat
+    window.addEventListener('DOMContentLoaded', () => {
+      renderOverviewSubmissions();
+      renderSubmissions(ALL_SUBMISSIONS);
+      renderAssessments(MATERI_ASSESSMENTS);
+      renderAksaraGrid(JAWA_DATA, true);
+      renderLeaderboard();
+      renderFeedbackLogs();
+      lucide.createIcons();
+    });
+  </script>
 </body>
 </html>
-

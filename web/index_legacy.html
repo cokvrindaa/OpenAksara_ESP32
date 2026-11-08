@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenAksara EduCloud - Sistem Pemantauan Nilai Siswa IoT</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#F0F9FF',
+              100: '#E0F2FE',
+              400: '#38BDF8',
+              500: '#0EA5E9',
+              600: '#0284C7',
+              700: '#0369A1'
+            },
+            darkbg: {
+              900: '#0B0F19',
+              800: '#111827',
+              700: '#1F2937',
+              600: '#374151'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            bali: ['BaliNative', 'Noto Sans Balinese', 'sans-serif'],
+            jawa: ['JawaNative', 'Noto Sans Javanese', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    @font-face {
+      font-family: 'BaliNative';
+      src: url('fonts/NotoSansBalinese-Regular.ttf') format('truetype');
+    }
+    @font-face {
+      font-family: 'JawaNative';
+      src: url('fonts/NotoSansJavanese-Regular.ttf') format('truetype');
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    }
+
+    .aksara-bali-glyph {
+      font-family: 'BaliNative', sans-serif;
+    }
+    .aksara-jawa-glyph {
+      font-family: 'JawaNative', sans-serif;
+    }
+
+    /* Custom Glassmorphism */
+    .glass-card {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(55, 65, 81, 0.4);
+    }
+    .light .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(229, 231, 235, 0.8);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4B5563;
+    }
+
+    /* Pulse animation */
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+    .live-pulse {
+      animation: pulse-subtle 2s infinite ease-in-out;
+    }
+
+    /* Print styles for Rapor */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        color: black !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#0B0F19] text-gray-100 min-h-screen transition-colors duration-200">
+
+  <!-- Header / Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-[#0F172A]/90 backdrop-blur-md border-b border-gray-800 px-4 lg:px-8 py-3.5 transition-colors duration-200">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Status -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-bold text-lg">
+          <i data-lucide="book-open-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold text-white tracking-tight">OpenAksara <span class="text-sky-400">EduCloud</span></h1>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">v2.4 IoT</span>
+          </div>
+          <p class="text-xs text-gray-400 flex items-center gap-1.5">
+            <span id="connectionBadge" class="inline-block w-2 h-2 rounded-full bg-emerald-400 live-pulse"></span>
+            <span id="connectionText">Menghubungkan ke Server IoT...</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Action Toolbar -->
+      <div class="flex items-center flex-wrap gap-2.5">
+        <!-- Search bar -->
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Cari siswa, NISN..." 
+            class="pl-9 pr-4 py-1.5 text-xs rounded-lg bg-gray-900 border border-gray-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-gray-200 placeholder-gray-500 w-48 sm:w-60 outline-none transition-all"
+            oninput="handleSearch()"
+          >
+        </div>
+
+        <!-- Filter Kelas Dropdown -->
+        <select 
+          id="classFilter" 
+          onchange="filterByClass()" 
+          class="text-xs py-1.5 px-3 rounded-lg bg-gray-900 border border-gray-700 text-gray-200 focus:border-sky-500 outline-none cursor-pointer"
+        >
+          <option value="ALL">Semua Kelas (4A, 4B, 5A)</option>
+          <option value="4A">Kelas 4A (SDN 1 Tuban)</option>
+          <option value="4B">Kelas 4B (SDN 1 Tuban)</option>
+          <option value="5A">Kelas 5A (SDN 1 Tuban)</option>
+        </select>
+
+        <!-- ESP32 Live Simulator Button -->
+        <button 
+          onclick="openSimulatorModal()" 
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all shadow-sm"
+          title="Simulasi pengiriman skor langsung dari tablet ESP32"
+        >
+          <i data-lucide="radio" class="w-3.5 h-3.5 animate-pulse"></i>
+          <span>Simulasi ESP32</span>
+        </button>
+
+        <!-- Telegram Bot Button -->
+        <button 
+          onclick="openTelegramModal()" 
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 border border-sky-400/30 text-sky-400 hover:bg-sky-500/20 transition-all shadow-sm"
+          title="Buka Pusat Notifikasi Telegram Bot (Dummy Data & Real)"
+        >
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          <span>Telegram Bot</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        </button>
+
+        <!-- Tambah Siswa Button -->
+        <button 
+          onclick="openAddStudentModal()" 
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 transition-all"
+        >
+          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+          <span>+ Siswa Baru</span>
+        </button>
+
+        <!-- Export CSV Button -->
+        <button 
+          onclick="exportToCSV()" 
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition-all"
+          title="Unduh rekapitulasi nilai ke format CSV/Excel"
+        >
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span class="hidden md:inline">Ekspor CSV</span>
+        </button>
+
+        <!-- Dark / Light toggle -->
+        <button 
+          onclick="toggleTheme()" 
+          id="themeToggleBtn" 
+          class="p-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:text-white transition-all"
+          title="Ganti Tema Gelap / Terang"
+        >
+          <i data-lucide="sun" id="themeIcon" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+    <!-- Hero / Class Banner -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-900/50 via-indigo-900/40 to-slate-900/70 border border-sky-500/20 p-5 lg:p-6 shadow-xl">
+      <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none select-none text-[120px] aksara-bali-glyph">
+        ᬳᬦᬘᬭᬓ
+      </div>
+      <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+              🏫 Tahun Ajaran 2026/2027 • Semester Genap
+            </span>
+            <span class="text-xs text-gray-400">Pembaruan: <strong id="lastUpdatedClock" class="text-gray-200">Live</strong></span>
+          </div>
+          <h2 class="text-xl md:text-2xl font-extrabold text-white tracking-tight">
+            Dashboard Pemantauan Menulis Aksara Daerah
+          </h2>
+          <p class="text-xs md:text-sm text-gray-300 mt-1 max-w-2xl leading-relaxed">
+            Memantau interaktivitas goresan stylus, toleransi checkpoints lintasan (sequential checkpoints), akurasi sandhangan/pengangge suara, dan hasil evaluasi perangkat OpenAksara ESP32.
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <div class="text-xs text-gray-400">Target KKM</div>
+            <div class="text-xl font-bold text-emerald-400">75.0 Poin</div>
+          </div>
+          <div class="h-10 w-[1px] bg-gray-700"></div>
+          <div class="text-right">
+            <div class="text-xs text-gray-400">Akurasi Minimal</div>
+            <div class="text-xl font-bold text-sky-400">80.0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 KPI Overview Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Card 1: Rata-Rata Nilai Keseluruhan -->
+      <div class="glass-card rounded-2xl p-5 relative overflow-hidden transition-all hover:border-sky-500/50">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Rata-Rata Nilai</span>
+          <div class="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center">
+            <i data-lucide="award" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="statAvgScore" class="text-3xl font-extrabold text-white">88.2</span>
+          <span class="text-xs text-gray-400">/ 100</span>
+          <span id="statScoreBadge" class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            +3.5% Di Atas KKM
+          </span>
+        </div>
+        <div class="mt-3 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+          <div id="statAvgScoreBar" class="bg-gradient-to-r from-sky-500 to-indigo-500 h-1.5 rounded-full" style="width: 88%"></div>
+        </div>
+      </div>
+
+      <!-- Card 2: Akurasi Goresan Rata-Rata -->
+      <div class="glass-card rounded-2xl p-5 relative overflow-hidden transition-all hover:border-emerald-500/50">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Akurasi Goresan</span>
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="pen-tool" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="statAvgAccuracy" class="text-3xl font-extrabold text-white">91.4%</span>
+          <span class="text-xs text-gray-400">presisi</span>
+          <span class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            Toleransi 18px
+          </span>
+        </div>
+        <div class="mt-3 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+          <div id="statAvgAccBar" class="bg-emerald-500 h-1.5 rounded-full" style="width: 91%"></div>
+        </div>
+      </div>
+
+      <!-- Card 3: Kelulusan / Ketuntasan Belajar -->
+      <div class="glass-card rounded-2xl p-5 relative overflow-hidden transition-all hover:border-indigo-500/50">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Tingkat Ketuntasan</span>
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="statPassRate" class="text-3xl font-extrabold text-white">91.7%</span>
+          <span id="statPassRatio" class="text-xs text-gray-400">11 / 12 Siswa</span>
+          <span id="statRemedialBadge" class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            1 Remedial
+          </span>
+        </div>
+        <div class="mt-3 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+          <div id="statPassBar" class="bg-indigo-500 h-1.5 rounded-full" style="width: 92%"></div>
+        </div>
+      </div>
+
+      <!-- Card 4: Perangkat OpenAksara Online -->
+      <div class="glass-card rounded-2xl p-5 relative overflow-hidden transition-all hover:border-amber-500/50">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-gray-400 uppercase tracking-wider">Perangkat IoT Aktif</span>
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+            <i data-lucide="tablet" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline gap-2">
+          <span id="statActiveDevices" class="text-3xl font-extrabold text-white">12</span>
+          <span class="text-xs text-gray-400">ESP32 Unit</span>
+          <span class="ml-auto text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> 100% Online
+          </span>
+        </div>
+        <div class="mt-3 flex items-center justify-between text-[11px] text-gray-400">
+          <span>Baterai Rata-rata: <strong>88%</strong></span>
+          <span>WiFi: <strong>-58 dBm</strong></span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Live Classroom Activity Feed (Real-time telemetry strip) -->
+    <div class="glass-card rounded-2xl p-4 border border-sky-500/20">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 live-pulse"></span>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-300">Aktivitas Langsung Kelas (Live Telemetry Feed)</h3>
+        </div>
+        <span class="text-[11px] text-gray-400">Pembaruan instan tiap kali siswa menyelesaikan goresan di ESP32</span>
+      </div>
+      <div id="liveActivityFeed" class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+        <!-- Diisi secara dinamis via JavaScript -->
+      </div>
+    </div>
+
+    <!-- Analytics Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Chart 1: Perbandingan Performa Pembelajaran (Aksara Bali vs Jawa) -->
+      <div class="glass-card rounded-2xl p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-400"></i>
+              Perbandingan Rata-Rata Nilai (Aksara Bali vs Aksara Jawa)
+            </h3>
+            <p class="text-xs text-gray-400">Evaluasi penguasaan huruf konsonan dasar vs tanda vokal panjang & pendek</p>
+          </div>
+          <span class="text-xs px-2.5 py-1 rounded-lg bg-gray-800 text-gray-300 border border-gray-700">Modul 1 s/d 4</span>
+        </div>
+        <div class="h-64">
+          <canvas id="comparisonChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Distribusi Predikat Nilai -->
+      <div class="glass-card rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-400"></i>
+              Distribusi Predikat Nilai
+            </h3>
+            <p class="text-xs text-gray-400">Proporsi capaian kompetensi</p>
+          </div>
+          <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">KKM 75</span>
+        </div>
+        <div class="h-56 relative flex items-center justify-center">
+          <canvas id="gradeDistributionChart"></canvas>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-gray-800 text-xs">
+          <div class="flex items-center gap-2 text-gray-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Sangat Baik (A): <strong id="countA">6</strong>
+          </div>
+          <div class="flex items-center gap-2 text-gray-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span> Baik (B): <strong id="countB">4</strong>
+          </div>
+          <div class="flex items-center gap-2 text-gray-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Cukup (C): <strong id="countC">1</strong>
+          </div>
+          <div class="flex items-center gap-2 text-gray-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Remedial (D): <strong id="countD">1</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Script Difficulty Heatmap & Focus Ranking -->
+    <div class="glass-card rounded-2xl p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-white flex items-center gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400"></i>
+            Analisis Tingkat Kesulitan Aksara (Rekomendasi Fokus Pembelajaran Guru)
+          </h3>
+          <p class="text-xs text-gray-400">Huruf-huruf dengan persentase kesalahan goresan atau deviasi koordinat tertinggi</p>
+        </div>
+        <span class="text-xs text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2.5 py-1 rounded-lg">
+          🔍 Diurutkan dari yang paling sering salah
+        </span>
+      </div>
+      <div id="difficultyRankingContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <!-- Diisi otomatis oleh JavaScript -->
+      </div>
+    </div>
+
+    <!-- Student Gradebook Table Section -->
+    <div class="glass-card rounded-2xl overflow-hidden border border-gray-800">
+      
+      <!-- Table Header & Controls -->
+      <div class="p-5 border-b border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="table" class="w-4 h-4 text-sky-400"></i>
+            Daftar Nilai & Rapor Belajar Siswa
+          </h3>
+          <p class="text-xs text-gray-400 mt-0.5">
+            Total <strong id="filteredCountText" class="text-gray-200">12 Siswa</strong> terdata dalam sistem
+          </p>
+        </div>
+
+        <!-- Quick Filter Tabs -->
+        <div class="flex items-center gap-1.5 bg-gray-900 p-1 rounded-xl border border-gray-800 text-xs">
+          <button onclick="setFilterStatus('ALL')" id="tabFilterAll" class="px-3 py-1.5 rounded-lg font-semibold bg-sky-600 text-white transition-all">Semua Siswa</button>
+          <button onclick="setFilterStatus('Tuntas')" id="tabFilterTuntas" class="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition-all">Tuntas (≥75)</button>
+          <button onclick="setFilterStatus('Remedial')" id="tabFilterRemedial" class="px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition-all">Perlu Remedial (<75)</button>
+        </div>
+      </div>
+
+      <!-- Table Body -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-900/60 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">
+              <th class="py-3.5 px-4 cursor-pointer hover:text-white" onclick="sortTable('nisn')">No / NISN</th>
+              <th class="py-3.5 px-4 cursor-pointer hover:text-white" onclick="sortTable('name')">Nama Siswa</th>
+              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('score_bali')">Aksara Bali</th>
+              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('score_jawa')">Aksara Jawa</th>
+              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('score_quiz')">Kuis Teori</th>
+              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('accuracy')">Akurasi Goresan</th>
+              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('speed_sec')">Rata-Rata Waktu</th>
+              <th class="py-3.5 px-4 text-center cursor-pointer hover:text-white" onclick="sortTable('final_score')">Nilai Akhir</th>
+              <th class="py-3.5 px-4 text-center">Status</th>
+              <th class="py-3.5 px-4 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="studentTableBody" class="divide-y divide-gray-800/60 text-xs">
+            <!-- Diisi secara dinamis melalui app.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Footer / Summary -->
+      <div class="px-5 py-3.5 bg-gray-900/40 border-t border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-400 gap-2">
+        <span>Menampilkan <strong id="showingCount" class="text-gray-200">12</strong> siswa dari total <strong id="totalCount" class="text-gray-200">12</strong></span>
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Nilai A: 90-100</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Nilai B: 80-89</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Nilai C: 75-79</span>
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Remedial: <75</span>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Modal 1: Detail Rapor Siswa & Analisis Kompetensi -->
+  <div id="studentDetailModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200" id="printArea">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-sky-900/60 to-indigo-900/60 p-6 border-b border-gray-700 flex items-start justify-between">
+        <div class="flex items-center gap-4">
+          <div id="modalAvatar" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white text-xl shadow-lg">
+            --
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 id="modalStudentName" class="text-lg md:text-xl font-bold text-white">Nama Siswa</h2>
+              <span id="modalStudentGender" class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-400">L</span>
+            </div>
+            <p class="text-xs text-gray-300 mt-0.5">
+              NISN: <span id="modalStudentNisn" class="font-mono text-gray-200">--</span> • Kelas: <strong id="modalStudentClass" class="text-sky-400">--</strong> • Device: <span id="modalStudentDevice" class="font-mono text-amber-300">--</span>
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="sendCurrentStudentTelegram()" class="p-2 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/40 text-sky-300 text-xs flex items-center gap-1.5 transition-all shadow-sm" title="Kirim Rapor ke Telegram Orang Tua">
+            <i data-lucide="send" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Kirim ke Telegram</span>
+          </button>
+          <button onclick="printStudentReport()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-200 text-xs flex items-center gap-1.5 transition-all" title="Cetak Rapor Siswa">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Cetak</span>
+          </button>
+          <button onclick="closeDetailModal()" class="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-all">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        
+        <!-- Nilai Cards Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
+            <span class="text-[11px] text-gray-400 uppercase">Aksara Bali</span>
+            <div id="modalScoreBali" class="text-2xl font-black text-sky-400 mt-1">--</div>
+            <div id="modalBestBali" class="text-[10px] text-gray-400 mt-0.5 truncate">Terbaik: --</div>
+          </div>
+          <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
+            <span class="text-[11px] text-gray-400 uppercase">Aksara Jawa</span>
+            <div id="modalScoreJawa" class="text-2xl font-black text-indigo-400 mt-1">--</div>
+            <div id="modalBestJawa" class="text-[10px] text-gray-400 mt-0.5 truncate">Terbaik: --</div>
+          </div>
+          <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
+            <span class="text-[11px] text-gray-400 uppercase">Kuis Teori</span>
+            <div id="modalScoreQuiz" class="text-2xl font-black text-amber-400 mt-1">--</div>
+            <div class="text-[10px] text-gray-400 mt-0.5">Pemahaman Bunyi</div>
+          </div>
+          <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700 text-center">
+            <span class="text-[11px] text-gray-400 uppercase">Nilai Akhir</span>
+            <div id="modalFinalScore" class="text-2xl font-black text-emerald-400 mt-1">--</div>
+            <span id="modalFinalBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400">TUNTAS</span>
+          </div>
+        </div>
+
+        <!-- Radar Kompetensi & Indikator -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center bg-gray-800/40 p-4 rounded-xl border border-gray-700">
+          <div>
+            <h4 class="text-xs font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <i data-lucide="compass" class="w-3.5 h-3.5 text-sky-400"></i>
+              Grafik Radar Kompetensi Menulis
+            </h4>
+            <div class="h-52 flex items-center justify-center">
+              <canvas id="studentRadarChart"></canvas>
+            </div>
+          </div>
+          <div class="space-y-3 text-xs">
+            <div>
+              <div class="flex justify-between text-gray-300 mb-1">
+                <span>Akurasi Titik Checkpoints (P1..Pn)</span>
+                <strong id="modalRadarAcc" class="text-emerald-400">--%</strong>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-1.5"><div id="modalBarAcc" class="bg-emerald-400 h-1.5 rounded-full" style="width: 90%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-gray-300 mb-1">
+                <span>Kecepatan Menulis Rata-rata</span>
+                <strong id="modalRadarSpeed" class="text-sky-400">-- detik</strong>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-1.5"><div id="modalBarSpeed" class="bg-sky-400 h-1.5 rounded-full" style="width: 85%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-gray-300 mb-1">
+                <span>Konsistensi Bentuk (Form Fit)</span>
+                <strong class="text-indigo-400">92%</strong>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-1.5"><div class="bg-indigo-400 h-1.5 rounded-full" style="width: 92%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-gray-300 mb-1">
+                <span>Penguasaan Sandhangan / Pengangge</span>
+                <strong class="text-amber-400">88%</strong>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-1.5"><div class="bg-amber-400 h-1.5 rounded-full" style="width: 88%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Riwayat Sesi Terakhir dari ESP32 -->
+        <div>
+          <h4 class="text-xs font-bold text-gray-200 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i data-lucide="history" class="w-3.5 h-3.5 text-sky-400"></i>
+            Riwayat 5 Sesi Terakhir (Log IoT Hardware)
+          </h4>
+          <div class="overflow-x-auto rounded-xl border border-gray-700">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-gray-800 text-gray-400 text-[10px] uppercase">
+                <tr>
+                  <th class="p-2.5">Waktu</th>
+                  <th class="p-2.5">Naskah</th>
+                  <th class="p-2.5">Huruf / Tanda</th>
+                  <th class="p-2.5 text-center">Skor</th>
+                  <th class="p-2.5 text-center">Akurasi</th>
+                  <th class="p-2.5 text-center">Waktu</th>
+                </tr>
+              </thead>
+              <tbody id="modalHistoryTable" class="divide-y divide-gray-800">
+                <!-- Diisi via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Catatan & Rekomendasi Guru (Editable) -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="message-square" class="w-3.5 h-3.5 text-indigo-400"></i>
+              Catatan & Evaluasi Guru
+            </h4>
+            <span class="text-[10px] text-gray-400">Tersimpan otomatis saat diedit</span>
+          </div>
+          <textarea 
+            id="modalStudentNotes" 
+            rows="3" 
+            class="w-full p-3 rounded-xl bg-gray-800/80 border border-gray-700 text-gray-200 text-xs focus:border-sky-500 outline-none"
+            placeholder="Ketik catatan evaluasi atau instruksi perbaikan khusus untuk siswa ini..."
+            onchange="saveStudentNotes()"
+          ></textarea>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-gray-950 border-t border-gray-800 flex justify-end">
+        <button onclick="closeDetailModal()" class="px-5 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300">
+          Tutup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal 2: Tambah / Edit Siswa -->
+  <div id="addStudentModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div class="p-5 border-b border-gray-800 flex items-center justify-between">
+        <h3 id="formModalTitle" class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-4 h-4 text-sky-400"></i>
+          Tambah Siswa Baru
+        </h3>
+        <button onclick="closeAddStudentModal()" class="text-gray-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form id="studentForm" onsubmit="handleSaveStudent(event)" class="p-5 space-y-3.5 text-xs">
+        <input type="hidden" id="formStudentId">
+        
+        <div>
+          <label class="block text-gray-400 mb-1">Nama Lengkap Siswa *</label>
+          <input type="text" id="formName" required placeholder="Contoh: I Gede Bagus Wijaya" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">NISN *</label>
+            <input type="text" id="formNisn" required placeholder="20260413" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">Kelas *</label>
+            <select id="formClass" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
+              <option value="4A">Kelas 4A</option>
+              <option value="4B">Kelas 4B</option>
+              <option value="5A">Kelas 5A</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">Jenis Kelamin</label>
+            <select id="formGender" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
+              <option value="L">Laki-Laki (L)</option>
+              <option value="P">Perempuan (P)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">ID Perangkat ESP32</label>
+            <input type="text" id="formDeviceId" placeholder="ESP32-BALI-08" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white outline-none focus:border-sky-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-gray-800">
+          <div>
+            <label class="block text-gray-400 mb-1">Nilai Bali (0-100)</label>
+            <input type="number" id="formScoreBali" min="0" max="100" value="85" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center font-bold">
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">Nilai Jawa (0-100)</label>
+            <input type="number" id="formScoreJawa" min="0" max="100" value="85" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center font-bold">
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">Nilai Kuis (0-100)</label>
+            <input type="number" id="formScoreQuiz" min="0" max="100" value="88" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center font-bold">
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-gray-800 flex justify-end gap-2">
+          <button type="button" onclick="closeAddStudentModal()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300">Batal</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold">Simpan Data Siswa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Simulasi Telemetri ESP32 (Live Tester) -->
+  <div id="simulatorModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-amber-500/40 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div class="bg-gradient-to-r from-amber-950/60 to-gray-900 p-5 border-b border-amber-500/30 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-amber-400 flex items-center gap-2">
+            <i data-lucide="radio" class="w-4 h-4 animate-pulse"></i>
+            Simulator Pengiriman Skor ESP32 IoT
+          </h3>
+          <p class="text-xs text-gray-400 mt-0.5">Uji coba aliran data langsung seolah-olah dikirimkan dari stylus tablet OpenAksara</p>
+        </div>
+        <button onclick="closeSimulatorModal()" class="text-gray-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs">
+        <div>
+          <label class="block text-gray-400 mb-1">Pilih Siswa yang Sedang Menulis di Tablet:</label>
+          <select id="simStudentSelect" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white font-semibold">
+            <!-- Diisi opsi siswa via JS -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">Jenis Naskah:</label>
+            <select id="simScript" onchange="updateSimLetters()" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white">
+              <option value="bali">Aksara Bali</option>
+              <option value="jawa">Aksara Jawa</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">Huruf yang Digores:</label>
+            <select id="simLetter" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white font-bold">
+              <!-- Diisi via JS -->
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-gray-300 mb-1">
+            <span>Skor Evaluasi Goresan:</span>
+            <strong id="simScoreVal" class="text-amber-400 font-bold text-sm">96</strong>
+          </div>
+          <input type="range" id="simScore" min="50" max="100" value="96" oninput="document.getElementById('simScoreVal').textContent = this.value" class="w-full accent-amber-500">
+        </div>
+
+        <div>
+          <div class="flex justify-between text-gray-300 mb-1">
+            <span>Akurasi Checkpoints Lintasan (%):</span>
+            <strong id="simAccVal" class="text-sky-400 font-bold text-sm">94.5%</strong>
+          </div>
+          <input type="range" id="simAccuracy" min="60" max="100" value="95" oninput="document.getElementById('simAccVal').textContent = this.value + '%'" class="w-full accent-sky-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-gray-400 mb-1">Waktu Selesai (Detik):</label>
+            <input type="number" id="simDuration" value="12" min="5" max="60" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center">
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">Baterai Tablet (%):</label>
+            <input type="number" id="simBattery" value="88" min="10" max="100" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-center">
+          </div>
+        </div>
+
+        <div class="p-3 bg-gray-950 rounded-xl border border-gray-800 text-[11px] text-gray-400 space-y-1">
+          <div class="text-gray-300 font-bold flex items-center gap-1">
+            <i data-lucide="code" class="w-3.5 h-3.5 text-sky-400"></i> Format HTTP Payload ESP32:
+          </div>
+          <pre class="text-[10px] text-emerald-400 font-mono overflow-x-auto">POST /api/telemetry
+{"device_id":"ESP32_01","script":"bali","letter":"Ca","score":96,"accuracy":94.5,"duration_sec":12}</pre>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeSimulatorModal()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300">Tutup</button>
+          <button type="button" onclick="executeSimulation()" class="px-5 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-amber-600/30">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            <span>⚡ Kirim Data Telemetri Sekarang!</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Telegram Bot Notification Center -->
+  <div id="telegramModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-[#111827] border border-sky-500/40 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-sky-950 via-[#17212B] to-[#0F172A] p-4 px-6 border-b border-gray-700 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-[#2AABEE] text-white flex items-center justify-center shadow-lg shadow-sky-500/30">
+            <i data-lucide="send" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm md:text-base font-bold text-white tracking-tight">OpenAksara Telegram Bot</h3>
+              <span id="tgModeBadge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Mode Dummy / Proposal
+              </span>
+            </div>
+            <p class="text-xs text-gray-400">Notifikasi otomatis nilai & perkembangan menulis ke orang tua dan wali kelas</p>
+          </div>
+        </div>
+        <button onclick="closeTelegramModal()" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-all">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="flex border-b border-gray-800 bg-[#0E1621] px-6 text-xs font-semibold">
+        <button onclick="switchTelegramTab('preview')" id="tgTabBtnPreview" class="py-3 px-4 border-b-2 border-sky-400 text-sky-400 flex items-center gap-2 transition-all">
+          <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+          <span>Live Chat Simulator</span>
+        </button>
+        <button onclick="switchTelegramTab('logs')" id="tgTabBtnLogs" class="py-3 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 transition-all">
+          <i data-lucide="history" class="w-3.5 h-3.5"></i>
+          <span>Riwayat Pesan (<span id="tgLogsCount">1</span>)</span>
+        </button>
+        <button onclick="switchTelegramTab('settings')" id="tgTabBtnSettings" class="py-3 px-4 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center gap-2 transition-all">
+          <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+          <span>Pengaturan Bot</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Live Chat Simulator -->
+      <div id="tgTabPreview" class="p-5 space-y-4">
+        
+        <!-- Telegram Chat Mockup Box -->
+        <div class="rounded-xl overflow-hidden border border-gray-700 bg-[#0E1621] shadow-inner">
+          <!-- Chat Window Header -->
+          <div class="bg-[#17212B] px-4 py-2.5 flex items-center justify-between border-b border-[#232E3C]">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-[#2AABEE] text-white flex items-center justify-center font-bold text-xs">
+                OA
+              </div>
+              <div>
+                <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>OpenAksara EduCloud Bot</span>
+                  <span class="text-[9px] px-1 rounded bg-[#2B5278] text-[#70B4E8] font-mono">bot</span>
+                </div>
+                <div class="text-[10px] text-emerald-400 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span>online • bot siap mengirim</span>
+                </div>
+              </div>
+            </div>
+            <span class="text-[10px] text-gray-400 font-mono" id="tgChatTime">Hari ini</span>
+          </div>
+
+          <!-- Chat Messages Scroll Area -->
+          <div class="p-4 space-y-3 min-h-[220px] max-h-[260px] overflow-y-auto bg-gradient-to-b from-[#0E1621] to-[#121B26]" id="tgChatBubbleContainer">
+            <div class="max-w-[90%] bg-[#182533] border border-[#2B5278]/60 rounded-2xl rounded-tl-sm p-3.5 text-xs text-gray-200 shadow-md relative">
+              <div class="text-[11px] font-bold text-sky-400 mb-1 flex items-center justify-between">
+                <span>🤖 @OpenAksaraBot</span>
+                <span class="text-[10px] text-gray-400 font-mono">12:30 WIB</span>
+              </div>
+              <div id="tgMessageBody" class="space-y-1 leading-relaxed font-sans text-gray-100">
+                <!-- Diisi via JS -->
+              </div>
+              <!-- Simulated Inline Buttons -->
+              <div class="mt-3 pt-2 border-t border-gray-700/60 flex flex-wrap gap-1.5">
+                <button onclick="showToast('Membuka tautan rapor digital siswa...', 'info')" class="text-[10px] py-1 px-2.5 rounded-lg bg-[#2B5278]/70 hover:bg-[#2B5278] text-sky-200 font-semibold transition-all">
+                  📊 Lihat Rapor Online
+                </button>
+                <button onclick="showToast('Jadwal bimbingan remedial dicatat di kalender.', 'success')" class="text-[10px] py-1 px-2.5 rounded-lg bg-gray-700/70 hover:bg-gray-700 text-gray-200 font-semibold transition-all">
+                  📝 Jadwalkan Bimbingan
+                </button>
+              </div>
+              <div class="text-right text-[10px] text-gray-400 mt-1 flex items-center justify-end gap-1 font-mono">
+                <span>Terkirim</span>
+                <span class="text-sky-400 font-bold">✓✓</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trigger Controls -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-gray-300 font-medium shrink-0">Target Siswa:</label>
+            <select id="tgTargetStudent" class="w-full text-xs p-2 rounded-lg bg-gray-800 border border-gray-700 text-white font-semibold">
+              <!-- Diisi via JS -->
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+            <button onclick="triggerTelegramAction('student_score')" class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-sky-600/20 transition-all">
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+              <span>Kirim Nilai Siswa</span>
+            </button>
+            <button onclick="triggerTelegramAction('class_summary')" class="py-2.5 px-3 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sky-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
+              <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-sky-400"></i>
+              <span>Rekap Harian Kelas</span>
+            </button>
+            <button onclick="triggerTelegramAction('remedial_alert')" class="py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-400"></i>
+              <span>Peringatan Remedial</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Tab 2: Logs Table -->
+      <div id="tgTabLogs" class="p-5 hidden space-y-3 max-h-[360px] overflow-y-auto">
+        <div class="text-xs text-gray-400 flex items-center justify-between">
+          <span>Riwayat Pesan Notifikasi yang Dikirimkan:</span>
+          <button onclick="clearTelegramLogs()" class="text-rose-400 hover:underline text-[11px]">Bersihkan Log</button>
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-gray-800">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-gray-800/80 text-gray-400 text-[10px] uppercase">
+              <tr>
+                <th class="p-2.5">Waktu</th>
+                <th class="p-2.5">Tipe Notifikasi</th>
+                <th class="p-2.5">Penerima</th>
+                <th class="p-2.5 text-center">Mode</th>
+                <th class="p-2.5 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tgLogsTableBody" class="divide-y divide-gray-800">
+              <!-- Diisi via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Settings -->
+      <div id="tgTabSettings" class="p-5 hidden space-y-4 text-xs">
+        <div class="p-3.5 rounded-xl bg-gray-800/60 border border-gray-700 space-y-2">
+          <div class="font-bold text-white flex items-center gap-2">
+            <i data-lucide="sliders" class="w-4 h-4 text-sky-400"></i>
+            Pilihan Mode Pengiriman:
+          </div>
+          <div class="space-y-2 pt-1">
+            <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-800 cursor-pointer">
+              <input type="radio" name="tgModeRadio" value="dummy" checked onchange="toggleTgModeRadio(true)" class="mt-0.5 accent-sky-500">
+              <div>
+                <span class="font-bold text-white">Mode Dummy / Demo Proposal (Direkomendasikan)</span>
+                <p class="text-[11px] text-gray-400">Pesan disimulasikan 100% dengan audio chime & live preview chat di dashboard. Tidak memerlukan akun atau token Telegram riil.</p>
+              </div>
+            </label>
+            <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-800 cursor-pointer">
+              <input type="radio" name="tgModeRadio" value="live" onchange="toggleTgModeRadio(false)" class="mt-0.5 accent-sky-500">
+              <div>
+                <span class="font-bold text-white">Mode Bot Telegram Riil (Live API)</span>
+                <p class="text-[11px] text-gray-400">Pesan benar-benar dikirimkan ke grup/chat Telegram orang tua via HTTP API Telegram (memerlukan Bot Token).</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div id="tgRealConfigSection" class="space-y-3 opacity-60 pointer-events-none transition-opacity">
+          <div>
+            <label class="block text-gray-400 mb-1">Telegram Bot Token (dari @BotFather):</label>
+            <input type="text" id="tgInputToken" placeholder="Contoh: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-gray-400 mb-1">Chat ID / Grup ID Tujuan:</label>
+            <input type="text" id="tgInputChatId" placeholder="Contoh: -1001234567890 atau @nama_channel" class="w-full p-2.5 rounded-lg bg-gray-800 border border-gray-700 text-white font-mono">
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2 border-t border-gray-800">
+          <button type="button" onclick="closeTelegramModal()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300">Tutup</button>
+          <button type="button" onclick="saveTelegramSettings()" class="px-5 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold">Simpan Pengaturan</button>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 bg-gray-950 border-t border-gray-800 flex items-center justify-between text-[11px] text-gray-400 px-6">
+        <span>Teknologi: <strong>Telegram Bot API Webhook & REST Relay</strong></span>
+        <span>Integrasi: <strong>OpenAksara ESP32 IoT</strong></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Script Dashboard Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
+
