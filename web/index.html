@@ -16,6 +16,14 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- Firebase SDK (v10 compat) & AksaraBuddy Firebase Module -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <!-- Environment Keys (File ini masuk .gitignore & aman dari GitHub) -->
+  <script src="./firebase-keys.js?v=2"></script>
+  <script src="./firebase-config.js?v=2"></script>
+
   <script>
     tailwind.config = {
       theme: {
@@ -133,82 +141,132 @@
         </div>
       </div>
 
-      <!-- Sisi Kanan: Form Login Guru & Demo Login -->
-      <div class="md:w-7/12 p-8 md:p-10 flex flex-col justify-between bg-white">
+      <!-- Sisi Kanan: Form Login Guru, Portal Orang Tua & Demo Login -->
+      <div class="md:w-7/12 p-6 sm:p-8 md:p-10 flex flex-col justify-between bg-white">
         <div>
-          <div class="mb-6">
-            <h3 class="text-2xl font-bold text-brand-dark">Selamat Datang, Bapak/Ibu Guru! 👋</h3>
-            <p class="text-xs text-brand-muted mt-1">Masuk untuk memantau nilai akhir, perolehan XP, dan akurasi goresan siswa.</p>
+          <!-- Switcher Peran: Guru vs Orang Tua / Wali Murid -->
+          <div class="flex items-center bg-brand-bg p-1 rounded-2xl border border-brand-border mb-5">
+            <button type="button" id="login-tab-teacher" onclick="switchLoginRole('teacher')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold bg-brand-primary text-white shadow-sm transition flex items-center justify-center gap-1.5">
+              <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+              <span>Portal Guru</span>
+            </button>
+            <button type="button" id="login-tab-parent" onclick="switchLoginRole('parent')" class="flex-1 py-2 px-3 rounded-xl text-xs font-bold text-brand-muted hover:text-brand-dark transition flex items-center justify-center gap-1.5">
+              <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+              <span>Portal Orang Tua / Wali</span>
+            </button>
           </div>
 
-          <!-- Form Login -->
-          <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+          <!-- PANEL 1: FORM LOGIN GURU -->
+          <div id="login-panel-teacher">
+            <div class="mb-4">
+              <h3 class="text-xl sm:text-2xl font-bold text-brand-dark">Selamat Datang, Bapak/Ibu Guru! 👋</h3>
+              <p class="text-xs text-brand-muted mt-1">Masuk untuk memantau nilai akhir, perolehan XP, dan akurasi goresan siswa.</p>
+            </div>
+
+            <form id="form-login" onsubmit="handleLoginSubmit(event)" class="space-y-3.5">
+              <div>
+                <label class="block text-xs font-semibold text-brand-dark mb-1" for="login-email">Email / NIP / Akun Guru</label>
+                <div class="relative">
+                  <i data-lucide="user" class="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                  <input type="text" id="login-email" value="guru.yoga@aksarabuddy.id" required class="w-full pl-10 pr-4 py-2.5 bg-brand-bg rounded-xl border border-brand-border text-sm text-brand-dark font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+                </div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-xs font-semibold text-brand-dark" for="login-password">Kata Sandi</label>
+                  <a href="javascript:void(0)" onclick="showToast('Tautan reset kata sandi telah dikirimkan ke email guru.')" class="text-xs text-brand-primary font-semibold hover:underline">Lupa sandi?</a>
+                </div>
+                <div class="relative">
+                  <i data-lucide="lock" class="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                  <input type="password" id="login-password" value="aksara123" required class="w-full pl-10 pr-10 py-2.5 bg-brand-bg rounded-xl border border-brand-border text-sm text-brand-dark font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+                  <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark">
+                    <i data-lucide="eye" id="icon-toggle-password" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-0.5">
+                <label class="flex items-center gap-2 cursor-pointer text-xs text-brand-muted select-none">
+                  <input type="checkbox" checked class="w-4 h-4 rounded border-brand-border text-brand-primary focus:ring-brand-primary/30">
+                  <span>Ingat saya di perangkat ini</span>
+                </label>
+                <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Port COM3 Ready
+                </span>
+              </div>
+
+              <button type="submit" id="btn-login-submit" class="w-full py-2.5 px-4 rounded-xl bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm shadow-md shadow-brand-primary/20 flex items-center justify-center gap-2 transition duration-200">
+                <span id="btn-login-text">Masuk ke Dashboard Guru</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+            </form>
+          </div>
+
+          <!-- PANEL 2: PORTAL AKSES CEPAT ORANG TUA + SEARCH BAR NAMA ANAK -->
+          <div id="login-panel-parent" class="hidden space-y-4">
             <div>
-              <label class="block text-xs font-semibold text-brand-dark mb-1.5" for="login-email">Email / NIP / Akun Guru</label>
-              <div class="relative">
-                <i data-lucide="user" class="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                <input type="text" id="login-email" value="guru.yoga@aksarabuddy.id" required class="w-full pl-10 pr-4 py-2.5 bg-brand-bg rounded-xl border border-brand-border text-sm text-brand-dark font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
-              </div>
+              <h3 class="text-xl sm:text-2xl font-bold text-brand-dark">Portal Orang Tua / Wali Murid 👨‍👩‍👧</h3>
+              <p class="text-xs text-brand-muted mt-1">Cari nama putra/putri Anda untuk melihat nilai menulis aksara, perkembangan XP, dan rapor guru secara real-time.</p>
             </div>
 
+            <!-- Search Bar Nama Anak di Halaman Login -->
             <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-semibold text-brand-dark" for="login-password">Kata Sandi</label>
-                <a href="javascript:void(0)" onclick="showToast('Tautan reset kata sandi telah dikirimkan ke email guru.')" class="text-xs text-brand-primary font-semibold hover:underline">Lupa sandi?</a>
-              </div>
+              <label class="block text-xs font-semibold text-brand-dark mb-1.5" for="login-student-search">Cari Nama Anak / Siswa atau Nama Wali:</label>
               <div class="relative">
-                <i data-lucide="lock" class="w-4 h-4 text-brand-muted absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                <input type="password" id="login-password" value="aksara123" required class="w-full pl-10 pr-10 py-2.5 bg-brand-bg rounded-xl border border-brand-border text-sm text-brand-dark font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
-                <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark">
-                  <i data-lucide="eye" id="icon-toggle-password" class="w-4 h-4"></i>
-                </button>
+                <i data-lucide="search" class="w-4 h-4 text-brand-primary absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="login-student-search" oninput="renderLoginParentSearchPreview(this.value)" placeholder="Ketik nama anak (cth: Raditya, Kadek Ayu, Ahmad, Siti)..." class="w-full pl-10 pr-9 py-2.5 bg-brand-bg rounded-xl border border-brand-primary/40 text-sm text-brand-dark font-medium focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+                <button type="button" onclick="document.getElementById('login-student-search').value=''; renderLoginParentSearchPreview('');" class="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark text-xs font-bold">✕</button>
               </div>
             </div>
 
-            <div class="flex items-center justify-between pt-1">
-              <label class="flex items-center gap-2 cursor-pointer text-xs text-brand-muted select-none">
-                <input type="checkbox" checked class="w-4 h-4 rounded border-brand-border text-brand-primary focus:ring-brand-primary/30">
-                <span>Ingat saya di perangkat ini</span>
-              </label>
-              <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Port COM3 Ready
-              </span>
+            <!-- Hasil Pencarian Cepat Nama Anak di Login -->
+            <div id="login-parent-search-results" class="max-h-40 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+              <!-- Populated dynamically via JS -->
             </div>
 
-            <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 rounded-xl bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm shadow-md shadow-brand-primary/20 flex items-center justify-center gap-2 transition duration-200">
-              <span id="btn-login-text">Masuk ke Dashboard Guru</span>
-              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            <button type="button" onclick="enterParentPortalFromLogin()" class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md shadow-amber-500/20 flex items-center justify-center gap-2 transition duration-200">
+              <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+              <span>Buka Portal Orang Tua Lengkap</span>
             </button>
-          </form>
+          </div>
 
           <!-- Divider -->
-          <div class="relative my-6">
+          <div class="relative my-5">
             <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-brand-border"></div></div>
-            <div class="relative flex justify-center text-[10px] uppercase tracking-wider text-brand-muted font-bold"><span class="bg-white px-3">Atau Masuk Cepat (Akun Demo)</span></div>
+            <div class="relative flex justify-center text-[10px] uppercase tracking-wider text-brand-muted font-bold"><span class="bg-white px-3">Atau Masuk Cepat (Guru & Orang Tua)</span></div>
           </div>
 
-          <!-- Pilihan Demo Login Sekali Klik -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button onclick="loginAs('Pak Guru Yoga', 'Wali Kelas 5A & 5B', 'PG')" class="p-3 rounded-xl border border-brand-border hover:border-brand-primary bg-brand-bg/50 hover:bg-brand-soft/40 transition flex items-center gap-3 text-left">
-              <div class="w-9 h-9 rounded-xl bg-brand-primary text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">PG</div>
+          <!-- Pilihan Demo Login Sekali Klik (Guru & Orang Tua) -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <button onclick="loginAs('Pak Guru Yoga', 'Wali Kelas 5A & 5B', 'PG', 'overview')" class="p-2.5 rounded-xl border border-brand-border hover:border-brand-primary bg-brand-bg/50 hover:bg-brand-soft/40 transition flex items-center gap-2.5 text-left">
+              <div class="w-8 h-8 rounded-xl bg-brand-primary text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">PG</div>
               <div class="overflow-hidden">
                 <p class="text-xs font-bold text-brand-dark truncate leading-tight">Pak Guru Yoga</p>
                 <p class="text-[10px] text-brand-muted truncate">Wali Kelas 5A & 5B</p>
               </div>
             </button>
 
-            <button onclick="loginAs('Bu Guru Desak', 'Guru Bahasa Bali', 'BD')" class="p-3 rounded-xl border border-brand-border hover:border-brand-primary bg-brand-bg/50 hover:bg-brand-soft/40 transition flex items-center gap-3 text-left">
-              <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">BD</div>
+            <button onclick="loginAs('Bu Guru Desak', 'Guru Bahasa Bali', 'BD', 'overview')" class="p-2.5 rounded-xl border border-brand-border hover:border-brand-primary bg-brand-bg/50 hover:bg-brand-soft/40 transition flex items-center gap-2.5 text-left">
+              <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">BD</div>
               <div class="overflow-hidden">
                 <p class="text-xs font-bold text-brand-dark truncate leading-tight">Bu Guru Desak</p>
                 <p class="text-[10px] text-brand-muted truncate">Guru Bahasa Bali</p>
               </div>
             </button>
+
+            <button onclick="loginAsParent('Wali Murid (Orang Tua)', 'Portal Pantauan Anak', 'OT', '')" class="p-2.5 rounded-xl border border-amber-300 hover:border-amber-500 bg-amber-50/60 hover:bg-amber-100/60 transition flex items-center gap-2.5 text-left">
+              <div class="w-8 h-8 rounded-xl bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">OT</div>
+              <div class="overflow-hidden">
+                <p class="text-xs font-bold text-brand-dark truncate leading-tight">Portal Orang Tua</p>
+                <p class="text-[10px] text-amber-800 font-semibold truncate">Cek Progres Anak</p>
+              </div>
+            </button>
           </div>
         </div>
 
-        <div class="mt-6 pt-4 border-t border-brand-border/60 flex items-center justify-between text-[11px] text-brand-muted">
-          <span>OpenAksara EduCloud v2.4</span>
+        <div class="mt-5 pt-3 border-t border-brand-border/60 flex items-center justify-between text-[11px] text-brand-muted">
+          <span>OpenAksara EduCloud v2.5 (Guru & Orang Tua)</span>
           <span>Status Port: COM3 (9600 bps)</span>
         </div>
       </div>
@@ -280,6 +338,13 @@
             <span>Kelas & Siswa</span>
           </button>
 
+          <!-- MENU BARU: PORTAL ORANG TUA / WALI MURID -->
+          <button onclick="switchTab('parents'); toggleMobileSidebar(false);" id="nav-parents" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+            <span class="flex-1 text-left">Portal Orang Tua</span>
+            <span class="text-[10px] bg-emerald-500/10 text-emerald-700 px-2 py-0.5 rounded-full font-bold">Wali</span>
+          </button>
+
           <button onclick="switchTab('feedback'); toggleMobileSidebar(false);" id="nav-feedback" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
             <i data-lucide="message-square" class="w-4 h-4"></i>
             <span>Feedback Guru</span>
@@ -338,9 +403,16 @@
 
         <!-- Search & Actions -->
         <div class="flex items-center gap-2.5 sm:gap-3 flex-1 sm:flex-initial justify-end">
-          <div class="relative w-full sm:w-60 md:w-72">
-            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-muted"></i>
-            <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Cari siswa atau aksara..." class="w-full pl-9 pr-3 py-1.5 bg-brand-bg rounded-xl border border-brand-border text-xs focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+          <div class="relative w-full sm:w-64 md:w-80">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-primary"></i>
+            <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Cari nama siswa, orang tua, atau aksara..." class="w-full pl-9 pr-8 py-1.5 bg-brand-bg rounded-xl border border-brand-border text-xs font-medium text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+            <button type="button" id="global-search-clear" onclick="clearAllSearchBars()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-rose-600 text-xs font-bold px-1">✕</button>
+          </div>
+
+          <!-- Status Database Firebase / Demo -->
+          <div id="db-status-badge" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shadow-xs shrink-0 cursor-pointer hover:bg-amber-100 transition" onclick="openDatabaseModal()" title="Status Database Firebase (Klik untuk kelola / simulasi)">
+            <span id="db-status-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span id="db-status-text">Demo Mode</span>
           </div>
 
           <button onclick="showToast('Notifikasi: 3 submission baru masuk dari Kelas 5A!')" class="p-2 rounded-xl border border-brand-border text-brand-muted hover:text-brand-dark hover:bg-brand-bg relative transition shrink-0">
@@ -569,15 +641,23 @@
 
             <!-- Tabel Submission Terbaru Siswa (3 Kolom) -->
             <div class="lg:col-span-3 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between mb-3">
+              <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
                 <div>
                   <h4 class="text-base font-bold text-brand-dark">Submission Terbaru Siswa</h4>
                   <p class="text-xs text-brand-muted">Goresan stylus terverifikasi oleh hardware ESP32</p>
                 </div>
-                <button onclick="switchTab('submissions')" class="text-xs text-brand-primary font-bold hover:underline flex items-center gap-1">
-                  <span>Lihat Semua</span>
-                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                </button>
+                <div class="flex flex-wrap items-center gap-2.5">
+                  <!-- Search Bar Nama Siswa di Overview -->
+                  <div class="relative w-48 sm:w-56">
+                    <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-brand-muted"></i>
+                    <input type="text" id="overview-search-input" oninput="filterOverviewSubmissions()" placeholder="Cari nama siswa / aksara..." class="w-full pl-8 pr-6 py-1.5 bg-brand-bg rounded-xl border border-brand-border text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                    <button type="button" onclick="document.getElementById('overview-search-input').value=''; filterOverviewSubmissions();" class="absolute right-2 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark text-[10px] font-bold">✕</button>
+                  </div>
+                  <button onclick="switchTab('submissions')" class="text-xs text-brand-primary font-bold hover:underline flex items-center gap-1">
+                    <span>Lihat Semua</span>
+                    <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
               </div>
 
               <!-- Tabel Ringkas Responsive -->
@@ -614,6 +694,13 @@
           <!-- Filter Controls Responsive -->
           <div class="bg-white p-4 rounded-2xl border border-brand-border shadow-sm flex flex-wrap items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-3">
+              <!-- Search Bar Nama Siswa di Submission -->
+              <div class="relative w-full sm:w-56">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"></i>
+                <input type="text" id="submission-search-input" oninput="filterSubmissions()" placeholder="Cari nama siswa / aksara..." class="w-full pl-8 pr-6 py-1.5 bg-brand-bg rounded-xl border border-brand-border text-xs font-medium text-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                <button type="button" onclick="document.getElementById('submission-search-input').value=''; filterSubmissions();" class="absolute right-2 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark text-[10px] font-bold">✕</button>
+              </div>
+
               <div class="flex items-center gap-2">
                 <span class="text-xs font-semibold text-brand-muted">Kelas:</span>
                 <select id="filter-class" onchange="filterSubmissions()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-primary">
@@ -639,6 +726,18 @@
                   <option value="Sempurna">Sempurna</option>
                   <option value="Lulus">Lulus</option>
                   <option value="Remedial">Remedial</option>
+                </select>
+              </div>
+
+              <!-- Urutkan Berdasarkan Waktu / Nilai -->
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-brand-muted">Urutkan:</span>
+                <select id="filter-sort" onchange="filterSubmissions()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-primary font-medium text-brand-dark">
+                  <option value="newest" selected>⏳ Terbaru ke Terlama</option>
+                  <option value="oldest">⌛ Terlama ke Terbaru</option>
+                  <option value="score_desc">🏆 Nilai Tertinggi</option>
+                  <option value="score_asc">📉 Nilai Terendah</option>
+                  <option value="precision_desc">🎯 Presisi Tertinggi</option>
                 </select>
               </div>
             </div>
@@ -729,6 +828,13 @@
           <!-- Filter & Search Materi -->
           <div class="bg-white p-4 rounded-2xl border border-brand-border shadow-sm flex flex-wrap items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-3">
+              <!-- Search Bar Nama Siswa di Penilaian Materi -->
+              <div class="relative w-full sm:w-56">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"></i>
+                <input type="text" id="assessment-search-input" oninput="filterAssessments()" placeholder="Cari nama siswa / materi..." class="w-full pl-8 pr-6 py-1.5 bg-brand-bg rounded-xl border border-brand-border text-xs font-medium text-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                <button type="button" onclick="document.getElementById('assessment-search-input').value=''; filterAssessments();" class="absolute right-2 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark text-[10px] font-bold">✕</button>
+              </div>
+
               <select id="assessment-filter-script" onchange="filterAssessments()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none">
                 <option value="all">Semua Naskah (Jawa & Bali)</option>
                 <option value="Jawa">Hanya Carakan Jawa</option>
@@ -740,6 +846,18 @@
                 <option value="TUNTAS">Status: Tuntas Materi</option>
                 <option value="REMEDIAL">Status: Remedial</option>
               </select>
+
+              <!-- Urutkan Berdasarkan Waktu / Nilai -->
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-brand-muted">Urutkan:</span>
+                <select id="assessment-filter-sort" onchange="filterAssessments()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none font-medium text-brand-dark">
+                  <option value="newest" selected>⏳ Terbaru ke Terlama</option>
+                  <option value="oldest">⌛ Terlama ke Terbaru</option>
+                  <option value="score_desc">🏆 Point Tertinggi</option>
+                  <option value="score_asc">📉 Point Terendah</option>
+                  <option value="xp_desc">✨ Total XP Tertinggi</option>
+                </select>
+              </div>
             </div>
 
             <div class="text-xs text-brand-muted font-medium">
@@ -794,14 +912,23 @@
               <p class="text-xs text-brand-muted">Daftar aksara, tingkat kesulitan, dan panduan arah goresan stylus</p>
             </div>
 
-            <!-- Tab Toggle -->
-            <div class="flex items-center bg-brand-bg p-1 rounded-xl border border-brand-border">
-              <button onclick="switchScriptView('jawa')" id="btn-script-jawa" class="px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-sm transition">
-                Carakan Jawa (20)
-              </button>
-              <button onclick="switchScriptView('bali')" id="btn-script-bali" class="px-4 py-2 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition">
-                Wreastra Bali (18)
-              </button>
+            <div class="flex flex-wrap items-center gap-3">
+              <!-- Search Bar Aksara di Materi -->
+              <div class="relative w-52 sm:w-60">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"></i>
+                <input type="text" id="curriculum-search-input" oninput="filterCurriculumAksara()" placeholder="Cari aksara (Ha, Na, Ca)..." class="w-full pl-8 pr-6 py-1.5 bg-brand-bg rounded-xl border border-brand-border text-xs font-medium text-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-primary">
+                <button type="button" onclick="document.getElementById('curriculum-search-input').value=''; filterCurriculumAksara();" class="absolute right-2 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark text-[10px] font-bold">✕</button>
+              </div>
+
+              <!-- Tab Toggle -->
+              <div class="flex items-center bg-brand-bg p-1 rounded-xl border border-brand-border">
+                <button onclick="switchScriptView('jawa')" id="btn-script-jawa" class="px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-sm transition">
+                  Carakan Jawa (20)
+                </button>
+                <button onclick="switchScriptView('bali')" id="btn-script-bali" class="px-4 py-2 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition">
+                  Wreastra Bali (18)
+                </button>
+              </div>
             </div>
           </div>
 
@@ -823,14 +950,25 @@
             <!-- Top Maestro Leaderboard (3 Kolom) -->
             <div class="lg:col-span-3 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
               <div>
-                <div class="flex items-center justify-between mb-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                   <div>
                     <h4 class="text-base font-bold text-brand-dark">Peringkat Maestro Aksara</h4>
                     <p class="text-xs text-brand-muted">Berdasarkan akumulasi XP latihan materi dan presisi goresan</p>
                   </div>
-                  <span class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5">
-                    <i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-600"></i> Musim 2026/2027
-                  </span>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <div class="relative w-full sm:w-60">
+                      <i data-lucide="search" class="w-3.5 h-3.5 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                      <input type="text" id="students-search-input" oninput="renderLeaderboard()" placeholder="Cari nama siswa / orang tua..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-brand-bg border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+                    </div>
+                    <select id="students-filter-class" onchange="renderLeaderboard()" class="text-xs bg-brand-bg border border-brand-border rounded-xl px-2.5 py-1.5 font-medium text-brand-dark focus:outline-none focus:border-brand-primary">
+                      <option value="all">Semua Kelas</option>
+                      <option value="5A">Kelas 5A</option>
+                      <option value="5B">Kelas 5B</option>
+                    </select>
+                    <span class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5">
+                      <i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-600"></i> Musim 2026/2027
+                    </span>
+                  </div>
                 </div>
 
                 <div id="students-leaderboard" class="divide-y divide-brand-border/60">
@@ -887,14 +1025,218 @@
 
 
         <!-- ============================================================== -->
+        <!-- TAB BARU: PORTAL ORANG TUA / WALI MURID                        -->
+        <!-- ============================================================== -->
+        <div id="tab-parents" class="tab-pane hidden flex-col gap-6">
+
+          <!-- Banner & KPI Ringkasan Orang Tua -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-brand-muted">Total Siswa Terpantau</span>
+                <div class="w-9 h-9 rounded-xl bg-brand-soft flex items-center justify-center text-brand-primary">
+                  <i data-lucide="users" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="mt-3">
+                <h3 id="parent-kpi-total-students" class="text-2xl font-extrabold text-brand-dark">12 Siswa</h3>
+                <p class="text-[11px] text-brand-muted mt-1">Kelas 5A & 5B Terhubung Wali</p>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-brand-muted">Rata-Rata Nilai Anak</span>
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700">
+                  <i data-lucide="award" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="mt-3">
+                <h3 id="parent-kpi-avg-score" class="text-2xl font-extrabold text-brand-dark">88.4 / 100</h3>
+                <p class="text-[11px] text-emerald-700 font-semibold mt-1">Di atas KKM (75.0)</p>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-brand-muted">Rapor Dikonfirmasi Wali</span>
+                <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+                  <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="mt-3">
+                <h3 id="parent-kpi-verified" class="text-2xl font-extrabold text-brand-dark">9 / 12</h3>
+                <p class="text-[11px] text-brand-muted mt-1">Sudah ditandatangani digital</p>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-brand-muted">Pesan Dukungan Wali</span>
+                <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                  <i data-lucide="heart-handshake" class="w-4 h-4"></i>
+                </div>
+              </div>
+              <div class="mt-3">
+                <h3 id="parent-kpi-messages" class="text-2xl font-extrabold text-brand-dark">14 Pesan</h3>
+                <p class="text-[11px] text-blue-700 font-semibold mt-1">Terkirim ke Sabak ESP32 anak</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel Utama Pencarian Nama Anak / Orang Tua & Filter -->
+          <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col gap-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">KHUSUS WALI MURID & GURU</span>
+                  <h4 class="text-base font-bold text-brand-dark">Pencarian Cepat Nama Anak & Orang Tua</h4>
+                </div>
+                <p class="text-xs text-brand-muted mt-0.5">Ketik nama siswa atau nama orang tua/wali untuk melihat perkembangan belajar aksara Jawa & Bali secara lengkap</p>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2.5">
+                <div class="relative w-full sm:w-80">
+                  <i data-lucide="search" class="w-4 h-4 text-brand-primary absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                  <input type="text" id="parent-search-input" oninput="renderParentPortal()" placeholder="Cari nama siswa atau nama orang tua..." class="w-full pl-10 pr-8 py-2.5 text-xs font-medium bg-brand-bg border-2 border-brand-primary/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+                  <button type="button" onclick="document.getElementById('parent-search-input').value=''; renderParentPortal();" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark text-xs font-bold">✕</button>
+                </div>
+
+                <select id="parent-filter-class" onchange="renderParentPortal()" class="text-xs bg-brand-bg border border-brand-border rounded-xl px-3 py-2.5 font-semibold text-brand-dark focus:outline-none focus:border-brand-primary">
+                  <option value="all">Semua Kelas (5A & 5B)</option>
+                  <option value="5A">Kelas 5A</option>
+                  <option value="5B">Kelas 5B</option>
+                </select>
+
+                <select id="parent-filter-status" onchange="renderParentPortal()" class="text-xs bg-brand-bg border border-brand-border rounded-xl px-3 py-2.5 font-semibold text-brand-dark focus:outline-none focus:border-brand-primary">
+                  <option value="all">Semua Status Belajar</option>
+                  <option value="TUNTAS">Tuntas / Lulus</option>
+                  <option value="REMEDIAL">Perlu Pendampingan</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Chip Pintasan Nama Siswa -->
+            <div class="pt-3 border-t border-brand-border/60 flex items-center gap-2 flex-wrap">
+              <span class="text-[11px] font-bold text-brand-muted flex items-center gap-1">
+                <i data-lucide="user-check" class="w-3.5 h-3.5 text-brand-primary"></i> Pilih Cepat Nama Anak:
+              </span>
+              <div id="parent-student-chips" class="flex flex-wrap gap-1.5">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Grid Kartu Perkembangan Anak (Parent Cards) -->
+          <div id="parent-cards-container" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- Populated via JS -->
+          </div>
+
+          <!-- Konsol Komunikasi Orang Tua <-> Anak & Guru -->
+          <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <!-- Form Kirim Dukungan Orang Tua ke Sabak ESP32 Anak (2 Kolom) -->
+            <div class="lg:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between gap-4">
+              <div class="space-y-4">
+                <div>
+                  <h4 class="text-base font-bold text-brand-dark flex items-center gap-2">
+                    <i data-lucide="message-circle-heart" class="w-4 h-4 text-brand-accent"></i>
+                    <span>Kirim Semangat & Catatan Orang Tua</span>
+                  </h4>
+                  <p class="text-xs text-brand-muted mt-0.5">Pesan dari Ayah/Ibu akan tampil di layar Sabak ESP32 anak dan diterima oleh Wali Kelas</p>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-brand-dark">Pilih Nama Anak:</label>
+                  <select id="parent-msg-student" class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl px-3.5 py-2.5 font-semibold text-brand-dark focus:outline-none focus:border-brand-primary">
+                    <!-- Populated via JS -->
+                  </select>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-brand-dark">Nama Orang Tua / Wali Pengirim:</label>
+                  <input type="text" id="parent-msg-sender" placeholder="Contoh: Bpk. Wayan Sudarma (Ayah Raditya)" value="Bpk. Wayan Sudarma (Wali Murid)" class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl px-3.5 py-2.5 font-medium text-brand-dark focus:outline-none focus:border-brand-primary">
+                </div>
+
+                <div class="space-y-1.5">
+                  <span class="text-[11px] font-semibold text-brand-muted block">Template Pesan Orang Tua:</span>
+                  <div class="flex flex-wrap gap-1.5">
+                    <button type="button" onclick="setParentMessageText('Anak hebat Ayah & Ibu! Terus semangat belajar menulis aksara Jawa dan Bali ya! ❤️')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft border border-brand-border text-[11px] font-medium transition">
+                      ❤️ Semangat dari Ayah & Ibu
+                    </button>
+                    <button type="button" onclick="setParentMessageText('Terima kasih Bapak/Ibu Guru, malam ini kami sudah mendampingi latihan mengulang aksara di rumah.')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft border border-brand-border text-[11px] font-medium transition">
+                      🏠 Konfirmasi Latihan di Rumah
+                    </button>
+                    <button type="button" onclick="setParentMessageText('Wah nilai rapormu bagus sekali Nak! Nanti pulang sekolah kita belajar bareng lagi ya 🌟')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft border border-brand-border text-[11px] font-medium transition">
+                      🌟 Apresiasi Nilai Bagus
+                    </button>
+                  </div>
+                </div>
+
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-brand-dark">Isi Pesan / Catatan Wali:</label>
+                  <textarea id="parent-msg-text" rows="3" placeholder="Tulis pesan dukungan untuk anak atau catatan untuk guru..." class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl p-3.5 font-medium focus:outline-none focus:border-brand-primary transition">Anak hebat Ayah & Ibu! Terus semangat belajar menulis aksara Jawa dan Bali ya! ❤️</textarea>
+                </div>
+              </div>
+
+              <button type="button" onclick="sendParentMessage()" class="w-full py-3 px-4 bg-brand-accent hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-2">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>💌 Kirim Pesan Orang Tua ke Sabak & Guru</span>
+              </button>
+            </div>
+
+            <!-- Tabel Riwayat Komunikasi Orang Tua & Guru (3 Kolom) -->
+            <div class="lg:col-span-3 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
+              <div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h4 class="text-base font-bold text-brand-dark">Buku Penghubung Digital (Orang Tua & Guru)</h4>
+                    <p class="text-xs text-brand-muted">Riwayat pesan dukungan wali murid dan konfirmasi pendampingan belajar di rumah</p>
+                  </div>
+                  <div class="relative w-full sm:w-60">
+                    <i data-lucide="search" class="w-3.5 h-3.5 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" id="parent-msg-search-input" oninput="renderParentMessages()" placeholder="Cari nama anak / wali..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-brand-bg border border-brand-border rounded-xl focus:outline-none focus:border-brand-primary transition">
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left text-xs min-w-[520px]">
+                    <thead>
+                      <tr class="border-b border-brand-border text-brand-muted text-[10px] uppercase font-semibold">
+                        <th class="pb-2.5">Waktu</th>
+                        <th class="pb-2.5">Nama Anak</th>
+                        <th class="pb-2.5">Orang Tua / Wali</th>
+                        <th class="pb-2.5">Pesan / Catatan</th>
+                        <th class="pb-2.5 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="parent-messages-tbody" class="divide-y divide-brand-border/60">
+                      <!-- Populated via JS -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+
+        <!-- ============================================================== -->
         <!-- TAB 5: FEEDBACK GURU                                           -->
         <!-- ============================================================== -->
         <div id="tab-feedback" class="tab-pane hidden flex-col gap-6">
           
           <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col gap-6">
-            <div>
-              <h4 class="text-base font-bold text-brand-dark">Pusat Umpan Balik Guru (Feedback Console)</h4>
-              <p class="text-xs text-brand-muted">Kirimkan catatan motivasi dan panduan evaluasi langsung ke layar LCD Sabak ESP32 siswa</p>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 class="text-base font-bold text-brand-dark">Pusat Umpan Balik Guru (Feedback Console)</h4>
+                <p class="text-xs text-brand-muted">Kirimkan catatan motivasi dan panduan evaluasi langsung ke layar LCD Sabak ESP32 siswa</p>
+              </div>
+              <!-- Search Bar Filter Nama Siswa di Feedback -->
+              <div class="relative w-full sm:w-64">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="feedback-target-search" oninput="filterFeedbackTargetOptions(this.value)" placeholder="Cari nama siswa penerima..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-brand-bg border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+              </div>
             </div>
 
             <!-- Target Siswa Dropdown -->
@@ -904,6 +1246,12 @@
                 <option value="Sabak #03 - Ahmad Rizki (Remedial Aksara Dha)">Perangkat #03 (Ahmad Rizki - Remedial Aksara Dha)</option>
                 <option value="Sabak #01 - I Putu Raditya (Aksara Ha)">Perangkat #01 (I Putu Raditya - Aksara Ha Sempurna)</option>
                 <option value="Sabak #02 - Ni Kadek Ayu (Aksara Na)">Perangkat #02 (Ni Kadek Ayu - Aksara Na Lulus)</option>
+                <option value="Sabak #04 - Siti Rahmawati (Aksara Ka)">Perangkat #04 (Siti Rahmawati - Aksara Ka Lulus)</option>
+                <option value="Sabak #05 - Budi Santoso (Aksara Ca)">Perangkat #05 (Budi Santoso - Aksara Ca Lulus)</option>
+                <option value="Sabak #06 - Made Wijaya (Aksara Ra)">Perangkat #06 (Made Wijaya - Aksara Ra Sempurna)</option>
+                <option value="Sabak #07 - Dewi Lestari (Aksara Da)">Perangkat #07 (Dewi Lestari - Aksara Da Lulus)</option>
+                <option value="Sabak #08 - Ketut Artawan (Aksara Ta)">Perangkat #08 (Ketut Artawan - Aksara Ta Sempurna)</option>
+                <option value="Sabak #09 - Gede Surya (Remedial Aksara Sa)">Perangkat #09 (Gede Surya - Remedial Aksara Sa)</option>
                 <option value="Siaran Seluruh Kelas 5A">📢 Siaran Seluruh Kelas 5A</option>
                 <option value="Siaran Seluruh Kelas 5B">📢 Siaran Seluruh Kelas 5B</option>
               </select>
@@ -944,7 +1292,13 @@
 
             <!-- Riwayat Pengiriman Terakhir -->
             <div class="mt-4 pt-6 border-t border-brand-border">
-              <h5 class="text-xs font-bold uppercase tracking-wider text-brand-muted mb-3">Log Riwayat Feedback Terkirim</h5>
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                <h5 class="text-xs font-bold uppercase tracking-wider text-brand-muted">Log Riwayat Feedback Terkirim</h5>
+                <div class="relative w-full sm:w-64">
+                  <i data-lucide="search" class="w-3.5 h-3.5 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <input type="text" id="feedback-search-input" oninput="renderFeedbackLogs()" placeholder="Cari nama siswa di riwayat..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-brand-bg border border-brand-border rounded-xl focus:outline-none focus:border-brand-primary transition">
+                </div>
+              </div>
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs min-w-[500px]">
                   <thead>
@@ -1009,11 +1363,17 @@
               </div>
 
               <div class="mt-4 pt-4 border-t border-brand-border/60 flex flex-wrap items-center justify-between gap-3">
-                <button onclick="showToast('Sinyal PING terkirim ke ESP32! Respon: PONG 12ms')" class="px-3.5 py-2 rounded-xl border border-brand-border hover:border-brand-primary text-xs font-semibold text-brand-dark transition">
-                  ⚡ Ping Hardware ESP32
-                </button>
-                <button onclick="showToast('Firmware versi v2.4 sudah mutakhir.')" class="px-3.5 py-2 rounded-xl bg-brand-soft text-brand-primary text-xs font-bold transition">
-                  Cek Pembaruan Firmware
+                <div class="flex items-center gap-2">
+                  <button onclick="showToast('Sinyal PING terkirim ke ESP32! Respon: PONG 12ms')" class="px-3.5 py-2 rounded-xl border border-brand-border hover:border-brand-primary text-xs font-semibold text-brand-dark transition">
+                    ⚡ Ping Hardware ESP32
+                  </button>
+                  <button onclick="showToast('Firmware versi v2.4 sudah mutakhir.')" class="px-3.5 py-2 rounded-xl bg-brand-soft text-brand-primary text-xs font-bold transition">
+                    Cek Firmware
+                  </button>
+                </div>
+                <button onclick="saveHardwareSettingsToFirebase()" class="px-4 py-2 rounded-xl bg-brand-primary hover:bg-brand-hover text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                  <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
+                  <span>Simpan ke Cloud Firestore</span>
                 </button>
               </div>
             </div>
@@ -1069,6 +1429,23 @@
               </button>
             </div>
 
+          </div>
+
+          <!-- Daftar Perangkat Sabak ESP32 Terdaftar per Nama Siswa -->
+          <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col gap-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 class="text-base font-bold text-brand-dark">Daftar Perangkat Sabak ESP32 Siswa</h4>
+                <p class="text-xs text-brand-muted">Cari nama siswa atau orang tua untuk memeriksa status koneksi perangkat Sabak ESP32 masing-masing anak</p>
+              </div>
+              <div class="relative w-full sm:w-72">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="settings-student-search" oninput="renderSettingsDeviceList()" placeholder="Cari nama siswa / pemilik Sabak..." class="w-full pl-8 pr-3 py-2 text-xs bg-brand-bg border border-brand-border rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+              </div>
+            </div>
+            <div id="settings-devices-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <!-- Populated via JS -->
+            </div>
           </div>
 
         </div>
@@ -1218,7 +1595,75 @@
 
 
   <!-- ============================================================== -->
-  <!-- 5. FLOATING TOAST NOTIFICATION                                -->
+  <!-- 5. MODAL PUSAT INTEGRASI DATABASE FIREBASE                     -->
+  <!-- ============================================================== -->
+  <div id="database-modal" class="fixed inset-0 z-50 bg-brand-dark/50 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border border-brand-border w-full max-w-lg overflow-hidden flex flex-col">
+      <div class="p-5 border-b border-brand-border flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-brand-primary flex items-center justify-center font-bold">
+            <i data-lucide="database" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-bold text-brand-dark">Integrasi Firebase Cloud</h4>
+            <p class="text-xs text-brand-muted">Sinkronisasi Cloud Firestore & Real-Time IoT ESP32</p>
+          </div>
+        </div>
+        <button onclick="closeDatabaseModal()" class="p-1.5 rounded-lg hover:bg-gray-100 text-brand-muted hover:text-brand-dark transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 flex flex-col gap-4 text-xs">
+        <!-- Status Box -->
+        <div id="db-modal-status-box" class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div id="db-modal-dot" class="w-3 h-3 rounded-full bg-amber-500"></div>
+            <div>
+              <p id="db-modal-title" class="font-bold text-brand-dark text-sm">Mode Demo Lokal Aktif</p>
+              <p id="db-modal-desc" class="text-brand-muted text-[11px]">Belum terhubung ke Firebase Cloud. Menggunakan data demo lokal.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi Cloud -->
+        <span class="font-bold uppercase tracking-wider text-brand-muted text-[10px]">Aksi Sinkronisasi Realtime:</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button onclick="simulateESP32Tracing()" class="p-3.5 rounded-xl border border-brand-border hover:border-brand-primary bg-white hover:bg-brand-soft/30 transition text-left flex flex-col gap-1 shadow-xs">
+            <span class="font-bold text-brand-dark flex items-center gap-1.5 text-xs">
+              <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+              Simulasi Tracing ESP32
+            </span>
+            <span class="text-[11px] text-brand-muted">Kirim data goresan stylus baru secara live ke Firestore</span>
+          </button>
+
+          <button onclick="triggerSeedDefaultData()" class="p-3.5 rounded-xl border border-brand-border hover:border-brand-primary bg-white hover:bg-brand-soft/30 transition text-left flex flex-col gap-1 shadow-xs">
+            <span class="font-bold text-brand-dark flex items-center gap-1.5 text-xs">
+              <i data-lucide="cloud-upload" class="w-4 h-4 text-brand-primary"></i>
+              Migrasi Data Awal (Seed)
+            </span>
+            <span class="text-[11px] text-brand-muted">Unggah seluruh data master demo ke Firestore (1 klik)</span>
+          </button>
+        </div>
+
+        <!-- Panduan API Key -->
+        <div class="p-3.5 rounded-xl bg-gray-50 border border-brand-border space-y-1.5 text-[11px]">
+          <span class="font-bold text-brand-dark block">Cara Menghubungkan Firebase Asli:</span>
+          <p class="text-brand-muted">1. Buka file <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-brand-border text-brand-primary">web/firebase-keys.js</code></p>
+          <p class="text-brand-muted">2. Tempelkan <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-brand-border text-brand-primary">apiKey</code> dan <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-brand-border text-brand-primary">projectId</code> dari Firebase Console</p>
+          <p class="text-emerald-700 font-medium">🛡️ File tersebut otomatis masuk <code class="font-mono">.gitignore</code> dan tidak akan pernah ter-push ke GitHub.</p>
+        </div>
+      </div>
+
+      <div class="p-4 bg-gray-50 border-t border-brand-border flex items-center justify-end">
+        <button onclick="closeDatabaseModal()" class="px-4 py-2 bg-brand-primary text-white rounded-xl text-xs font-bold hover:bg-brand-hover transition">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============================================================== -->
+  <!-- 6. FLOATING TOAST NOTIFICATION                                -->
   <!-- ============================================================== -->
   <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
     <div class="bg-brand-dark text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-white/10">
@@ -1232,7 +1677,101 @@
   <!-- 6. LOGIKA SCRIPT (JAVASCRIPT LENGKAP & RESPONSIF)              -->
   <!-- ============================================================== -->
   <script>
-    // DATA MASTER PENILAIAN MATERI (POINT AKHIR & XP)
+    /**
+     * Parsing waktu universal (Timestamp Firestore, ISO 8601, string relatif Bahasa Indonesia)
+     * Menghasilkan nilai milidetik untuk pengurutan akurat dari TERBARU ke TERLAMA (Descending).
+     */
+    function parseItemTimestamp(item) {
+      if (!item) return 0;
+      
+      const rawCreated = item.createdAt;
+      if (rawCreated) {
+        if (typeof rawCreated.toMillis === 'function') return rawCreated.toMillis();
+        if (typeof rawCreated.toDate === 'function') return rawCreated.toDate().getTime();
+        if (typeof rawCreated === 'object' && rawCreated.seconds !== undefined) {
+          return rawCreated.seconds * 1000 + (rawCreated.nanoseconds ? rawCreated.nanoseconds / 1000000 : 0);
+        }
+        if (typeof rawCreated === 'number') return rawCreated;
+        const parsedIso = Date.parse(rawCreated);
+        if (!isNaN(parsedIso)) return parsedIso;
+      }
+
+      const timeStr = String(item.completedDate || item.time || item.timestamp || '').trim();
+      if (!timeStr) return 0;
+
+      const lower = timeStr.toLowerCase();
+
+      if (lower.includes('baru') || lower.includes('detik')) {
+        return Date.now();
+      }
+
+      const menitMatch = lower.match(/(\d+)\s*menit/);
+      if (menitMatch) {
+        return Date.now() - parseInt(menitMatch[1], 10) * 60000;
+      }
+
+      const jamMatch = lower.match(/(\d+)\s*jam/);
+      if (jamMatch) {
+        return Date.now() - parseInt(jamMatch[1], 10) * 3600000;
+      }
+
+      const now = new Date();
+
+      if (lower.includes('hari ini')) {
+        const timeMatch = lower.match(/(\d{1,2}):(\d{2})/);
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (timeMatch) {
+          d.setHours(parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10), 0, 0);
+        } else {
+          d.setHours(12, 0, 0, 0);
+        }
+        return d.getTime();
+      }
+
+      if (lower.includes('kemarin')) {
+        const timeMatch = lower.match(/(\d{1,2}):(\d{2})/);
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        if (timeMatch) {
+          d.setHours(parseInt(timeMatch[1], 10), parseInt(timeMatch[2], 10), 0, 0);
+        } else {
+          d.setHours(12, 0, 0, 0);
+        }
+        return d.getTime();
+      }
+
+      const monthsMap = {
+        'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'mei': 4, 'may': 4,
+        'jun': 5, 'jul': 6, 'agu': 7, 'ags': 7, 'aug': 7, 'sep': 8,
+        'okt': 9, 'oct': 9, 'nov': 10, 'des': 11, 'dec': 11
+      };
+
+      const dateRegex = /(\d{1,2})\s+([a-zA-Z]+)(?:\s+(\d{4}))?(?:[,\s]+(\d{1,2}):(\d{2}))?/;
+      const match = lower.match(dateRegex);
+      if (match) {
+        const day = parseInt(match[1], 10);
+        const monthKey = match[2].substring(0, 3);
+        const year = match[3] ? parseInt(match[3], 10) : now.getFullYear();
+        const hour = match[4] ? parseInt(match[4], 10) : 12;
+        const minute = match[5] ? parseInt(match[5], 10) : 0;
+
+        if (monthsMap[monthKey] !== undefined) {
+          return new Date(year, monthsMap[monthKey], day, hour, minute, 0).getTime();
+        }
+      }
+
+      const clockOnly = lower.match(/^(\d{1,2}):(\d{2})$/);
+      if (clockOnly) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(clockOnly[1], 10), parseInt(clockOnly[2], 10), 0);
+        return d.getTime();
+      }
+
+      const parsed = Date.parse(timeStr);
+      if (!isNaN(parsed)) return parsed;
+
+      return 0;
+    }
+
+    // DATA MASTER PENILAIAN MATERI (POINT AKHIR & XP) - Tersusun dari Terbaru ke Terlama
     const MATERI_ASSESSMENTS = [
       {
         id: "MTR-001",
@@ -1242,6 +1781,7 @@
         materiTitle: "Carakan Jawa - Konsonan Dasar (Ha-Na-Ca-Ra-Ka)",
         script: "Jawa",
         completedDate: "Hari ini, 14:15",
+        createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
         accuracyScore: 98,
         speedScore: 94,
         strokeStability: 96,
@@ -1261,6 +1801,7 @@
         materiTitle: "Wreastra Bali - Aksara Swalalita & Wianjana",
         script: "Bali",
         completedDate: "Hari ini, 13:40",
+        createdAt: new Date(Date.now() - 65 * 60000).toISOString(),
         accuracyScore: 94,
         speedScore: 90,
         strokeStability: 92,
@@ -1273,6 +1814,26 @@
         feedback: "Lekukan aksara Bali sangat luwes dan proporsional."
       },
       {
+        id: "MTR-006",
+        studentName: "Ahmad Rizki",
+        class: "5A",
+        avatar: "AR",
+        materiTitle: "Carakan Jawa - Konsonan Khusus (Dha & Tha)",
+        script: "Jawa",
+        completedDate: "Hari ini, 11:05",
+        createdAt: new Date(Date.now() - 220 * 60000).toISOString(),
+        accuracyScore: 62,
+        speedScore: 68,
+        strokeStability: 64,
+        finalScore: 64,
+        grade: "Remedial",
+        xpEarned: 80,
+        bonusStreakXp: 0,
+        totalXp: 80,
+        status: "REMEDIAL",
+        feedback: "Perlu latihan ulang checkpoint P2-P3 aksara Dha. Ulangi modul."
+      },
+      {
         id: "MTR-003",
         studentName: "Siti Rahmawati",
         class: "5B",
@@ -1280,6 +1841,7 @@
         materiTitle: "Carakan Jawa - Pasangan & Sandhangan Swara",
         script: "Jawa",
         completedDate: "Kemarin, 16:10",
+        createdAt: new Date(Date.now() - 86000000).toISOString(),
         accuracyScore: 90,
         speedScore: 86,
         strokeStability: 88,
@@ -1299,6 +1861,7 @@
         materiTitle: "Wreastra Bali - Gantungan & Gempelan",
         script: "Bali",
         completedDate: "Kemarin, 15:20",
+        createdAt: new Date(Date.now() - 89000000).toISOString(),
         accuracyScore: 96,
         speedScore: 92,
         strokeStability: 94,
@@ -1318,6 +1881,7 @@
         materiTitle: "Carakan Jawa - Dha, Ja, Ya, Nya, Ma",
         script: "Jawa",
         completedDate: "23 Mei, 11:30",
+        createdAt: "2026-05-23T11:30:00Z",
         accuracyScore: 82,
         speedScore: 80,
         strokeStability: 84,
@@ -1330,25 +1894,6 @@
         feedback: "Aksara Dha sedikit kaku, namun tuntas di atas KKM."
       },
       {
-        id: "MTR-006",
-        studentName: "Ahmad Rizki",
-        class: "5A",
-        avatar: "AR",
-        materiTitle: "Carakan Jawa - Konsonan Khusus (Dha & Tha)",
-        script: "Jawa",
-        completedDate: "Hari ini, 11:05",
-        accuracyScore: 62,
-        speedScore: 68,
-        strokeStability: 64,
-        finalScore: 64,
-        grade: "Remedial",
-        xpEarned: 80,
-        bonusStreakXp: 0,
-        totalXp: 80,
-        status: "REMEDIAL",
-        feedback: "Perlu latihan ulang checkpoint P2-P3 aksara Dha. Ulangi modul."
-      },
-      {
         id: "MTR-007",
         studentName: "Gede Surya",
         class: "5A",
@@ -1356,6 +1901,7 @@
         materiTitle: "Wreastra Bali - Pengangge Tengenan",
         script: "Bali",
         completedDate: "22 Mei, 13:00",
+        createdAt: "2026-05-22T13:00:00Z",
         accuracyScore: 68,
         speedScore: 70,
         strokeStability: 66,
@@ -1369,20 +1915,20 @@
       }
     ];
 
-    // DATA MASTER SUBMISSION HARIAN
+    // DATA MASTER SUBMISSION HARIAN - Tersusun dari Terbaru ke Terlama
     const ALL_SUBMISSIONS = [
-      { name: "I Putu Raditya", class: "5A", script: "Jawa", aksara: "Ha (ꦲ)", precision: 96, score: 98, status: "Sempurna", time: "Hari ini, 14:20" },
-      { name: "Ni Kadek Ayu", class: "5B", script: "Bali", aksara: "Na (ᬦ)", precision: 91, score: 92, status: "Lulus", time: "Hari ini, 13:45" },
-      { name: "Ahmad Rizki", class: "5A", script: "Jawa", aksara: "Dha (ꦝ)", precision: 64, score: 65, status: "Remedial", time: "Hari ini, 11:10" },
-      { name: "Siti Rahmawati", class: "5B", script: "Jawa", aksara: "Ka (ꦏ)", precision: 88, score: 88, status: "Lulus", time: "Kemarin, 16:05" },
-      { name: "Budi Santoso", class: "5A", script: "Bali", aksara: "Ca (ᬘ)", precision: 82, score: 80, status: "Lulus", time: "Kemarin, 14:30" },
-      { name: "Made Wijaya", class: "5B", script: "Bali", aksara: "Ra (ᬭ)", precision: 95, score: 96, status: "Sempurna", time: "23 Mei, 10:15" },
-      { name: "Dewi Lestari", class: "5A", script: "Jawa", aksara: "Da (ꦢ)", precision: 78, score: 76, status: "Lulus", time: "23 Mei, 09:40" },
-      { name: "Ketut Artawan", class: "5B", script: "Bali", aksara: "Ta (ᬢ)", precision: 93, score: 94, status: "Sempurna", time: "22 Mei, 15:20" },
-      { name: "Gede Surya", class: "5A", script: "Bali", aksara: "Sa (ᬲ)", precision: 70, score: 68, status: "Remedial", time: "22 Mei, 13:10" },
-      { name: "Anisa Putri", class: "5B", script: "Jawa", aksara: "Wa (ꦮ)", precision: 86, score: 85, status: "Lulus", time: "21 Mei, 11:30" },
-      { name: "Komang Bagus", class: "5A", script: "Bali", aksara: "La (ᬮ)", precision: 90, score: 90, status: "Lulus", time: "21 Mei, 10:05" },
-      { name: "Fajar Nugraha", class: "5B", script: "Jawa", aksara: "Pa (ꦥ)", precision: 84, score: 82, status: "Lulus", time: "20 Mei, 14:50" }
+      { name: "I Putu Raditya", class: "5A", script: "Jawa", aksara: "Ha (ꦲ)", precision: 96, score: 98, status: "Sempurna", time: "Hari ini, 14:20", createdAt: new Date(Date.now() - 25 * 60000).toISOString() },
+      { name: "Ni Kadek Ayu", class: "5B", script: "Bali", aksara: "Na (ᬦ)", precision: 91, score: 92, status: "Lulus", time: "Hari ini, 13:45", createdAt: new Date(Date.now() - 60 * 60000).toISOString() },
+      { name: "Ahmad Rizki", class: "5A", script: "Jawa", aksara: "Dha (ꦝ)", precision: 64, score: 65, status: "Remedial", time: "Hari ini, 11:10", createdAt: new Date(Date.now() - 215 * 60000).toISOString() },
+      { name: "Siti Rahmawati", class: "5B", script: "Jawa", aksara: "Ka (ꦏ)", precision: 88, score: 88, status: "Lulus", time: "Kemarin, 16:05", createdAt: new Date(Date.now() - 86400000).toISOString() },
+      { name: "Budi Santoso", class: "5A", script: "Bali", aksara: "Ca (ᬘ)", precision: 82, score: 80, status: "Lulus", time: "Kemarin, 14:30", createdAt: new Date(Date.now() - 92000000).toISOString() },
+      { name: "Made Wijaya", class: "5B", script: "Bali", aksara: "Ra (ᬭ)", precision: 95, score: 96, status: "Sempurna", time: "23 Mei, 10:15", createdAt: "2026-05-23T10:15:00Z" },
+      { name: "Dewi Lestari", class: "5A", script: "Jawa", aksara: "Da (ꦢ)", precision: 78, score: 76, status: "Lulus", time: "23 Mei, 09:40", createdAt: "2026-05-23T09:40:00Z" },
+      { name: "Ketut Artawan", class: "5B", script: "Bali", aksara: "Ta (ᬢ)", precision: 93, score: 94, status: "Sempurna", time: "22 Mei, 15:20", createdAt: "2026-05-22T15:20:00Z" },
+      { name: "Gede Surya", class: "5A", script: "Bali", aksara: "Sa (ᬲ)", precision: 70, score: 68, status: "Remedial", time: "22 Mei, 13:10", createdAt: "2026-05-22T13:10:00Z" },
+      { name: "Anisa Putri", class: "5B", script: "Jawa", aksara: "Wa (ꦮ)", precision: 86, score: 85, status: "Lulus", time: "21 Mei, 11:30", createdAt: "2026-05-21T11:30:00Z" },
+      { name: "Komang Bagus", class: "5A", script: "Bali", aksara: "La (ᬮ)", precision: 90, score: 90, status: "Lulus", time: "21 Mei, 10:05", createdAt: "2026-05-21T10:05:00Z" },
+      { name: "Fajar Nugraha", class: "5B", script: "Jawa", aksara: "Pa (ꦥ)", precision: 84, score: 82, status: "Lulus", time: "20 Mei, 14:50", createdAt: "2026-05-20T14:50:00Z" }
     ];
 
     // DATA MINGGUAN CHART (DETAIL LENGKAP)
@@ -1438,17 +1984,384 @@
     ];
 
     let FEEDBACK_LOGS = [
-      { time: "14:22", target: "Sabak #01 (I Putu Raditya)", text: "Hebat sekali! Lekukan goresanmu sangat rapi dan presisi!", status: "Terkirim (COM3)" },
-      { time: "11:15", target: "Sabak #03 (Ahmad Rizki)", text: "Perhatikan lekukan aksara Dha ya! Ulangi modulnya.", status: "Terkirim (COM3)" },
-      { time: "Kemarin", target: "📢 Siaran Kelas 5A", text: "Selamat berlatih modul aksara Jawa hari ini!", status: "Broadcast Selesai" }
+      { time: "14:22", createdAt: new Date(Date.now() - 20 * 60000).toISOString(), target: "Sabak #01 (I Putu Raditya)", text: "Hebat sekali! Lekukan goresanmu sangat rapi dan presisi!", status: "Terkirim (COM3)" },
+      { time: "11:15", createdAt: new Date(Date.now() - 200 * 60000).toISOString(), target: "Sabak #03 (Ahmad Rizki)", text: "Perhatikan lekukan aksara Dha ya! Ulangi modulnya.", status: "Terkirim (COM3)" },
+      { time: "Kemarin", createdAt: new Date(Date.now() - 86400000).toISOString(), target: "📢 Siaran Kelas 5A", text: "Selamat berlatih modul aksara Jawa hari ini!", status: "Broadcast Selesai" }
     ];
 
+    // DATA DIREKTORI ORANG TUA / WALI MURID & PROFIL PENDAMPINGAN RUMAH
+    const PARENT_DIRECTORY = {
+      "I Putu Raditya": {
+        parentName: "Bpk. I Wayan Sudarma & Ibu Ni Luh Sari",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7801",
+        sabakId: "Sabak #01",
+        jawaMastery: 96,
+        baliMastery: 94,
+        verified: true,
+        homeTip: "Pertahankan latihan menulis pasangan aksara Jawa & gantungan Bali 10 menit setiap sore."
+      },
+      "Ni Kadek Ayu": {
+        parentName: "Bpk. I Made Suardika & Ibu Ketut Murni",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7802",
+        sabakId: "Sabak #02",
+        jawaMastery: 90,
+        baliMastery: 95,
+        verified: true,
+        homeTip: "Sudah sangat mahir pada Wreastra Bali. Bisa mulai latihan keaksaraan lontar tingkat lanjut."
+      },
+      "Ahmad Rizki": {
+        parentName: "Bpk. Hendra Pratama & Ibu Rina Wati",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7803",
+        sabakId: "Sabak #03",
+        jawaMastery: 65,
+        baliMastery: 70,
+        verified: false,
+        homeTip: "Mohon pendampingan latihan lekukan aksara Dha (ꦝ) dan Sa (ᬲ) secara perlahan di rumah."
+      },
+      "Siti Rahmawati": {
+        parentName: "Bpk. Agus Salim & Ibu Nurhayati",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7804",
+        sabakId: "Sabak #04",
+        jawaMastery: 92,
+        baliMastery: 88,
+        verified: true,
+        homeTip: "Goresan stylus sangat stabil. Lanjutkan latihan sandhangan suara pada modul berikutnya."
+      },
+      "Budi Santoso": {
+        parentName: "Bpk. Joko Susilo & Ibu Sri Wahyuni",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7805",
+        sabakId: "Sabak #05",
+        jawaMastery: 84,
+        baliMastery: 82,
+        verified: true,
+        homeTip: "Tingkatkan kelancaran transisi antar titik checkpoint pada aksara Ca dan Dha."
+      },
+      "Made Wijaya": {
+        parentName: "Bpk. Nyoman Wijaya & Ibu Desak Putu",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7806",
+        sabakId: "Sabak #06",
+        jawaMastery: 91,
+        baliMastery: 96,
+        verified: true,
+        homeTip: "Sangat baik dan teliti! Pertahankan konsistensi kecepatan goresan stylus."
+      },
+      "Dewi Lestari": {
+        parentName: "Bpk. Bambang Purnomo & Ibu Endang",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7807",
+        sabakId: "Sabak #07",
+        jawaMastery: 80,
+        baliMastery: 78,
+        verified: true,
+        homeTip: "Latih ulang penekanan stylus agar garis akhir aksara Da (ꦢ) lebih tegas."
+      },
+      "Ketut Artawan": {
+        parentName: "Bpk. Ketut Subagia & Ibu Wayan Ratna",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7808",
+        sabakId: "Sabak #08",
+        jawaMastery: 89,
+        baliMastery: 94,
+        verified: true,
+        homeTip: "Penguasaan pengangge suara Bali sangat rapi. Siap menuju kuis memori kartu."
+      },
+      "Gede Surya": {
+        parentName: "Bpk. Gede Ardana & Ibu Kadek Yuni",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7809",
+        sabakId: "Sabak #09",
+        jawaMastery: 72,
+        baliMastery: 68,
+        verified: false,
+        homeTip: "Perlu mengulang modul Pengangge Tengenan (bisah & surang) bersama orang tua."
+      },
+      "Anisa Putri": {
+        parentName: "Bpk. Lukman Hakim & Ibu Fitriani",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7810",
+        sabakId: "Sabak #10",
+        jawaMastery: 86,
+        baliMastery: 84,
+        verified: true,
+        homeTip: "Perkembangan sangat positif minggu ini, teruskan latihan rutin."
+      },
+      "Komang Bagus": {
+        parentName: "Bpk. Komang Adi & Ibu Luh Gede",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7811",
+        sabakId: "Sabak #11",
+        jawaMastery: 88,
+        baliMastery: 91,
+        verified: true,
+        homeTip: "Sudah tuntas modul La (ᬮ) dengan presisi 90%."
+      },
+      "Fajar Nugraha": {
+        parentName: "Bpk. Eko Nugraha & Ibu Wulan",
+        relation: "Ayah & Ibu",
+        phone: "0812-3456-7812",
+        sabakId: "Sabak #12",
+        jawaMastery: 84,
+        baliMastery: 81,
+        verified: false,
+        homeTip: "Dampingi latihan aksara Pa (ꦥ) agar goresan awal tidak terlewat."
+      }
+    };
+
+    // RIWAYAT BUKU PENGHUBUNG ORANG TUA & GURU (Terbaru ke Terlama)
+    let PARENT_MESSAGES = [
+      {
+        time: "Hari ini, 14:30",
+        createdAt: new Date(Date.now() - 10 * 60000).toISOString(),
+        studentName: "I Putu Raditya",
+        class: "5A",
+        parentName: "Bpk. I Wayan Sudarma",
+        text: "Terima kasih Pak Guru, Raditya senang sekali belajar aksara Jawa & Bali pakai Sabak ESP32!",
+        status: "Tampil di Sabak #01"
+      },
+      {
+        time: "Hari ini, 13:55",
+        createdAt: new Date(Date.now() - 45 * 60000).toISOString(),
+        studentName: "Ni Kadek Ayu",
+        class: "5B",
+        parentName: "Ibu Ketut Murni",
+        text: "Nilai rapor Kadek Ayu sudah kami periksa. Semangat terus anak Ibu sayang! ❤️",
+        status: "Tampil di Sabak #02"
+      },
+      {
+        time: "Hari ini, 11:30",
+        createdAt: new Date(Date.now() - 190 * 60000).toISOString(),
+        studentName: "Ahmad Rizki",
+        class: "5A",
+        parentName: "Bpk. Hendra Pratama",
+        text: "Baik Pak Guru, nanti malam kami dampingi Rizki latihan ulang modul aksara Dha di rumah.",
+        status: "Diterima Wali Kelas"
+      },
+      {
+        time: "Kemarin, 19:20",
+        createdAt: new Date(Date.now() - 75000000).toISOString(),
+        studentName: "Siti Rahmawati",
+        class: "5B",
+        parentName: "Ibu Nurhayati",
+        text: "Alhamdulillah nilai Siti meningkat minggu ini. Terima kasih bimbingannya Bu Guru.",
+        status: "Tampil di Sabak #04"
+      }
+    ];
+
+    // Helper untuk menyatukan seluruh data siswa secara dinamis (Leaderboard + Submissions + Assessments)
+    function getUnifiedStudentsList() {
+      const map = new Map();
+
+      STUDENTS_LEADERBOARD.forEach(s => {
+        const meta = PARENT_DIRECTORY[s.name] || {};
+        map.set(s.name, {
+          name: s.name,
+          class: s.class || "5A",
+          xp: s.xp || 3000,
+          acc: parseFloat(s.acc) || 85,
+          badge: s.badge || "Pelajar Aktif",
+          parentName: meta.parentName || `Orang Tua / Wali dari ${s.name}`,
+          phone: meta.phone || "0812-3456-7800",
+          sabakId: meta.sabakId || `Sabak #${String(map.size + 1).padStart(2, '0')}`,
+          jawaMastery: meta.jawaMastery || 85,
+          baliMastery: meta.baliMastery || 85,
+          verified: meta.verified !== undefined ? meta.verified : true,
+          homeTip: meta.homeTip || "Dampingi anak mengulang latihan goresan aksara 10 menit setiap hari.",
+          submissions: [],
+          assessments: []
+        });
+      });
+
+      ALL_SUBMISSIONS.forEach(sub => {
+        if (!sub || !sub.name) return;
+        if (!map.has(sub.name)) {
+          const meta = PARENT_DIRECTORY[sub.name] || {};
+          map.set(sub.name, {
+            name: sub.name,
+            class: sub.class || "5A",
+            xp: 3250,
+            acc: sub.precision || 84,
+            badge: (sub.score >= 85) ? "Bintang Aksara" : (sub.score < 75 ? "Perlu Bimbingan" : "Pelajar Teladan"),
+            parentName: meta.parentName || `Orang Tua / Wali dari ${sub.name}`,
+            phone: meta.phone || "0812-3456-7899",
+            sabakId: meta.sabakId || `Sabak #${String(map.size + 1).padStart(2, '0')}`,
+            jawaMastery: meta.jawaMastery || (sub.script === 'Jawa' ? sub.score : 82),
+            baliMastery: meta.baliMastery || (sub.script === 'Bali' ? sub.score : 82),
+            verified: meta.verified !== undefined ? meta.verified : false,
+            homeTip: meta.homeTip || "Terus berlatih menjaga stabilitas goresan stylus pada titik checkpoint.",
+            submissions: [],
+            assessments: []
+          });
+        }
+        map.get(sub.name).submissions.push(sub);
+      });
+
+      MATERI_ASSESSMENTS.forEach(ass => {
+        if (!ass || !ass.studentName) return;
+        if (!map.has(ass.studentName)) {
+          const meta = PARENT_DIRECTORY[ass.studentName] || {};
+          map.set(ass.studentName, {
+            name: ass.studentName,
+            class: ass.class || "5A",
+            xp: ass.totalXp ? ass.totalXp * 10 : 3200,
+            acc: ass.accuracyScore || 85,
+            badge: ass.status === 'REMEDIAL' ? "Perlu Bimbingan" : "Pelajar Teladan",
+            parentName: meta.parentName || `Orang Tua / Wali dari ${ass.studentName}`,
+            phone: meta.phone || "0812-3456-7899",
+            sabakId: meta.sabakId || `Sabak #${String(map.size + 1).padStart(2, '0')}`,
+            jawaMastery: meta.jawaMastery || 82,
+            baliMastery: meta.baliMastery || 82,
+            verified: meta.verified !== undefined ? meta.verified : false,
+            homeTip: meta.homeTip || ass.feedback || "Dampingi latihan modul aksara di rumah.",
+            submissions: [],
+            assessments: []
+          });
+        }
+        map.get(ass.studentName).assessments.push(ass);
+      });
+
+      const result = Array.from(map.values());
+      result.forEach(st => {
+        st.submissions.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+        st.assessments.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+        const scores = [
+          ...st.submissions.map(s => Number(s.score) || 0),
+          ...st.assessments.map(a => Number(a.finalScore) || 0)
+        ].filter(n => n > 0);
+        st.avgScore = scores.length > 0
+          ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+          : Math.round(st.acc);
+        st.status = (st.avgScore < 75 || st.badge.includes('Perlu')) ? 'REMEDIAL' : 'TUNTAS';
+      });
+
+      return result;
+    }
+
     // ==============================================================
-    // LOGIKA LOGIN, LOGOUT & MOBILE DRAWER
+    // LOGIKA LOGIN, LOGOUT, ROLE SWITCHER & FIREBASE AUTHENTICATION
     // ==============================================================
-    function handleLoginSubmit(e) {
+    function switchLoginRole(role) {
+      const btnTeacher = document.getElementById('login-tab-teacher');
+      const btnParent = document.getElementById('login-tab-parent');
+      const panelTeacher = document.getElementById('login-panel-teacher');
+      const panelParent = document.getElementById('login-panel-parent');
+
+      if (!btnTeacher || !btnParent || !panelTeacher || !panelParent) return;
+
+      if (role === 'parent') {
+        btnParent.className = "py-2 px-3 rounded-lg text-xs font-bold bg-white text-brand-primary shadow-xs transition flex items-center justify-center gap-1.5";
+        btnTeacher.className = "py-2 px-3 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition flex items-center justify-center gap-1.5";
+        panelTeacher.classList.add('hidden');
+        panelParent.classList.remove('hidden');
+        renderLoginParentSearchPreview(document.getElementById('login-student-search')?.value || '');
+      } else {
+        btnTeacher.className = "py-2 px-3 rounded-lg text-xs font-bold bg-white text-brand-primary shadow-xs transition flex items-center justify-center gap-1.5";
+        btnParent.className = "py-2 px-3 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition flex items-center justify-center gap-1.5";
+        panelParent.classList.add('hidden');
+        panelTeacher.classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function renderLoginParentSearchPreview(query) {
+      const container = document.getElementById('login-parent-search-results');
+      if (!container) return;
+      const q = (query || '').toLowerCase().trim();
+      const students = getUnifiedStudentsList();
+      const filtered = students.filter(s =>
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        s.parentName.toLowerCase().includes(q) ||
+        s.class.toLowerCase().includes(q)
+      );
+
+      container.innerHTML = '';
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-xs text-brand-muted p-2 text-center">Nama siswa/wali "${query}" tidak ditemukan.</p>`;
+        return;
+      }
+
+      filtered.slice(0, 5).forEach(s => {
+        const div = document.createElement('div');
+        div.className = "p-2.5 rounded-xl bg-white hover:bg-brand-soft/60 border border-brand-border hover:border-brand-primary cursor-pointer transition flex items-center justify-between gap-2";
+        div.onclick = () => {
+          const input = document.getElementById('login-student-search');
+          if (input) input.value = s.name;
+          enterParentPortalFromLogin(s.name);
+        };
+        div.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-7 h-7 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px] flex items-center justify-center shrink-0">${s.name.substring(0, 2).toUpperCase()}</span>
+            <div class="truncate">
+              <p class="text-xs font-bold text-brand-dark truncate">${s.name} <span class="text-[10px] font-normal text-brand-muted">(Kelas ${s.class})</span></p>
+              <p class="text-[10px] text-brand-muted truncate">Wali: ${s.parentName}</p>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded-lg bg-brand-soft text-brand-primary font-bold text-[10px] shrink-0">Lihat Nilai →</span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function enterParentPortalFromLogin(selectedName) {
+      const searchVal = selectedName || (document.getElementById('login-student-search')?.value || '').trim();
+      const students = getUnifiedStudentsList();
+      const matched = students.find(s =>
+        searchVal && (
+          s.name.toLowerCase().includes(searchVal.toLowerCase()) ||
+          s.parentName.toLowerCase().includes(searchVal.toLowerCase())
+        )
+      ) || students[0];
+
+      const parentShort = matched ? matched.parentName.split('&')[0].trim() : "Orang Tua Siswa";
+      const initials = matched ? matched.name.substring(0, 2).toUpperCase() : "OT";
+      loginAsParent(parentShort, `Wali dari ${matched.name} (${matched.class})`, initials, searchVal || matched.name);
+    }
+
+    function loginAsParent(name, role, avatar, studentFilter = '') {
+      executeLogin(name, role, avatar);
+      switchTab('parents');
+      const parentSearch = document.getElementById('parent-search-input');
+      if (parentSearch) {
+        parentSearch.value = studentFilter || '';
+      }
+      renderParentPortal();
+      showToast(`Selamat datang di Portal Orang Tua, ${name}!`);
+    }
+    async function handleLoginSubmit(e) {
       e.preventDefault();
-      executeLogin("Pak Guru Yoga", "Wali Kelas 5A & 5B", "PG");
+      const email = document.getElementById('login-email').value.trim();
+      const pwd = document.getElementById('login-password').value;
+
+      // Coba autentikasi Firebase jika terkonfigurasi
+      if (typeof firebaseLoginTeacher === 'function' && window.FirebaseState && window.FirebaseState.isConfigured) {
+        showToast("Menghubungkan ke Firebase Auth...");
+        const res = await firebaseLoginTeacher(email, pwd);
+        if (res.success) {
+          const isDesak = email.toLowerCase().includes('desak');
+          const name = isDesak ? "Bu Guru Desak" : "Pak Guru Yoga";
+          const role = isDesak ? "Guru Bahasa Bali" : "Wali Kelas 5A & 5B";
+          const avatar = isDesak ? "BD" : "PG";
+          executeLogin(name, role, avatar);
+          showToast(`🟢 Login Firebase Auth Berhasil (${email})`);
+          return;
+        } else {
+          showToast(`Koneksi Firebase: ${res.error}. Masuk via sesi lokal.`);
+        }
+      }
+
+      // Fallback sesi lokal
+      const isDesak = email.toLowerCase().includes('desak');
+      executeLogin(
+        isDesak ? "Bu Guru Desak" : "Pak Guru Yoga",
+        isDesak ? "Guru Bahasa Bali" : "Wali Kelas 5A & 5B",
+        isDesak ? "BD" : "PG"
+      );
     }
 
     function loginAs(name, role, avatar) {
@@ -1471,7 +2384,11 @@
       lucide.createIcons();
     }
 
-    function handleLogout() {
+    async function handleLogout() {
+      if (typeof firebaseLogoutTeacher === 'function') {
+        await firebaseLogoutTeacher();
+      }
+
       // Hide dashboard completely, display login screen
       const dashboard = document.getElementById('view-dashboard');
       dashboard.classList.add('hidden');
@@ -1531,6 +2448,7 @@
         assessments: { title: "Penilaian Materi & Perolehan XP", sub: "Rekap point akhir modul dan akumulasi XP setiap siswa menyelesaikan materi" },
         curriculum: { title: "Katalog Materi & Titik Checkpoints", sub: "Panduan arah goresan P1-Pn dan evaluasi batas toleransi goresan radius 18px" },
         students: { title: "Data Kelas & Siswa", sub: "Peringkat keaktifan, total XP, dan daftar siswa yang memerlukan bimbingan remedial" },
+        parents: { title: "Portal Orang Tua & Wali Murid", sub: "Pantau nilai anak, penguasaan aksara Jawa & Bali, konfirmasi rapor, dan komunikasi guru" },
         feedback: { title: "Pusat Umpan Balik Guru", sub: "Kirim pesan motivasi langsung ke layar LCD Sabak ESP32 siswa saat latihan" },
         settings: { title: "Setelan & Integrasi Hardware ESP32", sub: "Konfigurasi audio DFPlayer, volume, koneksi serial COM3, dan sensor stylus" }
       };
@@ -1538,6 +2456,12 @@
       if (titles[tabId]) {
         document.getElementById('page-title').innerText = titles[tabId].title;
         document.getElementById('page-subtitle').innerText = titles[tabId].sub;
+      }
+
+      if (tabId === 'parents') {
+        renderParentPortal();
+      } else if (tabId === 'settings') {
+        renderSettingsDeviceList();
       }
 
       lucide.createIcons();
@@ -1551,7 +2475,27 @@
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      data.forEach(item => {
+      // Terapkan pengurutan (default: Terbaru ke Terlama)
+      const sortVal = document.getElementById('assessment-filter-sort') ? document.getElementById('assessment-filter-sort').value : 'newest';
+      let sortedData = (data || MATERI_ASSESSMENTS).slice();
+      if (sortVal === 'newest') {
+        sortedData.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+      } else if (sortVal === 'oldest') {
+        sortedData.sort((a, b) => parseItemTimestamp(a) - parseItemTimestamp(b));
+      } else if (sortVal === 'score_desc') {
+        sortedData.sort((a, b) => (b.finalScore || 0) - (a.finalScore || 0));
+      } else if (sortVal === 'score_asc') {
+        sortedData.sort((a, b) => (a.finalScore || 0) - (b.finalScore || 0));
+      } else if (sortVal === 'xp_desc') {
+        sortedData.sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0));
+      }
+
+      if (sortedData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-xs text-brand-muted">Tidak ada data penilaian untuk nama yang dicari.</td></tr>`;
+        return;
+      }
+
+      sortedData.forEach(item => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-brand-bg/50 cursor-pointer transition text-xs";
         tr.onclick = () => openAssessmentModal(item);
@@ -1559,13 +2503,14 @@
         const statusBadge = item.status === 'TUNTAS' 
           ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
           : 'bg-rose-50 text-rose-800 border-rose-200';
+        const parentInfo = PARENT_DIRECTORY[item.studentName]?.parentName || '';
 
         tr.innerHTML = `
           <td class="py-3 font-bold text-brand-dark flex items-center gap-2.5">
             <span class="w-7 h-7 rounded-full bg-brand-soft text-brand-primary font-bold text-[10px] flex items-center justify-center shrink-0 shadow-xs">${item.avatar}</span>
             <div>
               <p class="font-bold text-brand-dark leading-tight">${item.studentName}</p>
-              <p class="text-[10px] text-brand-muted font-normal">Kelas ${item.class}</p>
+              <p class="text-[10px] text-brand-muted font-normal">Kelas ${item.class}${parentInfo ? ' • ' + parentInfo.split('&')[0].trim() : ''}</p>
             </div>
           </td>
           <td class="py-3 font-semibold text-brand-dark">${item.materiTitle}</td>
@@ -1596,13 +2541,20 @@
     }
 
     function filterAssessments() {
-      const scriptVal = document.getElementById('assessment-filter-script').value;
-      const statusVal = document.getElementById('assessment-filter-status').value;
+      const scriptVal = document.getElementById('assessment-filter-script') ? document.getElementById('assessment-filter-script').value : 'all';
+      const statusVal = document.getElementById('assessment-filter-status') ? document.getElementById('assessment-filter-status').value : 'all';
+      const searchQ = (document.getElementById('assessment-search-input')?.value || '').toLowerCase().trim();
 
       const filtered = MATERI_ASSESSMENTS.filter(i => {
         const matchScript = scriptVal === 'all' || i.script === scriptVal;
         const matchStatus = statusVal === 'all' || i.status === statusVal;
-        return matchScript && matchStatus;
+        const parentName = (PARENT_DIRECTORY[i.studentName]?.parentName || '').toLowerCase();
+        const matchSearch = !searchQ ||
+          i.studentName.toLowerCase().includes(searchQ) ||
+          parentName.includes(searchQ) ||
+          i.materiTitle.toLowerCase().includes(searchQ) ||
+          i.class.toLowerCase().includes(searchQ);
+        return matchScript && matchStatus && matchSearch;
       });
 
       renderAssessments(filtered);
@@ -1740,14 +2692,35 @@
     }
 
     // ==============================================================
-    // RENDERING TABEL SUBMISSIONS & MATERI
+    // RENDERING TABEL SUBMISSIONS & MATERI + PENCARIAN NAMA DI SEMUA TAB
     // ==============================================================
-    function renderOverviewSubmissions() {
+    let currentCurriculumScript = 'jawa';
+
+    function renderOverviewSubmissions(customQuery) {
       const tbody = document.getElementById('overview-submissions-tbody');
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      ALL_SUBMISSIONS.slice(0, 4).forEach(item => {
+      const q = (customQuery !== undefined ? customQuery : (document.getElementById('overview-search-input')?.value || '')).toLowerCase().trim();
+      const sorted = ALL_SUBMISSIONS.slice().sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+
+      const filtered = sorted.filter(item => {
+        if (!q) return true;
+        const parentName = (PARENT_DIRECTORY[item.name]?.parentName || '').toLowerCase();
+        return item.name.toLowerCase().includes(q) ||
+               parentName.includes(q) ||
+               item.aksara.toLowerCase().includes(q) ||
+               item.class.toLowerCase().includes(q);
+      });
+
+      const listToShow = q ? filtered : filtered.slice(0, 4);
+
+      if (listToShow.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-5 text-center text-xs text-brand-muted">Nama siswa "${q}" tidak ditemukan pada aktivitas terbaru.</td></tr>`;
+        return;
+      }
+
+      listToShow.forEach(item => {
         const badgeColor = item.status === 'Sempurna' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                            item.status === 'Lulus' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                            'bg-rose-50 text-rose-800 border-rose-200';
@@ -1780,17 +2753,42 @@
       });
     }
 
+    function filterOverviewSubmissions() {
+      renderOverviewSubmissions();
+    }
+
     function renderSubmissions(data) {
       const tbody = document.getElementById('all-submissions-tbody');
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      document.getElementById('submission-count-label').innerText = data.length;
+      // Terapkan pengurutan aktif (default: Terbaru ke Terlama)
+      const sortVal = document.getElementById('filter-sort') ? document.getElementById('filter-sort').value : 'newest';
+      let sortedData = (data || ALL_SUBMISSIONS).slice();
+      if (sortVal === 'newest') {
+        sortedData.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+      } else if (sortVal === 'oldest') {
+        sortedData.sort((a, b) => parseItemTimestamp(a) - parseItemTimestamp(b));
+      } else if (sortVal === 'score_desc') {
+        sortedData.sort((a, b) => (b.score || 0) - (a.score || 0));
+      } else if (sortVal === 'score_asc') {
+        sortedData.sort((a, b) => (a.score || 0) - (b.score || 0));
+      } else if (sortVal === 'precision_desc') {
+        sortedData.sort((a, b) => (b.precision || 0) - (a.precision || 0));
+      }
 
-      data.forEach(item => {
+      document.getElementById('submission-count-label').innerText = sortedData.length;
+
+      if (sortedData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-xs text-brand-muted">Tidak ditemukan submission untuk pencarian tersebut.</td></tr>`;
+        return;
+      }
+
+      sortedData.forEach(item => {
         const badgeColor = item.status === 'Sempurna' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                            item.status === 'Lulus' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                            'bg-rose-50 text-rose-800 border-rose-200';
+        const parentInfo = PARENT_DIRECTORY[item.name]?.parentName || '';
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-brand-bg/50 cursor-pointer transition";
@@ -1799,7 +2797,10 @@
         tr.innerHTML = `
           <td class="p-3 font-bold text-brand-dark flex items-center gap-2">
             <span class="w-6 h-6 rounded-full bg-brand-soft text-brand-primary font-bold text-[10px] flex items-center justify-center shrink-0">${item.name.substring(0, 2).toUpperCase()}</span>
-            ${item.name}
+            <div>
+              <p class="leading-tight">${item.name}</p>
+              ${parentInfo ? `<p class="text-[10px] font-normal text-brand-muted">${parentInfo.split('&')[0].trim()}</p>` : ''}
+            </div>
           </td>
           <td class="p-3 font-semibold text-brand-dark">Kelas ${item.class}</td>
           <td class="p-3 text-brand-dark">${item.aksara}</td>
@@ -1822,48 +2823,80 @@
     }
 
     function filterSubmissions() {
-      const classVal = document.getElementById('filter-class').value;
-      const scriptVal = document.getElementById('filter-script').value;
-      const statusVal = document.getElementById('filter-status').value;
+      const classVal = document.getElementById('filter-class') ? document.getElementById('filter-class').value : 'all';
+      const scriptVal = document.getElementById('filter-script') ? document.getElementById('filter-script').value : 'all';
+      const statusVal = document.getElementById('filter-status') ? document.getElementById('filter-status').value : 'all';
+      const searchQ = (document.getElementById('submission-search-input')?.value || '').toLowerCase().trim();
 
       const filtered = ALL_SUBMISSIONS.filter(item => {
         const matchClass = classVal === 'all' || item.class === classVal;
         const matchScript = scriptVal === 'all' || item.script === scriptVal;
         const matchStatus = statusVal === 'all' || item.status === statusVal;
-        return matchClass && matchScript && matchStatus;
+        const parentName = (PARENT_DIRECTORY[item.name]?.parentName || '').toLowerCase();
+        const matchSearch = !searchQ ||
+          item.name.toLowerCase().includes(searchQ) ||
+          parentName.includes(searchQ) ||
+          item.aksara.toLowerCase().includes(searchQ) ||
+          item.class.toLowerCase().includes(searchQ);
+        return matchClass && matchScript && matchStatus && matchSearch;
       });
 
       renderSubmissions(filtered);
     }
 
+    // Sinkronisasi Search Bar Global di Header ke Seluruh Tab Web
     function handleGlobalSearch(val) {
-      const q = val.toLowerCase().trim();
-      if (!q) {
-        renderSubmissions(ALL_SUBMISSIONS);
-        renderAssessments(MATERI_ASSESSMENTS);
-        return;
+      const clearBtn = document.getElementById('global-search-clear');
+      if (clearBtn) {
+        if (val && val.trim().length > 0) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
       }
-      const filtered = ALL_SUBMISSIONS.filter(s =>
-        s.name.toLowerCase().includes(q) ||
-        s.aksara.toLowerCase().includes(q) ||
-        s.class.toLowerCase().includes(q)
-      );
-      renderSubmissions(filtered);
 
-      const filteredAssessments = MATERI_ASSESSMENTS.filter(a =>
-        a.studentName.toLowerCase().includes(q) ||
-        a.materiTitle.toLowerCase().includes(q) ||
-        a.class.toLowerCase().includes(q)
-      );
-      renderAssessments(filteredAssessments);
+      const tabInputs = [
+        'overview-search-input',
+        'submission-search-input',
+        'assessment-search-input',
+        'curriculum-search-input',
+        'students-search-input',
+        'parent-search-input',
+        'feedback-search-input',
+        'settings-student-search'
+      ];
+      tabInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.value !== val) el.value = val;
+      });
+
+      renderOverviewSubmissions(val);
+      filterSubmissions();
+      filterAssessments();
+      filterCurriculumAksara();
+      renderLeaderboard();
+      renderParentPortal();
+      renderFeedbackLogs();
+      renderSettingsDeviceList();
     }
 
-    function renderAksaraGrid(data, isJawa = true) {
+    function clearGlobalSearch() {
+      const globalInput = document.getElementById('global-search');
+      if (globalInput) globalInput.value = '';
+      handleGlobalSearch('');
+    }
+
+    function renderAksaraGrid(data, isJawa = true, studentQuery = '') {
       const grid = document.getElementById('aksara-grid');
       if (!grid) return;
       grid.innerHTML = '';
 
+      const q = (studentQuery || '').toLowerCase().trim();
+
       data.forEach(item => {
+        // Cek apakah ada submission siswa untuk aksara ini
+        const matchingSub = q ? ALL_SUBMISSIONS.find(s =>
+          (s.name.toLowerCase().includes(q) || (PARENT_DIRECTORY[s.name]?.parentName || '').toLowerCase().includes(q)) &&
+          s.aksara.toLowerCase().includes(item.latin.toLowerCase())
+        ) : null;
+
         const card = document.createElement('div');
         card.className = "bg-white p-4 rounded-2xl border border-brand-border shadow-sm hover:shadow-md hover:border-brand-primary transition flex flex-col items-center text-center group cursor-pointer";
         card.onclick = () => {
@@ -1881,6 +2914,7 @@
           </div>
           <h5 class="text-sm font-bold text-brand-dark">${item.latin}</h5>
           <p class="text-[10px] text-brand-muted line-clamp-1 mt-0.5">${item.desc}</p>
+          ${matchingSub ? `<span class="mt-1.5 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">${matchingSub.name}: ${matchingSub.score} pts</span>` : ''}
           <div class="mt-3 w-full pt-2 border-t border-brand-border/60 flex items-center justify-between text-[10px]">
             <span class="text-brand-muted">Akurasi:</span>
             <span class="font-extrabold px-1.5 py-0.5 rounded-full border ${accentBadge}">${item.acc}</span>
@@ -1890,19 +2924,44 @@
       });
     }
 
+    function filterCurriculumAksara() {
+      const q = (document.getElementById('curriculum-search-input')?.value || '').toLowerCase().trim();
+      const isJawa = currentCurriculumScript === 'jawa';
+      const source = isJawa ? JAWA_DATA : BALI_DATA;
+
+      if (!q) {
+        renderAksaraGrid(source, isJawa, '');
+        return;
+      }
+
+      // Cari aksara berdasarkan nama aksara, filosofi, atau aksara yang pernah dikerjakan oleh nama siswa yang dicari
+      const studentAksaraList = ALL_SUBMISSIONS
+        .filter(s => s.name.toLowerCase().includes(q) || (PARENT_DIRECTORY[s.name]?.parentName || '').toLowerCase().includes(q))
+        .map(s => s.aksara.toLowerCase());
+
+      const filtered = source.filter(item =>
+        item.latin.toLowerCase().includes(q) ||
+        item.desc.toLowerCase().includes(q) ||
+        item.glyph.includes(q) ||
+        studentAksaraList.some(a => a.includes(item.latin.toLowerCase()))
+      );
+
+      renderAksaraGrid(filtered.length > 0 ? filtered : source, isJawa, q);
+    }
+
     function switchScriptView(type) {
+      currentCurriculumScript = type;
       const btnJawa = document.getElementById('btn-script-jawa');
       const btnBali = document.getElementById('btn-script-bali');
 
       if (type === 'jawa') {
         btnJawa.className = "px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-sm transition";
         btnBali.className = "px-4 py-2 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition";
-        renderAksaraGrid(JAWA_DATA, true);
       } else {
         btnBali.className = "px-4 py-2 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-sm transition";
         btnJawa.className = "px-4 py-2 rounded-lg text-xs font-bold text-brand-muted hover:text-brand-dark transition";
-        renderAksaraGrid(BALI_DATA, false);
       }
+      filterCurriculumAksara();
     }
 
     function renderLeaderboard() {
@@ -1910,9 +2969,34 @@
       if (!container) return;
       container.innerHTML = '';
 
-      STUDENTS_LEADERBOARD.forEach((s, idx) => {
+      const q = (document.getElementById('students-search-input')?.value || '').toLowerCase().trim();
+      const classFilter = document.getElementById('students-filter-class') ? document.getElementById('students-filter-class').value : 'all';
+
+      const unified = getUnifiedStudentsList().sort((a, b) => (b.xp || 0) - (a.xp || 0));
+      const filtered = unified.filter(s => {
+        const matchClass = classFilter === 'all' || s.class === classFilter;
+        const matchName = !q ||
+          s.name.toLowerCase().includes(q) ||
+          s.parentName.toLowerCase().includes(q) ||
+          s.class.toLowerCase().includes(q) ||
+          s.badge.toLowerCase().includes(q);
+        return matchClass && matchName;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="py-6 text-center text-xs text-brand-muted">Nama siswa atau orang tua "${q}" tidak ditemukan.</p>`;
+        return;
+      }
+
+      filtered.forEach((s, idx) => {
         const item = document.createElement('div');
-        item.className = "py-3 flex items-center justify-between hover:bg-brand-bg/60 px-3 rounded-xl transition";
+        item.className = "py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-brand-bg/60 px-3 rounded-xl transition cursor-pointer";
+        item.onclick = () => {
+          switchTab('parents');
+          const pInput = document.getElementById('parent-search-input');
+          if (pInput) pInput.value = s.name;
+          renderParentPortal();
+        };
         item.innerHTML = `
           <div class="flex items-center gap-3">
             <span class="w-6 text-center font-extrabold text-xs ${idx === 0 ? 'text-amber-500 text-sm' : idx === 1 ? 'text-slate-400 text-sm' : idx === 2 ? 'text-amber-700 text-sm' : 'text-brand-muted'}">
@@ -1922,17 +3006,419 @@
               ${s.name.substring(0, 2).toUpperCase()}
             </div>
             <div>
-              <p class="text-xs font-bold text-brand-dark">${s.name} <span class="text-[10px] text-brand-muted font-normal">(${s.class})</span></p>
-              <span class="inline-block text-[10px] px-2 py-0.2 rounded-full font-semibold ${s.badge.includes('Perlu') ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800'}">${s.badge}</span>
+              <p class="text-xs font-bold text-brand-dark">${s.name} <span class="text-[10px] text-brand-muted font-normal">(Kelas ${s.class})</span></p>
+              <p class="text-[10px] text-brand-muted">Wali: ${s.parentName}</p>
+              <span class="inline-block text-[10px] px-2 py-0.2 rounded-full font-semibold mt-0.5 ${s.badge.includes('Perlu') ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-800'}">${s.badge}</span>
             </div>
           </div>
-          <div class="text-right">
+          <div class="flex sm:flex-col items-center sm:items-end justify-between gap-1">
             <p class="text-xs font-extrabold text-brand-primary">${s.xp.toLocaleString()} XP</p>
-            <p class="text-[10px] text-brand-muted">Akurasi: ${s.acc}</p>
+            <p class="text-[10px] text-brand-muted">Rata-rata: <strong>${s.avgScore}</strong> • Presisi: ${s.acc}%</p>
+            <span class="text-[10px] font-bold text-brand-accent hover:underline">Buka Portal Wali →</span>
           </div>
         `;
         container.appendChild(item);
       });
+    }
+
+    // ==============================================================
+    // FITUR PORTAL ORANG TUA / WALI MURID LENGKAP
+    // ==============================================================
+    function renderParentPortal() {
+      const cardsContainer = document.getElementById('parent-cards-container');
+      const chipsContainer = document.getElementById('parent-student-chips');
+      const studentSelect = document.getElementById('parent-msg-student');
+      if (!cardsContainer) return;
+
+      const allStudents = getUnifiedStudentsList();
+      const q = (document.getElementById('parent-search-input')?.value || '').toLowerCase().trim();
+      const classVal = document.getElementById('parent-filter-class') ? document.getElementById('parent-filter-class').value : 'all';
+      const statusVal = document.getElementById('parent-filter-status') ? document.getElementById('parent-filter-status').value : 'all';
+
+      // Update KPI Cards
+      const totalEl = document.getElementById('parent-kpi-total-students');
+      const avgEl = document.getElementById('parent-kpi-avg-score');
+      const verEl = document.getElementById('parent-kpi-verified');
+      const msgEl = document.getElementById('parent-kpi-messages');
+
+      if (totalEl) totalEl.innerText = `${allStudents.length} Siswa`;
+      if (avgEl && allStudents.length > 0) {
+        const avgAll = (allStudents.reduce((acc, s) => acc + (s.avgScore || 85), 0) / allStudents.length).toFixed(1);
+        avgEl.innerText = `${avgAll} / 100`;
+      }
+      if (verEl) {
+        const verCount = allStudents.filter(s => s.verified).length;
+        verEl.innerText = `${verCount} / ${allStudents.length}`;
+      }
+      if (msgEl) msgEl.innerText = `${PARENT_MESSAGES.length} Pesan`;
+
+      // Populate Student Select in Parent Message Form
+      if (studentSelect && studentSelect.options.length !== allStudents.length) {
+        const prevVal = studentSelect.value;
+        studentSelect.innerHTML = allStudents.map(s =>
+          `<option value="${s.name}">${s.name} (Kelas ${s.class} - ${s.parentName.split('&')[0].trim()})</option>`
+        ).join('');
+        if (prevVal) studentSelect.value = prevVal;
+      }
+
+      // Render Quick-Select Student Name Chips
+      if (chipsContainer) {
+        chipsContainer.innerHTML = '';
+        const allChip = document.createElement('button');
+        allChip.type = 'button';
+        allChip.className = `px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${!q ? 'bg-brand-primary text-white shadow-xs' : 'bg-brand-bg text-brand-muted hover:text-brand-dark border border-brand-border'}`;
+        allChip.innerText = 'Semua Anak';
+        allChip.onclick = () => selectParentStudentChip('');
+        chipsContainer.appendChild(allChip);
+
+        allStudents.forEach(s => {
+          const isSelected = q && s.name.toLowerCase() === q;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${isSelected ? 'bg-brand-primary text-white shadow-xs font-bold' : 'bg-brand-bg text-brand-dark hover:bg-brand-soft/60 border border-brand-border'}`;
+          btn.innerText = s.name;
+          btn.onclick = () => selectParentStudentChip(s.name);
+          chipsContainer.appendChild(btn);
+        });
+      }
+
+      // Filter Kartu Siswa berdasarkan pencarian nama anak / nama orang tua / kelas / status
+      const filtered = allStudents.filter(s => {
+        const matchClass = classVal === 'all' || s.class === classVal;
+        const matchStatus = statusVal === 'all' || s.status === statusVal;
+        const matchQuery = !q ||
+          s.name.toLowerCase().includes(q) ||
+          s.parentName.toLowerCase().includes(q) ||
+          s.class.toLowerCase().includes(q) ||
+          s.sabakId.toLowerCase().includes(q);
+        return matchClass && matchStatus && matchQuery;
+      });
+
+      cardsContainer.innerHTML = '';
+
+      if (filtered.length === 0) {
+        cardsContainer.innerHTML = `
+          <div class="lg:col-span-2 bg-white p-8 rounded-2xl border border-brand-border text-center">
+            <p class="text-sm font-bold text-brand-dark">Data anak atau orang tua "${q}" tidak ditemukan</p>
+            <p class="text-xs text-brand-muted mt-1">Silakan gunakan kata kunci nama lain atau klik tombol "Semua Anak" di atas.</p>
+          </div>
+        `;
+      } else {
+        filtered.forEach(s => {
+          const latestSubs = s.submissions.slice(0, 3);
+          const statusBadge = s.status === 'TUNTAS'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-rose-50 text-rose-800 border-rose-200';
+          const verifiedBadge = s.verified
+            ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">✅ Sudah Diperiksa Orang Tua</span>`
+            : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">⏳ Menunggu Konfirmasi Wali</span>`;
+
+          const subsHtml = latestSubs.length > 0
+            ? latestSubs.map(sub => `
+                <div onclick="openSubmissionDetail('${sub.name}', 'Kelas ${sub.class}', '${sub.aksara}', ${sub.precision}, ${sub.score}, '${sub.status}', '${sub.time}')" class="p-2.5 rounded-xl bg-brand-bg hover:bg-brand-soft/40 border border-brand-border/70 flex items-center justify-between text-xs cursor-pointer transition">
+                  <div>
+                    <span class="font-bold text-brand-dark">${sub.aksara}</span>
+                    <span class="text-[10px] text-brand-muted ml-1.5">(${sub.script} • ${sub.time})</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-semibold text-brand-muted">Presisi ${sub.precision}%</span>
+                    <span class="px-2 py-0.5 rounded-lg font-extrabold text-[11px] ${sub.score >= 80 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${sub.score} pts</span>
+                  </div>
+                </div>
+              `).join('')
+            : `<p class="text-xs text-brand-muted italic">Belum ada riwayat latihan terekam.</p>`;
+
+          const card = document.createElement('div');
+          card.className = "bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm hover:shadow-md transition flex flex-col justify-between gap-4";
+          card.innerHTML = `
+            <div class="space-y-4">
+              <!-- Header Profil Anak & Wali -->
+              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3.5 border-b border-brand-border/70">
+                <div class="flex items-start gap-3">
+                  <div class="w-12 h-12 rounded-2xl bg-brand-soft text-brand-primary font-extrabold text-sm flex items-center justify-center shrink-0 border border-brand-primary/20">
+                    ${s.name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <h5 class="text-base font-extrabold text-brand-dark">${s.name}</h5>
+                      <span class="px-2 py-0.5 rounded-md bg-brand-bg border border-brand-border text-[10px] font-bold text-brand-dark">Kelas ${s.class}</span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadge}">${s.status === 'TUNTAS' ? 'Tuntas KKM' : 'Perlu Pendampingan'}</span>
+                    </div>
+                    <p class="text-xs text-brand-muted mt-1">👨‍👩‍👧 <strong>Orang Tua / Wali:</strong> ${s.parentName}</p>
+                    <p class="text-[11px] text-brand-muted">📱 Kontak Wali: ${s.phone} • Perangkat: <strong>${s.sabakId}</strong></p>
+                  </div>
+                </div>
+                <div class="shrink-0">
+                  ${verifiedBadge}
+                </div>
+              </div>
+
+              <!-- 3 Metrik Utama Anak -->
+              <div class="grid grid-cols-3 gap-2.5 text-center">
+                <div class="p-3 rounded-xl bg-brand-bg border border-brand-border/60">
+                  <span class="text-[10px] text-brand-muted font-semibold block">Rata-Rata Nilai</span>
+                  <span class="text-lg font-black ${s.avgScore >= 75 ? 'text-brand-primary' : 'text-rose-700'}">${s.avgScore}</span>
+                </div>
+                <div class="p-3 rounded-xl bg-brand-bg border border-brand-border/60">
+                  <span class="text-[10px] text-brand-muted font-semibold block">Presisi Goresan</span>
+                  <span class="text-lg font-black text-brand-dark">${s.acc}%</span>
+                </div>
+                <div class="p-3 rounded-xl bg-brand-bg border border-brand-border/60">
+                  <span class="text-[10px] text-brand-muted font-semibold block">Total Capaian XP</span>
+                  <span class="text-lg font-black text-amber-600">${s.xp.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <!-- Progress Penguasaan Aksara Jawa & Bali -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-3 rounded-xl border border-brand-border/70 bg-white">
+                  <div class="flex justify-between text-xs font-bold mb-1">
+                    <span class="text-brand-dark">Carakan Aksara Jawa</span>
+                    <span class="text-brand-primary">${s.jawaMastery}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                    <div class="bg-brand-primary h-full rounded-full" style="width: ${s.jawaMastery}%"></div>
+                  </div>
+                </div>
+                <div class="p-3 rounded-xl border border-brand-border/70 bg-white">
+                  <div class="flex justify-between text-xs font-bold mb-1">
+                    <span class="text-brand-dark">Wreastra Aksara Bali</span>
+                    <span class="text-brand-accent">${s.baliMastery}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                    <div class="bg-brand-accent h-full rounded-full" style="width: ${s.baliMastery}%"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Riwayat Goresan ESP32 Terbaru Anak -->
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-brand-muted block mb-2">Latihan Sabak ESP32 Terbaru (Terbaru ke Terlama):</span>
+                <div class="space-y-1.5">
+                  ${subsHtml}
+                </div>
+              </div>
+
+              <!-- Panduan Pendampingan Belajar di Rumah untuk Orang Tua -->
+              <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
+                <span class="font-bold text-amber-900 flex items-center gap-1.5 mb-0.5">
+                  💡 Saran Pendampingan Orang Tua di Rumah:
+                </span>
+                <p class="text-amber-800">${s.homeTip}</p>
+              </div>
+            </div>
+
+            <!-- Tombol Aksi Orang Tua -->
+            <div class="pt-3 border-t border-brand-border/60 flex flex-wrap items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="openParentStudentRapor('${s.name}')" class="px-3 py-2 rounded-xl bg-brand-primary hover:bg-brand-hover text-white text-xs font-bold transition shadow-xs">
+                  📄 Buka Rapor Anak
+                </button>
+                <button type="button" onclick="toggleParentVerification('${s.name}')" class="px-3 py-2 rounded-xl border border-brand-border hover:border-brand-primary bg-white text-xs font-bold text-brand-dark transition">
+                  ${s.verified ? '✅ Sudah Dikonfirmasi' : '✍️ Konfirmasi Rapor'}
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="prefillParentSupportMessage('${s.name}')" class="px-3 py-2 rounded-xl bg-brand-soft hover:bg-brand-primary hover:text-white text-brand-primary text-xs font-bold transition">
+                  💌 Kirim Semangat
+                </button>
+                <button type="button" onclick="shareStudentReportWA('${s.name}')" class="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition">
+                  📲 WA Wali
+                </button>
+              </div>
+            </div>
+          `;
+          cardsContainer.appendChild(card);
+        });
+      }
+
+      renderParentMessages();
+      lucide.createIcons();
+    }
+
+    function selectParentStudentChip(studentName) {
+      const input = document.getElementById('parent-search-input');
+      if (input) input.value = studentName;
+      if (studentName) {
+        const select = document.getElementById('parent-msg-student');
+        if (select) select.value = studentName;
+        const meta = PARENT_DIRECTORY[studentName];
+        const senderInput = document.getElementById('parent-msg-sender');
+        if (senderInput && meta) senderInput.value = `${meta.parentName.split('&')[0].trim()} (Wali ${studentName})`;
+      }
+      renderParentPortal();
+    }
+
+    function toggleParentVerification(studentName) {
+      if (!PARENT_DIRECTORY[studentName]) {
+        PARENT_DIRECTORY[studentName] = {
+          parentName: `Orang Tua dari ${studentName}`,
+          phone: "0812-3456-7800",
+          sabakId: "Sabak #01",
+          jawaMastery: 85,
+          baliMastery: 85,
+          verified: true,
+          homeTip: "Terus dampingi latihan rutin di rumah."
+        };
+      } else {
+        PARENT_DIRECTORY[studentName].verified = !PARENT_DIRECTORY[studentName].verified;
+      }
+      const isVer = PARENT_DIRECTORY[studentName].verified;
+      renderParentPortal();
+      showToast(isVer
+        ? `✅ Rapor ${studentName} telah dikonfirmasi & ditandatangani digital oleh Orang Tua!`
+        : `Status konfirmasi rapor ${studentName} diubah.`);
+      playMascotChime();
+    }
+
+    function openParentStudentRapor(studentName) {
+      const existingAss = MATERI_ASSESSMENTS.find(a => a.studentName.toLowerCase() === studentName.toLowerCase());
+      if (existingAss) {
+        openAssessmentModal(existingAss);
+        return;
+      }
+      const st = getUnifiedStudentsList().find(s => s.name === studentName);
+      if (!st) return;
+      openAssessmentModal({
+        studentName: st.name,
+        class: st.class,
+        materiTitle: "Rekap Kumulatif Carakan Jawa & Wreastra Bali",
+        finalScore: st.avgScore,
+        grade: st.avgScore >= 90 ? "Grade A+" : (st.avgScore >= 80 ? "Grade A" : "Grade B"),
+        totalXp: st.xp,
+        accuracyScore: st.acc,
+        speedScore: Math.min(100, Math.round(st.avgScore)),
+        strokeStability: Math.min(100, Math.round(st.acc)),
+        feedback: st.homeTip
+      });
+    }
+
+    function prefillParentSupportMessage(studentName) {
+      const select = document.getElementById('parent-msg-student');
+      if (select) select.value = studentName;
+      const meta = PARENT_DIRECTORY[studentName];
+      const senderInput = document.getElementById('parent-msg-sender');
+      if (senderInput && meta) {
+        senderInput.value = `${meta.parentName.split('&')[0].trim()} (Wali ${studentName})`;
+      }
+      const msgBox = document.getElementById('parent-msg-text');
+      if (msgBox) {
+        msgBox.value = `Semangat terus belajarnya ya ${studentName}! Ayah & Ibu bangga melihat progres menulis aksara Jawa dan Balimu hari ini ❤️`;
+        msgBox.focus();
+        msgBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showToast(`Form dukungan orang tua disiapkan untuk ${studentName}`);
+    }
+
+    function setParentMessageText(txt) {
+      const msgBox = document.getElementById('parent-msg-text');
+      if (msgBox) msgBox.value = txt;
+    }
+
+    async function sendParentMessage() {
+      const studentName = document.getElementById('parent-msg-student')?.value || 'I Putu Raditya';
+      const sender = (document.getElementById('parent-msg-sender')?.value || 'Orang Tua Siswa').trim();
+      const text = (document.getElementById('parent-msg-text')?.value || '').trim();
+
+      if (!text) {
+        showToast("Tuliskan pesan dukungan orang tua terlebih dahulu!");
+        return;
+      }
+
+      const st = getUnifiedStudentsList().find(s => s.name === studentName);
+      const sabakId = st ? st.sabakId : 'Sabak #01';
+      const cls = st ? st.class : '5A';
+
+      const newMsg = {
+        time: "Baru saja",
+        createdAt: new Date().toISOString(),
+        studentName: studentName,
+        class: cls,
+        parentName: sender,
+        text: text,
+        status: `Tampil di ${sabakId}`
+      };
+
+      PARENT_MESSAGES.unshift(newMsg);
+      PARENT_MESSAGES.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+
+      // Catat juga ke log feedback ESP32 agar tampil di layar Sabak anak
+      const feedbackPayload = {
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        createdAt: new Date().toISOString(),
+        target: `${sabakId} (${studentName} - Pesan Wali)`,
+        text: `[Orang Tua] ${text}`,
+        status: "Terkirim ke Sabak"
+      };
+
+      if (typeof firebaseSendFeedback === 'function') {
+        await firebaseSendFeedback(feedbackPayload);
+      }
+
+      FEEDBACK_LOGS.unshift(feedbackPayload);
+      renderParentPortal();
+      renderFeedbackLogs();
+      showToast(`💌 Pesan dukungan untuk ${studentName} terkirim ke ${sabakId} & Guru!`);
+      playMascotChime();
+    }
+
+    function renderParentMessages() {
+      const tbody = document.getElementById('parent-messages-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const q = (document.getElementById('parent-msg-search-input')?.value || '').toLowerCase().trim();
+      const sorted = PARENT_MESSAGES.slice().sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+      const filtered = sorted.filter(m =>
+        !q ||
+        m.studentName.toLowerCase().includes(q) ||
+        m.parentName.toLowerCase().includes(q) ||
+        m.text.toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-5 text-center text-xs text-brand-muted">Tidak ada pesan wali untuk pencarian "${q}".</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-brand-bg/50 transition text-xs";
+        tr.innerHTML = `
+          <td class="py-2.5 text-brand-muted whitespace-nowrap">${m.time}</td>
+          <td class="py-2.5 font-bold text-brand-dark">${m.studentName} <span class="text-[10px] font-normal text-brand-muted">(${m.class})</span></td>
+          <td class="py-2.5 text-brand-dark font-medium">${m.parentName}</td>
+          <td class="py-2.5 text-brand-dark italic max-w-xs truncate">"${m.text}"</td>
+          <td class="py-2.5 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">${m.status}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function shareStudentReportWA(studentName) {
+      const st = getUnifiedStudentsList().find(s => s.name === studentName);
+      if (!st) return;
+      showToast(`📲 Ringkasan Rapor ${st.name} (Nilai: ${st.avgScore}, XP: ${st.xp}) siap dikirim ke WhatsApp ${st.parentName}!`);
+      playMascotChime();
+    }
+
+    function filterFeedbackTargetOptions(query) {
+      const select = document.getElementById('feedback-target-select');
+      if (!select) return;
+      const q = (query || '').toLowerCase().trim();
+      let firstMatchIdx = -1;
+
+      for (let i = 0; i < select.options.length; i++) {
+        const opt = select.options[i];
+        const match = !q || opt.text.toLowerCase().includes(q) || opt.value.toLowerCase().includes(q);
+        opt.hidden = !match;
+        if (match && firstMatchIdx === -1) {
+          firstMatchIdx = i;
+        }
+      }
+      if (firstMatchIdx !== -1) {
+        select.selectedIndex = firstMatchIdx;
+      }
     }
 
     function renderFeedbackLogs() {
@@ -1940,7 +3426,21 @@
       if (!tbody) return;
       tbody.innerHTML = '';
 
-      FEEDBACK_LOGS.forEach(log => {
+      const q = (document.getElementById('feedback-search-input')?.value || '').toLowerCase().trim();
+      const sorted = FEEDBACK_LOGS.slice().sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+      const filtered = sorted.filter(log =>
+        !q ||
+        log.target.toLowerCase().includes(q) ||
+        log.text.toLowerCase().includes(q) ||
+        log.status.toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-xs text-brand-muted">Tidak ditemukan riwayat feedback untuk "${q}".</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(log => {
         const tr = document.createElement('tr');
         tr.className = "text-xs";
         tr.innerHTML = `
@@ -1950,6 +3450,45 @@
           <td class="py-2 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">${log.status}</span></td>
         `;
         tbody.appendChild(tr);
+      });
+    }
+
+    function renderSettingsDeviceList() {
+      const grid = document.getElementById('settings-devices-grid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const q = (document.getElementById('settings-student-search')?.value || '').toLowerCase().trim();
+      const students = getUnifiedStudentsList();
+      const filtered = students.filter(s =>
+        !q ||
+        s.name.toLowerCase().includes(q) ||
+        s.parentName.toLowerCase().includes(q) ||
+        s.sabakId.toLowerCase().includes(q) ||
+        s.class.toLowerCase().includes(q)
+      );
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-3 py-4 text-center text-xs text-brand-muted">Perangkat Sabak untuk nama "${q}" tidak ditemukan.</div>`;
+        return;
+      }
+
+      filtered.forEach(s => {
+        const div = document.createElement('div');
+        div.className = "p-3.5 rounded-xl border border-brand-border bg-brand-bg/60 hover:bg-white hover:border-brand-primary transition flex items-center justify-between gap-3";
+        div.innerHTML = `
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span class="text-xs font-extrabold text-brand-dark">${s.sabakId} — ${s.name}</span>
+            </div>
+            <p class="text-[10px] text-brand-muted truncate mt-0.5">Kelas ${s.class} • Wali: ${s.parentName.split('&')[0].trim()}</p>
+          </div>
+          <button type="button" onclick="showToast('Sinyal test terkirim ke ${s.sabakId} milik ${s.name}!')" class="px-2.5 py-1 rounded-lg bg-white border border-brand-border hover:border-brand-primary text-[10px] font-bold text-brand-primary shrink-0 transition">
+            Ping Sabak
+          </button>
+        `;
+        grid.appendChild(div);
       });
     }
 
@@ -1970,7 +3509,7 @@
       showToast(`Form feedback dimuat untuk: ${target}`);
     }
 
-    function sendFeedbackToESP32() {
+    async function sendFeedbackToESP32() {
       const target = document.getElementById('feedback-target-select').value;
       const msg = document.getElementById('feedback-message').value.trim();
 
@@ -1979,16 +3518,46 @@
         return;
       }
 
-      FEEDBACK_LOGS.unshift({
-        time: "Baru saja",
+      const feedbackData = {
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        createdAt: new Date().toISOString(),
         target: target.split('-')[0].trim(),
         text: msg,
-        status: "Terkirim (COM3)"
-      });
+        status: "Terkirim (Cloud)"
+      };
 
+      // Simpan ke Firestore jika terhubung
+      if (typeof firebaseSendFeedback === 'function') {
+        await firebaseSendFeedback(feedbackData);
+      }
+
+      FEEDBACK_LOGS.unshift(feedbackData);
+      FEEDBACK_LOGS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
       renderFeedbackLogs();
-      showToast(`Pesan terkirim ke ESP32: "${msg.substring(0, 30)}..."`);
+      showToast(`Pesan tersinkron ke Cloud & ESP32: "${msg.substring(0, 30)}..."`);
       playMascotChime();
+    }
+
+    async function saveHardwareSettingsToFirebase() {
+      const vol = document.getElementById('volume-slider') ? parseInt(document.getElementById('volume-slider').value) : 24;
+      const settings = {
+        port: "COM3",
+        baudRate: 115200,
+        tolerancePx: 18,
+        volume: vol,
+        vcc: 4.98,
+        audioMode: "speech_and_melody"
+      };
+
+      if (typeof firebaseSaveHardwareSettings === 'function') {
+        const res = await firebaseSaveHardwareSettings(settings);
+        if (res.success) {
+          showToast("🟢 Setelan berhasil disimpan ke Firebase Cloud & disinkronkan ke ESP32!");
+          playMascotChime();
+          return;
+        }
+      }
+      showToast("Setelan tersimpan secara lokal.");
     }
 
     function handleVolumeChange(val) {
@@ -2088,14 +3657,168 @@
       }, 2800);
     }
 
+    // ==============================================================
+    // PUSAT MODAL & SIMULASI DATABASE FIREBASE
+    // ==============================================================
+    function openDatabaseModal() {
+      const isConn = window.FirebaseState && window.FirebaseState.isConnected;
+      const box = document.getElementById('db-modal-status-box');
+      const dot = document.getElementById('db-modal-dot');
+      const title = document.getElementById('db-modal-title');
+      const desc = document.getElementById('db-modal-desc');
+
+      if (isConn) {
+        box.className = "p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between";
+        dot.className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+        title.innerText = "Firebase Cloud Terhubung (Aktif)";
+        desc.innerText = `Project ID: ${window.FIREBASE_CONFIG.projectId || 'aksarabuddy'}. Sinkronisasi data real-time berjalan aktif.`;
+      } else {
+        box.className = "p-4 rounded-2xl bg-amber-50/70 border border-amber-200 flex items-center justify-between";
+        dot.className = "w-3 h-3 rounded-full bg-amber-500";
+        title.innerText = "Mode Demo Lokal Aktif";
+        desc.innerText = "Belum terhubung ke Firebase Cloud. Menggunakan data simulasi lokal.";
+      }
+
+      document.getElementById('database-modal').classList.remove('hidden');
+      document.getElementById('database-modal').classList.add('flex');
+    }
+
+    function closeDatabaseModal() {
+      document.getElementById('database-modal').classList.add('hidden');
+      document.getElementById('database-modal').classList.remove('flex');
+    }
+
+    // Simulasi Tracing Masuk dari Sabak ESP32
+    async function simulateESP32Tracing() {
+      const names = ["I Putu Raditya", "Ni Kadek Ayu", "Ahmad Rizki", "Siti Rahmawati", "Made Wijaya", "Dewi Lestari", "Budi Santoso"];
+      const classes = ["5A", "5B"];
+      const scripts = [
+        { s: "Jawa", aksara: "Ha (ꦲ)" },
+        { s: "Jawa", aksara: "Na (ꦤ)" },
+        { s: "Bali", aksara: "Ca (ᬘ)" },
+        { s: "Bali", aksara: "Ra (ᬭ)" },
+        { s: "Jawa", aksara: "Ka (ꦏ)" },
+        { s: "Bali", aksara: "Ta (ᬢ)" }
+      ];
+      const randName = names[Math.floor(Math.random() * names.length)];
+      const randCls = classes[Math.floor(Math.random() * classes.length)];
+      const randScript = scripts[Math.floor(Math.random() * scripts.length)];
+      const randPrecision = Math.floor(Math.random() * 25) + 75; // 75 - 99%
+      const randScore = Math.min(100, randPrecision + Math.floor(Math.random() * 4));
+
+      const newSub = {
+        name: randName,
+        class: randCls,
+        script: randScript.s,
+        aksara: randScript.aksara,
+        precision: randPrecision,
+        score: randScore,
+        status: randScore >= 90 ? "Sempurna" : (randScore >= 75 ? "Lulus" : "Remedial"),
+        time: "Baru saja",
+        createdAt: new Date().toISOString()
+      };
+
+      if (typeof firebaseSaveSubmission === 'function' && window.FirebaseState && window.FirebaseState.isConnected) {
+        await firebaseSaveSubmission(newSub);
+        showToast(`⚡ Tracing ${randName} (${randScript.aksara}) tersimpan ke Cloud Firestore!`);
+      } else {
+        ALL_SUBMISSIONS.unshift(newSub);
+        ALL_SUBMISSIONS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+        renderOverviewSubmissions();
+        renderSubmissions(ALL_SUBMISSIONS);
+        showToast(`⚡ Simulasi lokal: Tracing ${randName} (${randScript.aksara}) berhasil ditambahkan!`);
+      }
+      playMascotChime();
+      closeDatabaseModal();
+    }
+
+    // Migrasi Data Awal ke Firestore (One-Click Seeder)
+    async function triggerSeedDefaultData() {
+      if (typeof firebaseSeedDefaultData === 'function') {
+        showToast("Mengunggah data master ke Firestore...");
+        const success = await firebaseSeedDefaultData(ALL_SUBMISSIONS, MATERI_ASSESSMENTS, STUDENTS_LEADERBOARD, FEEDBACK_LOGS);
+        if (success) {
+          showToast("🟢 Seluruh data master berhasil dimigrasikan ke Firestore!");
+          closeDatabaseModal();
+        }
+      }
+    }
+
+    // ==============================================================
+    // REALTIME DATABASE SYNC HOOKS (FIREBASE FIRESTORE SYNC)
+    // ==============================================================
+    window.onFirebaseSubmissionsSync = function(liveSubmissions) {
+      if (liveSubmissions && liveSubmissions.length > 0) {
+        ALL_SUBMISSIONS.length = 0;
+        liveSubmissions.forEach(item => ALL_SUBMISSIONS.push(item));
+        // Pastikan selalu terurut dari terbaru ke terlama
+        ALL_SUBMISSIONS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+        renderOverviewSubmissions();
+        filterSubmissions();
+        renderParentPortal();
+        renderSettingsDeviceList();
+        showToast("⚡ Realtime Sync: Data submission diperbarui dari Firestore!");
+      }
+    };
+
+    window.onFirebaseAssessmentsSync = function(liveAssessments) {
+      if (liveAssessments && liveAssessments.length > 0) {
+        MATERI_ASSESSMENTS.length = 0;
+        liveAssessments.forEach(item => MATERI_ASSESSMENTS.push(item));
+        // Pastikan selalu terurut dari terbaru ke terlama
+        MATERI_ASSESSMENTS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+        filterAssessments();
+        renderParentPortal();
+      }
+    };
+
+    window.onFirebaseStudentsSync = function(liveStudents) {
+      if (liveStudents && liveStudents.length > 0) {
+        STUDENTS_LEADERBOARD.length = 0;
+        liveStudents.forEach(item => STUDENTS_LEADERBOARD.push(item));
+        renderLeaderboard();
+        renderParentPortal();
+        renderSettingsDeviceList();
+      }
+    };
+
+    window.onFirebaseFeedbacksSync = function(liveFeedbacks) {
+      if (liveFeedbacks && liveFeedbacks.length > 0) {
+        FEEDBACK_LOGS.length = 0;
+        liveFeedbacks.forEach(item => FEEDBACK_LOGS.push(item));
+        // Pastikan selalu terurut dari terbaru ke terlama
+        FEEDBACK_LOGS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+        renderFeedbackLogs();
+      }
+    };
+
+    window.onFirebaseSettingsSync = function(cfg) {
+      if (cfg && cfg.volume !== undefined) {
+        const slider = document.getElementById('volume-slider');
+        if (slider) {
+          slider.value = cfg.volume;
+          handleVolumeChange(cfg.volume);
+        }
+      }
+    };
+
     // Inisialisasi awal saat halaman termuat
     window.addEventListener('DOMContentLoaded', () => {
+      // Urutkan semua data dari terbaru ke terlama
+      ALL_SUBMISSIONS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+      MATERI_ASSESSMENTS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+      FEEDBACK_LOGS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+      PARENT_MESSAGES.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
+
+      renderLoginParentSearchPreview('');
       renderOverviewSubmissions();
       renderSubmissions(ALL_SUBMISSIONS);
       renderAssessments(MATERI_ASSESSMENTS);
       renderAksaraGrid(JAWA_DATA, true);
       renderLeaderboard();
+      renderParentPortal();
       renderFeedbackLogs();
+      renderSettingsDeviceList();
       lucide.createIcons();
     });
   </script>

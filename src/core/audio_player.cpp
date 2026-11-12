@@ -22,7 +22,6 @@ static void send_df_cmd(uint8_t cmd, uint16_t param) {
   buf[9] = 0xEF; // End byte
 
   Serial2.write(buf, 10);
-  Serial2.flush();
 
   // Tampilkan paket HEX yang benar-benar dikirim keluar dari ESP32 GPIO 17
   Serial.print(F("[Audio TX >> GPIO17] Paket Hex: "));

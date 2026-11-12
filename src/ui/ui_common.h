@@ -300,6 +300,7 @@ inline void ui_trace_set_completed_visuals(TraceState *st)
   // 1. Sembunyikan coretan stylus user (coretannya di-hide)
   if (st->draw_layer)
   {
+    lv_obj_clean(st->draw_layer); // Bebaskan heap objek lv_line coretan (dibutuhkan TLS Firebase)
     lv_obj_add_flag(st->draw_layer, LV_OBJ_FLAG_HIDDEN);
   }
 
@@ -512,6 +513,17 @@ inline int ui_trace_total_points(const TraceState *st)
   return total;
 }
 
+inline lv_point_precise_t (*ui_get_shared_trace_points())[MAX_TRACE_POINTS_PER_STROKE]
+{
+  static lv_point_precise_t (*shared_pts)[MAX_TRACE_POINTS_PER_STROKE] = nullptr;
+  if (!shared_pts)
+  {
+    shared_pts = (lv_point_precise_t(*)[MAX_TRACE_POINTS_PER_STROKE])malloc(
+        sizeof(lv_point_precise_t) * MAX_TRACE_STROKES * MAX_TRACE_POINTS_PER_STROKE);
+  }
+  return shared_pts;
+}
+
 inline void ui_trace_detach(TraceState *st)
 {
   if (!st)
@@ -531,11 +543,7 @@ inline void ui_trace_detach(TraceState *st)
     lv_obj_delete(st->draw_layer);
     st->draw_layer = nullptr;
   }
-  if (st->points)
-  {
-    free(st->points);
-    st->points = nullptr;
-  }
+  st->points = nullptr;
 }
 
 inline void ui_trace_set_checkpoints(TraceState *st, const StrokeWaypoint *pts, uint8_t count,
@@ -1027,7 +1035,7 @@ inline void ui_trace_attach(TraceState *st, lv_obj_t *canvas_card)
   }
   if (!st->points)
   {
-    st->points = (lv_point_precise_t(*)[MAX_TRACE_POINTS_PER_STROKE])malloc(sizeof(lv_point_precise_t) * MAX_TRACE_STROKES * MAX_TRACE_POINTS_PER_STROKE);
+    st->points = ui_get_shared_trace_points();
   }
   if (!st->draw_layer)
   {

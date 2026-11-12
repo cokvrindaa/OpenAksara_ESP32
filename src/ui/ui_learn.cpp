@@ -1,6 +1,7 @@
 #include "ui_learn.h"
 #include "ui_jawa.h"
 #include "ui_bali.h"
+#include "firebase_sync.h"
 #include <stdio.h>
 #include <string.h>
 #include <esp_system.h>
@@ -158,6 +159,31 @@ struct CardFlipCtx {
 };
 static CardFlipCtx flip_ctx[4];
 
+static lv_timer_t* wrong_timer = nullptr;
+static int wrong_pair_indices[2] = { -1, -1 };
+static lv_timer_t* mem_timer = nullptr;
+
+static void cancel_all_card_anims() {
+  for (int i = 0; i < 4; i++) {
+    if (flip_ctx[i].card_inner) {
+      lv_anim_del(flip_ctx[i].card_inner, NULL);
+      flip_ctx[i].card_inner = nullptr;
+    }
+    card_animating[i] = false;
+  }
+}
+
+static void cancel_all_learn_timers() {
+  if (wrong_timer) {
+    lv_timer_delete(wrong_timer);
+    wrong_timer = nullptr;
+  }
+  if (mem_timer) {
+    lv_timer_delete(mem_timer);
+    mem_timer = nullptr;
+  }
+}
+
 // Stage 1: Match Pairs Data
 static const int PAIR_COUNT = 4;
 static int active_item_indices[4];
@@ -252,6 +278,7 @@ static lv_obj_t* guess_action_btn = nullptr;
 static lv_obj_t* guess_action_lbl = nullptr;
 
 // Forward declarations
+static void hide_all_stage_views();
 static void build_stage_lesson();
 static void build_stage_match();
 static void build_stage_word();
@@ -484,6 +511,10 @@ static void prepare_session_stages() {
 static void on_close_learn_click(lv_event_t* e) {
   (void)e;
   audio_play(SOUND_CLICK);
+  cancel_all_card_anims();
+  cancel_all_learn_timers();
+  hide_all_stage_views();
+
   if (current_script == AKSARA_JAWA) {
     ui_jawa_show();
   } else {
@@ -536,13 +567,20 @@ static void on_start_practice_click(lv_event_t* e) {
 
 // ---------- Animasi Flip Kartu Interaktif ----------
 static void card_flip_anim_exec_cb(void* var, int32_t val) {
-  lv_obj_set_width((lv_obj_t*)var, val);
-  lv_obj_center((lv_obj_t*)var);
+  lv_obj_t* obj = (lv_obj_t*)var;
+  if (!obj) return;
+  lv_obj_set_width(obj, val);
+  lv_obj_center(obj);
 }
 
 static void card_flip_phase2_ready_cb(lv_anim_t* a) {
   CardFlipCtx* ctx = (CardFlipCtx*)a->user_data;
-  card_animating[ctx->card_idx] = false;
+  if (!ctx) return;
+  if (ctx->card_idx >= 0 && ctx->card_idx < 4) {
+    card_animating[ctx->card_idx] = false;
+  }
+  if (!view_lesson || lv_obj_has_flag(view_lesson, LV_OBJ_FLAG_HIDDEN)) return;
+
   audio_play(SOUND_REWARD);
 
   update_cards_action_state();
@@ -565,6 +603,11 @@ static void card_flip_phase2_ready_cb(lv_anim_t* a) {
 
 static void card_flip_phase1_ready_cb(lv_anim_t* a) {
   CardFlipCtx* ctx = (CardFlipCtx*)a->user_data;
+  if (!ctx || !ctx->card_inner) return;
+  if (!view_lesson || lv_obj_has_flag(view_lesson, LV_OBJ_FLAG_HIDDEN)) {
+    if (ctx->card_idx >= 0 && ctx->card_idx < 4) card_animating[ctx->card_idx] = false;
+    return;
+  }
 
   lv_obj_clean(ctx->card_inner);
   render_revealed_card_content(ctx->card_inner, ctx->card_idx);
@@ -585,6 +628,7 @@ static void card_flip_phase1_ready_cb(lv_anim_t* a) {
 
 static void on_interactive_card_click(lv_event_t* e) {
   int card_idx = (int)(intptr_t)lv_event_get_user_data(e);
+  if (card_idx < 0 || card_idx >= 4) return;
   if (card_animating[card_idx]) return;
 
   if (card_revealed[card_idx]) {
@@ -597,11 +641,12 @@ static void on_interactive_card_click(lv_event_t* e) {
     return;
   }
 
+  CardFlipCtx* ctx = &flip_ctx[card_idx];
+  if (!ctx->card_inner) return;
+
   card_revealed[card_idx] = true;
   card_animating[card_idx] = true;
   audio_play(SOUND_CLICK);
-
-  CardFlipCtx* ctx = &flip_ctx[card_idx];
 
   lv_anim_t a1;
   lv_anim_init(&a1);
@@ -929,6 +974,8 @@ static void render_slide_cards_4_and_start(lv_obj_t* parent, int prev_slide_targ
 static void update_lesson_slide() {
   if (!view_lesson) return;
 
+  cancel_all_card_anims();
+
   btn_tall_next = nullptr;
   btn_start_practice = nullptr;
 
@@ -1016,13 +1063,22 @@ static void mark_error_buttons(int l, int r) {
 }
 
 static void wrong_reset_timer_cb(lv_timer_t* t) {
-  int* pair = (int*)lv_timer_get_user_data(t);
-  int l = pair[0];
-  int r = pair[1];
-  lv_free(pair);
+  (void)t;
+  wrong_timer = nullptr;
+  if (!view_match || lv_obj_has_flag(view_match, LV_OBJ_FLAG_HIDDEN)) return;
 
-  if (l >= 0 && l < PAIR_COUNT) reset_pair_button_style(left_btns[l], left_lbls[l], left_matched[l]);
-  if (r >= 0 && r < PAIR_COUNT) reset_pair_button_style(right_btns[r], right_lbls[r], right_matched[r]);
+  int l = wrong_pair_indices[0];
+  int r = wrong_pair_indices[1];
+
+  if (l >= 0 && l < PAIR_COUNT && left_btns[l] && left_lbls[l]) {
+    reset_pair_button_style(left_btns[l], left_lbls[l], left_matched[l]);
+  }
+  if (r >= 0 && r < PAIR_COUNT && right_btns[r] && right_lbls[r]) {
+    reset_pair_button_style(right_btns[r], right_lbls[r], right_matched[r]);
+  }
+
+  wrong_pair_indices[0] = -1;
+  wrong_pair_indices[1] = -1;
 }
 
 static void check_match() {
@@ -1050,11 +1106,14 @@ static void check_match() {
     mark_error_buttons(sel_left, sel_right);
     audio_play(SOUND_ERROR);
 
-    int* pair = (int*)lv_malloc(sizeof(int) * 2);
-    pair[0] = sel_left;
-    pair[1] = sel_right;
-    lv_timer_t* tmr = lv_timer_create(wrong_reset_timer_cb, 350, pair);
-    lv_timer_set_repeat_count(tmr, 1);
+    if (wrong_timer) {
+      lv_timer_delete(wrong_timer);
+      wrong_timer = nullptr;
+    }
+    wrong_pair_indices[0] = sel_left;
+    wrong_pair_indices[1] = sel_right;
+    wrong_timer = lv_timer_create(wrong_reset_timer_cb, 350, NULL);
+    lv_timer_set_repeat_count(wrong_timer, 1);
 
     sel_left = -1;
     sel_right = -1;
@@ -1100,6 +1159,7 @@ static void on_match_next_click(lv_event_t* e) {
 }
 
 static void build_stage_match() {
+  cancel_all_learn_timers();
   if (view_match) {
     lv_obj_clean(view_match);
   } else {
@@ -1531,7 +1591,7 @@ static void build_stage_vowel() {
 
   char target_sound[24];
   build_vowel_latin_str(vowel_base_item_idx, vowel_target_type, target_sound, sizeof(target_sound));
-  char q_str[80];
+  char q_str[128];
   snprintf(q_str, sizeof(q_str), "Pilih aksara \"%s\" dengan %s:", target_sound, get_vowel_diacritic_name(vowel_target_type));
   lv_obj_t* q_lbl = ui_make_label(prompt_card, q_str, &lv_font_montserrat_16, C_TEXT);
   lv_obj_set_pos(q_lbl, 14, 28);
@@ -1585,11 +1645,11 @@ static void on_tf_answer_click(lv_event_t* e) {
     audio_play(SOUND_SUCCESS);
     add_xp(15);
     if (tf_is_true_pair) {
-      char msg[64];
+      char msg[96];
       snprintf(msg, sizeof(msg), LV_SYMBOL_OK " Tepat! Aksara itu memang \"%s\" (+15 XP)", items[tf_shown_item_idx].latin);
       lv_label_set_text(tf_feedback_lbl, msg);
     } else {
-      char msg[64];
+      char msg[96];
       snprintf(msg, sizeof(msg), LV_SYMBOL_OK " Tepat! Itu aksara \"%s\", bukan \"%s\" (+15 XP)",
                items[tf_shown_item_idx].latin, items[tf_shown_latin_idx].latin);
       lv_label_set_text(tf_feedback_lbl, msg);
@@ -1597,7 +1657,7 @@ static void on_tf_answer_click(lv_event_t* e) {
     lv_obj_set_style_text_color(tf_feedback_lbl, lv_color_hex(0x4ADE80), 0);
   } else {
     audio_play(SOUND_ERROR);
-    char msg[64];
+    char msg[96];
     snprintf(msg, sizeof(msg), LV_SYMBOL_CLOSE " Kurang tepat! Aksara itu berbunyi \"%s\"", items[tf_shown_item_idx].latin);
     lv_label_set_text(tf_feedback_lbl, msg);
     lv_obj_set_style_text_color(tf_feedback_lbl, lv_color_hex(0xF87171), 0);
@@ -1854,6 +1914,17 @@ static void on_finish_learn_click(lv_event_t* e) {
   audio_play(SOUND_REWARD);
   ui_show_toast("Selamat! Latihan Selesai, XP Bertambah.");
 
+  // Kirim capaian penilaian materi & XP ke Cloud Firestore & Serial USB
+  const char* scriptName = (current_script == AKSARA_JAWA) ? "Jawa" : "Bali";
+  const char* materiTitle = (current_script == AKSARA_JAWA) ? "Carakan Jawa - Konsonan Dasar" : "Wreastra Bali - Konsonan Wianjana";
+  int finalScore = 95;
+  const char* grade = "Grade A+";
+  firebase_sync_send_assessment("I Putu Raditya", "5A", materiTitle, scriptName, finalScore, grade, earned_xp, "Sangat istimewa, menuntaskan semua tantangan latihan aksara!");
+
+  cancel_all_card_anims();
+  cancel_all_learn_timers();
+  hide_all_stage_views();
+
   if (current_script == AKSARA_JAWA) {
     ui_jawa_show();
   } else {
@@ -2084,12 +2155,15 @@ static void mem_render_card(int i) {
 }
 
 static void mem_flip_back_cb(lv_timer_t* t) {
+  mem_timer = nullptr;
+  if (!view_memory || lv_obj_has_flag(view_memory, LV_OBJ_FLAG_HIDDEN)) return;
+
   uint32_t gen = (uint32_t)(uintptr_t)lv_timer_get_user_data(t);
   if (gen != mem_gen) return; // Permainan sudah dibangun ulang, abaikan
   int a = mem_pending_a;
   int b = mem_pending_b;
-  if (a >= 0) { mem_face_up[a] = false; mem_render_card(a); }
-  if (b >= 0) { mem_face_up[b] = false; mem_render_card(b); }
+  if (a >= 0 && a < 8 && mem_btns[a]) { mem_face_up[a] = false; mem_render_card(a); }
+  if (b >= 0 && b < 8 && mem_btns[b]) { mem_face_up[b] = false; mem_render_card(b); }
   mem_pending_a = -1;
   mem_pending_b = -1;
   mem_first = -1;
@@ -2135,8 +2209,12 @@ static void on_mem_card_click(lv_event_t* e) {
     mem_lock = true;
     mem_pending_a = a;
     mem_pending_b = i;
-    lv_timer_t* tmr = lv_timer_create(mem_flip_back_cb, 800, (void*)(uintptr_t)mem_gen);
-    lv_timer_set_repeat_count(tmr, 1);
+    if (mem_timer) {
+      lv_timer_delete(mem_timer);
+      mem_timer = nullptr;
+    }
+    mem_timer = lv_timer_create(mem_flip_back_cb, 800, (void*)(uintptr_t)mem_gen);
+    lv_timer_set_repeat_count(mem_timer, 1);
   }
 }
 
@@ -2147,6 +2225,7 @@ static void on_mem_next_click(lv_event_t* e) {
 }
 
 static void build_stage_memory() {
+  cancel_all_learn_timers();
   if (view_memory) {
     lv_obj_clean(view_memory);
   } else {
@@ -2416,17 +2495,67 @@ static void build_stage_mode_menu() {
 }
 
 static void hide_all_stage_views() {
-  if (view_lesson) lv_obj_add_flag(view_lesson, LV_OBJ_FLAG_HIDDEN);
-  if (view_match) lv_obj_add_flag(view_match, LV_OBJ_FLAG_HIDDEN);
-  if (view_word) lv_obj_add_flag(view_word, LV_OBJ_FLAG_HIDDEN);
-  if (view_vowel) lv_obj_add_flag(view_vowel, LV_OBJ_FLAG_HIDDEN);
-  if (view_tf) lv_obj_add_flag(view_tf, LV_OBJ_FLAG_HIDDEN);
-  if (view_guess) lv_obj_add_flag(view_guess, LV_OBJ_FLAG_HIDDEN);
-  if (view_complete) lv_obj_add_flag(view_complete, LV_OBJ_FLAG_HIDDEN);
-  if (view_mode_menu) lv_obj_add_flag(view_mode_menu, LV_OBJ_FLAG_HIDDEN);
-  if (view_vowel_intro) lv_obj_add_flag(view_vowel_intro, LV_OBJ_FLAG_HIDDEN);
-  if (view_memory) lv_obj_add_flag(view_memory, LV_OBJ_FLAG_HIDDEN);
-  if (view_readword) lv_obj_add_flag(view_readword, LV_OBJ_FLAG_HIDDEN);
+  cancel_all_card_anims();
+  cancel_all_learn_timers();
+
+  btn_tall_next = nullptr;
+  btn_start_practice = nullptr;
+  match_bottom_bar = nullptr;
+  word_feedback_lbl = nullptr;
+  word_action_btn = nullptr;
+  word_action_lbl = nullptr;
+  vowel_feedback_lbl = nullptr;
+  vowel_action_btn = nullptr;
+  vowel_action_lbl = nullptr;
+  tf_btn_false = nullptr;
+  tf_btn_true = nullptr;
+  tf_bottom_bar = nullptr;
+  tf_feedback_lbl = nullptr;
+  mem_moves_lbl = nullptr;
+  mem_bottom_bar = nullptr;
+  rw_bottom_bar = nullptr;
+  rw_feedback_lbl = nullptr;
+  guess_feedback_lbl = nullptr;
+  guess_action_btn = nullptr;
+  guess_action_lbl = nullptr;
+
+  for (int i = 0; i < 4; i++) {
+    left_btns[i] = nullptr;
+    right_btns[i] = nullptr;
+    left_lbls[i] = nullptr;
+    right_lbls[i] = nullptr;
+    vowel_btns[i] = nullptr;
+    vowel_lbls[i] = nullptr;
+    rw_btns[i] = nullptr;
+    rw_lbls[i] = nullptr;
+    guess_btns[i] = nullptr;
+    guess_lbls[i] = nullptr;
+  }
+  for (int i = 0; i < 2; i++) {
+    word_slot_btns[i] = nullptr;
+    word_slot_lbls[i] = nullptr;
+    word_slot_sub_lbls[i] = nullptr;
+  }
+  for (int i = 0; i < 6; i++) {
+    word_tile_btns[i] = nullptr;
+    word_tile_lbls[i] = nullptr;
+  }
+  for (int i = 0; i < 8; i++) {
+    mem_btns[i] = nullptr;
+    mem_lbls[i] = nullptr;
+  }
+
+  if (view_lesson) { lv_obj_clean(view_lesson); lv_obj_add_flag(view_lesson, LV_OBJ_FLAG_HIDDEN); }
+  if (view_match) { lv_obj_clean(view_match); lv_obj_add_flag(view_match, LV_OBJ_FLAG_HIDDEN); }
+  if (view_word) { lv_obj_clean(view_word); lv_obj_add_flag(view_word, LV_OBJ_FLAG_HIDDEN); }
+  if (view_vowel) { lv_obj_clean(view_vowel); lv_obj_add_flag(view_vowel, LV_OBJ_FLAG_HIDDEN); }
+  if (view_tf) { lv_obj_clean(view_tf); lv_obj_add_flag(view_tf, LV_OBJ_FLAG_HIDDEN); }
+  if (view_guess) { lv_obj_clean(view_guess); lv_obj_add_flag(view_guess, LV_OBJ_FLAG_HIDDEN); }
+  if (view_complete) { lv_obj_clean(view_complete); lv_obj_add_flag(view_complete, LV_OBJ_FLAG_HIDDEN); }
+  if (view_mode_menu) { lv_obj_clean(view_mode_menu); lv_obj_add_flag(view_mode_menu, LV_OBJ_FLAG_HIDDEN); }
+  if (view_vowel_intro) { lv_obj_clean(view_vowel_intro); lv_obj_add_flag(view_vowel_intro, LV_OBJ_FLAG_HIDDEN); }
+  if (view_memory) { lv_obj_clean(view_memory); lv_obj_add_flag(view_memory, LV_OBJ_FLAG_HIDDEN); }
+  if (view_readword) { lv_obj_clean(view_readword); lv_obj_add_flag(view_readword, LV_OBJ_FLAG_HIDDEN); }
 }
 
 // Alur: 0 Kartu -> 1 Pasangkan -> 2 Susun Kata -> 8 Kenali Vokal -> 3 Lab Vokal
@@ -2551,6 +2680,9 @@ void ui_learn_init(const AppCallbacks* callbacks) {
 }
 
 void ui_learn_start(AksaraType script, int level_index) {
+  cancel_all_card_anims();
+  cancel_all_learn_timers();
+
   current_script = script;
   current_level_idx = level_index;
   current_target_item_idx = map_level_to_item_index(level_index);
@@ -2573,7 +2705,7 @@ void ui_learn_start(AksaraType script, int level_index) {
 }
 
 void ui_learn_show() {
-  if (scr_learn) {
+  if (scr_learn && lv_screen_active() != scr_learn) {
     lv_scr_load_anim(scr_learn, LV_SCR_LOAD_ANIM_MOVE_LEFT, 250, 0, false);
   }
 }

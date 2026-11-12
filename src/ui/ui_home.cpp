@@ -42,8 +42,8 @@ static void build_home_screen() {
   lv_obj_set_style_bg_opa(scr_home, LV_OPA_COVER, 0);
   lv_obj_clear_flag(scr_home, LV_OBJ_FLAG_SCROLLABLE);
 
-  // Header Title
-  lv_obj_t* title = ui_make_label(scr_home, "OpenAksara", &lv_font_montserrat_20, C_TEXT);
+  // Header Title AksaraBuddy
+  lv_obj_t* title = ui_make_label(scr_home, "AksaraBuddy", &lv_font_montserrat_20, C_TEXT);
   lv_obj_set_pos(title, 20, 14);
 
   lv_obj_t* sub = ui_make_label(scr_home, "Pilih aksara daerah untuk dipelajari",
@@ -123,8 +123,8 @@ static void build_home_screen() {
                                       &lv_font_montserrat_14, lv_color_hex(0xFFFFFF));
   lv_obj_center(btnBaliLbl);
 
-  // Footer Note
-  lv_obj_t* footer = ui_make_label(scr_home, "OpenAksara ESP32  •  Sentuh kartu untuk mulai",
+  // Footer Note AksaraBuddy
+  lv_obj_t* footer = ui_make_label(scr_home, "AksaraBuddy ESP32  •  Sentuh kartu untuk mulai",
                                   &lv_font_montserrat_14, C_MUTED);
   lv_obj_align(footer, LV_ALIGN_BOTTOM_MID, 0, -10);
 }
@@ -148,7 +148,7 @@ void ui_init(const AppCallbacks* callbacks) {
 }
 
 void ui_home_show() {
-  if (scr_home) {
+  if (scr_home && lv_screen_active() != scr_home) {
     lv_scr_load_anim(scr_home, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 250, 0, false);
   }
 }

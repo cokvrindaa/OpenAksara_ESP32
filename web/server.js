@@ -16,6 +16,39 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
+// Load Environment Variables (.env) secara zero-dependency
+function loadEnvFile() {
+  const envCandidates = [
+    path.join(__dirname, '.env'),
+    path.join(__dirname, '..', '.env')
+  ];
+  const env = {};
+  for (const envPath of envCandidates) {
+    if (fs.existsSync(envPath)) {
+      try {
+        const content = fs.readFileSync(envPath, 'utf8');
+        content.split('\n').forEach(line => {
+          line = line.trim();
+          if (!line || line.startsWith('#')) return;
+          const idx = line.indexOf('=');
+          if (idx !== -1) {
+            const key = line.substring(0, idx).trim();
+            const val = line.substring(idx + 1).trim().replace(/(^["']|["']$)/g, '');
+            env[key] = val;
+            if (!process.env[key]) process.env[key] = val;
+          }
+        });
+        console.log(`[Env] Berhasil memuat konfigurasi dari: ${path.basename(envPath)}`);
+        break;
+      } catch (e) {
+        console.warn(`[Env] Gagal membaca ${envPath}:`, e.message);
+      }
+    }
+  }
+  return env;
+}
+const localEnv = loadEnvFile();
+
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'students_data.json');
 const TELEGRAM_CONFIG_FILE = path.join(__dirname, 'telegram_config.json');
@@ -389,10 +422,32 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 2. API: GET /api/students
-  if (pathname === '/api/students' && req.method === 'GET') {
+  // 1b. API: GET /api/config (Safe Firebase Web Config from .env)
+  if (pathname === '/api/config' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true, data: students }));
+    res.end(JSON.stringify({
+      success: true,
+      firebase: {
+        apiKey: process.env.FIREBASE_API_KEY || localEnv.FIREBASE_API_KEY || '',
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN || localEnv.FIREBASE_AUTH_DOMAIN || '',
+        projectId: process.env.FIREBASE_PROJECT_ID || localEnv.FIREBASE_PROJECT_ID || '',
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || localEnv.FIREBASE_STORAGE_BUCKET || '',
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || localEnv.FIREBASE_MESSAGING_SENDER_ID || '',
+        appId: process.env.FIREBASE_APP_ID || localEnv.FIREBASE_APP_ID || ''
+      }
+    }));
+    return;
+  }
+
+  // 2. API: GET /api/students (Urutkan dari aktivitas terbaru ke terlama)
+  if (pathname === '/api/students' && req.method === 'GET') {
+    const sortedStudents = students.slice().sort((a, b) => {
+      const ta = a.last_active ? Date.parse(a.last_active) : 0;
+      const tb = b.last_active ? Date.parse(b.last_active) : 0;
+      return tb - ta;
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, data: sortedStudents }));
     return;
   }
 

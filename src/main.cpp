@@ -2,14 +2,18 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 #include "audio_player.h"
+#include "firebase_sync.h"
 #include "ui_home.h"
+#include "ui_jawa.h"
+#include "ui_bali.h"
+#include "ui_learn.h"
 
 TFT_eSPI tft = TFT_eSPI();
 uint16_t calData[5] = { 262, 3665, 291, 3496, 7 };   // kalibrasi, rotasi 1
 
-// Buffer display LVGL v9 (partial rendering 480x40 pixels)
-static uint8_t buf1[480 * 40 * 2];
-static uint8_t buf2[480 * 40 * 2];
+// Buffer display LVGL v9 (partial rendering 480x10 pixels - hemat DRAM 19.2KB agar heap cukup untuk TLS Firebase)
+static uint8_t buf1[480 * 10 * 2];
+static uint8_t buf2[480 * 10 * 2];
 
 static lv_display_t* disp = nullptr;
 static lv_indev_t* indev = nullptr;
@@ -84,28 +88,35 @@ static uint32_t my_tick(void) {
   return millis();
 }
 
-// ---- Callbacks Aplikasi ----
+// ---- Callbacks Aplikasi Terintegrasi ----
 void onSelectScript(AksaraType type) {
-  Serial.printf("Memilih aksara: %s\n", type == AKSARA_JAWA ? "Aksara Jawa" : "Aksara Bali");
+  Serial.printf("[OpenAksara] Memilih aksara: %s\n", type == AKSARA_JAWA ? "Aksara Jawa" : "Aksara Bali");
+  // ui_home.cpp sudah memanggil ui_jawa_show() / ui_bali_show() secara langsung
 }
 
 void onStartPractice(AksaraType type) {
-  Serial.printf("Mulai latihan %s\n", type == AKSARA_JAWA ? "Aksara Jawa" : "Aksara Bali");
-  // TODO: buka layar canvas menggambar/latihan aksara
+  Serial.printf("[OpenAksara] Mulai latihan %s\n", type == AKSARA_JAWA ? "Aksara Jawa" : "Aksara Bali");
+  ui_learn_start(type, 0); // ui_learn_start sudah memanggil ui_learn_show() internal
 }
 
 void onSelectAksara(AksaraType type, int index) {
-  Serial.printf("Pilih node aksara index #%d (%s)\n", index, type == AKSARA_JAWA ? "Jawa" : "Bali");
+  Serial.printf("[OpenAksara] Pilih node aksara index #%d (%s)\n", index, type == AKSARA_JAWA ? "Jawa" : "Bali");
+  // Catatan: ui_jawa / ui_bali sudah memanggil ui_learn_start secara mandiri saat node diklik.
+  // Jangan panggil ulang ui_learn_start / ui_learn_show di sini agar tidak terjadi multi-trigger / double free.
 }
 
 void onAllAksara(AksaraType type) {
-  Serial.printf("Buka daftar semua aksara (%s)\n", type == AKSARA_JAWA ? "Jawa" : "Bali");
-  // TODO: buka daftar semua aksara
+  if (type == AKSARA_JAWA) {
+    ui_jawa_show();
+  } else {
+    ui_bali_show();
+  }
 }
 
 void onSettings() {
-  Serial.println("Buka setelan");
-  // TODO: buka layar setelan
+  Serial.println(F("[OpenAksara] Buka setelan hardware"));
+  // Kirim sinyal telemetri real-time ke Cloud
+  firebase_sync_send_telemetry(4.98f, 18, 24);
 }
 
 AppCallbacks appCbs = {
@@ -119,6 +130,9 @@ AppCallbacks appCbs = {
 void setup() {
   Serial.begin(115200);
   audio_init();
+
+  // Inisialisasi Sinkronisasi Firebase Firestore & USB Telemetri
+  firebase_sync_init();
 
   lv_init();
   lv_tick_set_cb(my_tick);
@@ -142,6 +156,8 @@ void setup() {
 
 void loop() {
   audio_update();
+  firebase_sync_update();
+
   uint32_t ms = lv_timer_handler();
   if (is_touching) {
     // Mode responsif maksimal: saat menggores, NOL delay untuk 60+ FPS zero-lag!
