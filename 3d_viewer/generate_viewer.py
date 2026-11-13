@@ -2,10 +2,18 @@ import trimesh
 import json
 import os
 
-artifact_dir = r"C:\Users\cokvr\.gemini\antigravity\brain\f157119b-0846-4ce9-850e-bbbf528be1df"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+artifact_dir = r"C:\Users\cokvr\.gemini\antigravity\brain\7b259053-4c67-48f7-bd35-57a459999eab"
 
-top = trimesh.load("casing_atas.stl")
-bot = trimesh.load("tutup_bawah.stl")
+top_path = os.path.join(script_dir, "casing_atas.stl")
+bot_path = os.path.join(script_dir, "tutup_bawah.stl")
+if not os.path.exists(top_path):
+    top_path = os.path.join(script_dir, "models", "casing_atas.stl")
+if not os.path.exists(bot_path):
+    bot_path = os.path.join(script_dir, "models", "tutup_bawah.stl")
+
+top = trimesh.load(top_path)
+bot = trimesh.load(bot_path)
 
 top_data = {
     "verts": top.vertices.tolist(),
@@ -335,8 +343,15 @@ html_content = f"""<!DOCTYPE html>
 </html>
 """
 
-output_path = os.path.join(artifact_dir, "3d_viewer.html")
-with open(output_path, "w", encoding="utf-8") as f:
-    f.write(html_content)
+output_paths = [
+    os.path.join(script_dir, "3d_viewer.html"),
+    os.path.join(script_dir, "index.html")
+]
+if os.path.isdir(artifact_dir):
+    output_paths.append(os.path.join(artifact_dir, "3d_viewer.html"))
 
-print(f"Interactive 3D Viewer updated at {output_path}")
+for p in output_paths:
+    with open(p, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+print(f"Interactive 3D Viewer updated at {output_paths[0]}")

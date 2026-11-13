@@ -386,7 +386,9 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon',
   '.ttf': 'font/ttf',
   '.woff': 'font/woff',
-  '.woff2': 'font/woff2'
+  '.woff2': 'font/woff2',
+  '.stl': 'model/stl',
+  '.pdf': 'application/pdf'
 };
 
 const server = http.createServer((req, res) => {
@@ -724,11 +726,31 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 10. Static File Serving
-  let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
+  // 10. Static File Serving (Terintegrasi: web, 3D viewer, & waypoint editor)
+  const repoRoot = path.resolve(__dirname, '..');
+  const viewerDir = path.join(repoRoot, '3d_viewer');
+  const editorDir = path.join(repoRoot, 'waypoint_editor');
 
-  // Security: Prevent directory traversal outside __dirname
-  if (!filePath.startsWith(__dirname)) {
+  let filePath = '';
+  if (pathname === '/3d' || pathname === '/3d/' || pathname === '/3d-viewer' || pathname === '/3d_viewer') {
+    filePath = path.join(viewerDir, 'index.html');
+  } else if (pathname.startsWith('/3d_viewer/')) {
+    filePath = path.join(repoRoot, pathname.replace(/^\/+/, ''));
+  } else if (pathname === '/waypoint' || pathname === '/waypoint/' || pathname === '/waypoint-editor' || pathname === '/waypoint_editor' || pathname === '/editor') {
+    filePath = path.join(editorDir, 'index.html');
+  } else if (pathname.startsWith('/waypoint_editor/')) {
+    filePath = path.join(repoRoot, pathname.replace(/^\/+/, ''));
+  } else {
+    filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
+  }
+
+  // Security: Cegah directory traversal di luar folder yang diizinkan
+  const normalizedFilePath = path.normalize(filePath);
+  const isAllowedPath = normalizedFilePath.startsWith(__dirname) ||
+                        normalizedFilePath.startsWith(viewerDir) ||
+                        normalizedFilePath.startsWith(editorDir);
+
+  if (!isAllowedPath) {
     res.writeHead(403);
     res.end('Access Denied');
     return;

@@ -1,4 +1,4 @@
-Add-Type -AssemblyName System.Windows.Forms
+﻿Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $form = New-Object System.Windows.Forms.Form
@@ -67,9 +67,15 @@ $btnOpenHtml.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
 $form.Controls.Add($btnOpenHtml)
 
 $btnOpenHtml.Add_Click({
-  $htmlPath = Join-Path $PSScriptRoot "waypoint_editor.html"
-  if (Test-Path $htmlPath) {
-    Start-Process $htmlPath
+  $htmlCandidates = @(
+    (Join-Path $PSScriptRoot "waypoint_editor.html"),
+    (Join-Path $PSScriptRoot "index.html")
+  )
+  foreach ($h in $htmlCandidates) {
+    if (Test-Path $h) {
+      Start-Process $h
+      return
+    }
   }
 })
 
@@ -95,13 +101,24 @@ $btnUpdate.Add_Click({
     return
   }
 
+  # Deteksi root repository (mencari platformio.ini atau folder src)
+  $repoRoot = $PSScriptRoot
+  while ($repoRoot -and -not (Test-Path (Join-Path $repoRoot "platformio.ini"))) {
+    $parent = Split-Path $repoRoot -Parent
+    if (-not $parent -or $parent -eq $repoRoot) { break }
+    $repoRoot = $parent
+  }
+  if (-not (Test-Path (Join-Path $repoRoot "platformio.ini"))) {
+    $repoRoot = Split-Path $PSScriptRoot -Parent
+  }
+
   $targetFile = ""
   if ($varName.StartsWith("BALI_")) {
-    $targetFile = Join-Path $PSScriptRoot "src\ui\ui_bali.cpp"
-    if (-not (Test-Path $targetFile)) { $targetFile = Join-Path $PSScriptRoot "src\ui_bali.cpp" }
+    $targetFile = Join-Path $repoRoot "src\ui\ui_bali.cpp"
+    if (-not (Test-Path $targetFile)) { $targetFile = Join-Path $repoRoot "src\ui_bali.cpp" }
   } elseif ($varName.StartsWith("JAWA_")) {
-    $targetFile = Join-Path $PSScriptRoot "src\ui\ui_jawa.cpp"
-    if (-not (Test-Path $targetFile)) { $targetFile = Join-Path $PSScriptRoot "src\ui_jawa.cpp" }
+    $targetFile = Join-Path $repoRoot "src\ui\ui_jawa.cpp"
+    if (-not (Test-Path $targetFile)) { $targetFile = Join-Path $repoRoot "src\ui_jawa.cpp" }
   } else {
     $lblStatus.Text = "❌ Nama variabel '$varName' harus diawali BALI_ atau JAWA_"
     $lblStatus.ForeColor = [System.Drawing.Color]::FromArgb(239, 68, 68)

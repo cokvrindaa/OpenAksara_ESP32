@@ -159,7 +159,7 @@ function updateDatabaseStatusBadge(connected, label) {
  */
 function parseFirebaseItemTimestamp(item) {
   if (!item) return 0;
-  const raw = item.createdAt || item.completedDate || item.time || item.timestamp;
+  const raw = item.createdAt || item.updatedAt || item.timestamp || item.completedAt || item.completedDate || item.time;
   if (raw) {
     if (typeof raw.toMillis === 'function') return raw.toMillis();
     if (typeof raw.toDate === 'function') return raw.toDate().getTime();
@@ -189,6 +189,47 @@ function parseFirebaseItemTimestamp(item) {
   return 0;
 }
 
+/**
+ * Konversi field timestamp Firebase (Timestamp Firestore, ISO string, atau epoch)
+ * menjadi label waktu lokal yang terbaca jelas (cth: "Hari ini, 09:15", "Kemarin, 14:20", "12 Nov, 16:05").
+ */
+function formatFirebaseTimestamp(rawVal) {
+  if (!rawVal) return "";
+  let ms = 0;
+  if (typeof rawVal.toMillis === 'function') ms = rawVal.toMillis();
+  else if (typeof rawVal.toDate === 'function') ms = rawVal.toDate().getTime();
+  else if (typeof rawVal === 'object' && rawVal.seconds !== undefined) {
+    ms = rawVal.seconds * 1000 + (rawVal.nanoseconds ? rawVal.nanoseconds / 1000000 : 0);
+  } else if (typeof rawVal === 'number') {
+    ms = rawVal;
+  } else {
+    const parsed = Date.parse(rawVal);
+    if (!isNaN(parsed)) ms = parsed;
+  }
+  if (!ms) return "";
+
+  const date = new Date(ms);
+  const now = new Date();
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const timePart = `${hh}:${mm}`;
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const diffDays = Math.round((startOfToday - startOfDate) / 86400000);
+
+  if (diffDays === 0) return `Hari ini, ${timePart}`;
+  if (diffDays === 1) return `Kemarin, ${timePart}`;
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const day = date.getDate();
+  const mon = months[date.getMonth()];
+  if (date.getFullYear() === now.getFullYear()) {
+    return `${day} ${mon}, ${timePart}`;
+  }
+  return `${day} ${mon} ${date.getFullYear()}, ${timePart}`;
+}
+
 function setupAllRealtimeListeners() {
   if (!FirebaseState.db) return;
 
@@ -206,7 +247,10 @@ function setupAllRealtimeListeners() {
         if (!snapshot.empty) {
           const liveSubmissions = [];
           snapshot.forEach(doc => {
-            const d = doc.data();
+            const d = doc.data({ serverTimestamps: 'estimate' });
+            const rawCreated = d.createdAt || d.updatedAt || d.timestamp || "";
+            const formattedTime = formatFirebaseTimestamp(rawCreated);
+            const fallbackTime = (d.time && d.time !== "Baru saja") ? d.time : "";
             liveSubmissions.push({
               id: doc.id,
               name: d.name || "Siswa",
@@ -216,8 +260,8 @@ function setupAllRealtimeListeners() {
               precision: d.precision !== undefined ? d.precision : 85,
               score: d.score !== undefined ? d.score : 80,
               status: d.status || (d.score >= 90 ? "Sempurna" : (d.score >= 75 ? "Lulus" : "Remedial")),
-              time: d.time || "Baru saja",
-              createdAt: d.createdAt || ""
+              time: formattedTime || fallbackTime || "Baru saja",
+              createdAt: rawCreated
             });
           });
 
@@ -240,7 +284,10 @@ function setupAllRealtimeListeners() {
         if (!snapshot.empty) {
           const liveAssessments = [];
           snapshot.forEach(doc => {
-            const d = doc.data();
+            const d = doc.data({ serverTimestamps: 'estimate' });
+            const rawCreated = d.createdAt || d.updatedAt || d.timestamp || d.completedAt || "";
+            const formattedDate = formatFirebaseTimestamp(rawCreated);
+            const fallbackDate = (d.completedDate && d.completedDate !== "Hari ini") ? d.completedDate : "";
             liveAssessments.push({
               id: doc.id,
               studentName: d.studentName || "Siswa",
@@ -248,8 +295,8 @@ function setupAllRealtimeListeners() {
               avatar: d.avatar || "SW",
               materiTitle: d.materiTitle || "Aksara Nusantara",
               script: d.script || "Jawa",
-              completedDate: d.completedDate || "Hari ini",
-              createdAt: d.createdAt || "",
+              completedDate: formattedDate || fallbackDate || "Hari ini",
+              createdAt: rawCreated,
               accuracyScore: d.accuracyScore || 85,
               speedScore: d.speedScore || 80,
               strokeStability: d.strokeStability || 82,
@@ -310,11 +357,14 @@ function setupAllRealtimeListeners() {
         if (!snapshot.empty) {
           const liveFeedbacks = [];
           snapshot.forEach(doc => {
-            const d = doc.data();
+            const d = doc.data({ serverTimestamps: 'estimate' });
+            const rawCreated = d.createdAt || d.updatedAt || d.timestamp || "";
+            const formattedTime = formatFirebaseTimestamp(rawCreated);
+            const fallbackTime = (d.time && d.time !== "Baru saja") ? d.time : "";
             liveFeedbacks.push({
               id: doc.id,
-              time: d.time || "Baru saja",
-              createdAt: d.createdAt || "",
+              time: formattedTime || fallbackTime || "Baru saja",
+              createdAt: rawCreated,
               target: d.target || "Sabak Siswa",
               text: d.text || "-",
               status: d.status || "Terkirim (Cloud)"
@@ -395,9 +445,11 @@ async function firebaseSaveSubmission(data) {
   if (!FirebaseState.db) return { success: true, localOnly: true };
 
   try {
+    const nowIso = new Date().toISOString();
     const docRef = await FirebaseState.db.collection('submissions').add({
       ...data,
-      createdAt: new Date().toISOString()
+      time: formatFirebaseTimestamp(nowIso),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     return { success: true, id: docRef.id };
   } catch (err) {
@@ -413,9 +465,11 @@ async function firebaseSendFeedback(data) {
   if (!FirebaseState.db) return { success: true, localOnly: true };
 
   try {
+    const nowIso = new Date().toISOString();
     const docRef = await FirebaseState.db.collection('feedbacks').add({
       ...data,
-      createdAt: new Date().toISOString()
+      time: formatFirebaseTimestamp(nowIso),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     return { success: true, id: docRef.id };
   } catch (err) {
@@ -458,7 +512,7 @@ async function firebaseSeedDefaultData(defaultSubmissions, defaultAssessments, d
     if (defaultSubmissions && defaultSubmissions.length) {
       defaultSubmissions.forEach(sub => {
         const ref = FirebaseState.db.collection('submissions').doc();
-        batch.set(ref, { ...sub, createdAt: new Date().toISOString() });
+        batch.set(ref, { ...sub, createdAt: sub.createdAt || new Date().toISOString() });
       });
     }
 
@@ -466,7 +520,7 @@ async function firebaseSeedDefaultData(defaultSubmissions, defaultAssessments, d
     if (defaultAssessments && defaultAssessments.length) {
       defaultAssessments.forEach(ass => {
         const ref = FirebaseState.db.collection('assessments').doc(ass.id || undefined);
-        batch.set(ref, { ...ass, createdAt: new Date().toISOString() });
+        batch.set(ref, { ...ass, createdAt: ass.createdAt || new Date().toISOString() });
       });
     }
 

@@ -159,7 +159,7 @@
           <!-- PANEL 1: FORM LOGIN GURU -->
           <div id="login-panel-teacher">
             <div class="mb-4">
-              <h3 class="text-xl sm:text-2xl font-bold text-brand-dark">Selamat Datang, Bapak/Ibu Guru! 👋</h3>
+              <h3 class="text-xl sm:text-2xl font-bold text-brand-dark">Selamat Datang, Bapak/Ibu Guru</h3>
               <p class="text-xs text-brand-muted mt-1">Masuk untuk memantau nilai akhir, perolehan XP, dan akurasi goresan siswa.</p>
             </div>
 
@@ -206,7 +206,7 @@
           <!-- PANEL 2: PORTAL AKSES CEPAT ORANG TUA + SEARCH BAR NAMA ANAK -->
           <div id="login-panel-parent" class="hidden space-y-4">
             <div>
-              <h3 class="text-xl sm:text-2xl font-bold text-brand-dark">Portal Orang Tua / Wali Murid 👨‍👩‍👧</h3>
+              <h3 class="text-xl sm:text-2xl font-bold text-brand-dark">Portal Orang Tua & Wali Murid</h3>
               <p class="text-xs text-brand-muted mt-1">Cari nama putra/putri Anda untuk melihat nilai menulis aksara, perkembangan XP, dan rapor guru secara real-time.</p>
             </div>
 
@@ -323,8 +323,8 @@
           <button onclick="switchTab('assessments'); toggleMobileSidebar(false);" id="nav-assessments" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
             <i data-lucide="award" class="w-4 h-4"></i>
             <span class="flex-1 text-left">Penilaian Materi</span>
-            <span class="text-[10px] bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-              ⚡ XP
+            <span class="text-[10px] bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded-full font-bold">
+              XP
             </span>
           </button>
 
@@ -355,6 +355,23 @@
             <span class="flex-1 text-left">Setelan ESP32</span>
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           </button>
+
+          <!-- ALAT & EKOSISTEM (3D VIEWER & WAYPOINT EDITOR) -->
+          <div class="pt-4 pb-1.5 px-3">
+            <p class="text-[10px] font-bold tracking-wider text-brand-muted uppercase">Alat & Desain</p>
+          </div>
+
+          <a href="/3d" onclick="if(location.protocol==='file:'){window.open('../3d_viewer/index.html','_blank');return false;}" target="_blank" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="box" class="w-4 h-4 text-brand-primary"></i>
+            <span class="flex-1 text-left">Viewer 3D Casing</span>
+            <i data-lucide="external-link" class="w-3.5 h-3.5 text-brand-muted"></i>
+          </a>
+
+          <a href="/waypoint" onclick="if(location.protocol==='file:'){window.open('../waypoint_editor/index.html','_blank');return false;}" target="_blank" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-muted hover:bg-gray-100 hover:text-brand-dark transition-all">
+            <i data-lucide="pen-tool" class="w-4 h-4 text-brand-accent"></i>
+            <span class="flex-1 text-left">Editor Waypoint</span>
+            <i data-lucide="external-link" class="w-3.5 h-3.5 text-brand-muted"></i>
+          </a>
         </nav>
       </div>
 
@@ -733,11 +750,11 @@
               <div class="flex items-center gap-2">
                 <span class="text-xs font-semibold text-brand-muted">Urutkan:</span>
                 <select id="filter-sort" onchange="filterSubmissions()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-primary font-medium text-brand-dark">
-                  <option value="newest" selected>⏳ Terbaru ke Terlama</option>
-                  <option value="oldest">⌛ Terlama ke Terbaru</option>
-                  <option value="score_desc">🏆 Nilai Tertinggi</option>
-                  <option value="score_asc">📉 Nilai Terendah</option>
-                  <option value="precision_desc">🎯 Presisi Tertinggi</option>
+                  <option value="newest" selected>Terbaru ke Terlama</option>
+                  <option value="oldest">Terlama ke Terbaru</option>
+                  <option value="score_desc">Nilai Tertinggi</option>
+                  <option value="score_asc">Nilai Terendah</option>
+                  <option value="precision_desc">Presisi Tertinggi</option>
                 </select>
               </div>
             </div>
@@ -851,11 +868,11 @@
               <div class="flex items-center gap-2">
                 <span class="text-xs font-semibold text-brand-muted">Urutkan:</span>
                 <select id="assessment-filter-sort" onchange="filterAssessments()" class="bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-1.5 focus:outline-none font-medium text-brand-dark">
-                  <option value="newest" selected>⏳ Terbaru ke Terlama</option>
-                  <option value="oldest">⌛ Terlama ke Terbaru</option>
-                  <option value="score_desc">🏆 Point Tertinggi</option>
-                  <option value="score_asc">📉 Point Terendah</option>
-                  <option value="xp_desc">✨ Total XP Tertinggi</option>
+                  <option value="newest" selected>Terbaru ke Terlama</option>
+                  <option value="oldest">Terlama ke Terbaru</option>
+                  <option value="score_desc">Point Tertinggi</option>
+                  <option value="score_asc">Point Terendah</option>
+                  <option value="xp_desc">Total XP Tertinggi</option>
                 </select>
               </div>
             </div>
@@ -1027,193 +1044,147 @@
         <!-- ============================================================== -->
         <!-- TAB BARU: PORTAL ORANG TUA / WALI MURID                        -->
         <!-- ============================================================== -->
-        <div id="tab-parents" class="tab-pane hidden flex-col gap-6">
+        <div id="tab-parents" class="tab-pane hidden flex-col gap-5">
 
-          <!-- Banner & KPI Ringkasan Orang Tua -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-brand-muted">Total Siswa Terpantau</span>
-                <div class="w-9 h-9 rounded-xl bg-brand-soft flex items-center justify-center text-brand-primary">
-                  <i data-lucide="users" class="w-4 h-4"></i>
-                </div>
-              </div>
-              <div class="mt-3">
-                <h3 id="parent-kpi-total-students" class="text-2xl font-extrabold text-brand-dark">12 Siswa</h3>
-                <p class="text-[11px] text-brand-muted mt-1">Kelas 5A & 5B Terhubung Wali</p>
-              </div>
+          <!-- Ringkasan KPI Orang Tua (Ringkas & Bersih) -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white px-5 py-4 rounded-2xl border border-brand-border shadow-sm">
+              <span class="text-xs font-medium text-brand-muted">Siswa Terpantau</span>
+              <h3 id="parent-kpi-total-students" class="text-2xl font-bold text-brand-dark mt-1">12 Siswa</h3>
+              <p class="text-[11px] text-brand-muted mt-0.5">Kelas 5A &amp; 5B</p>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-brand-muted">Rata-Rata Nilai Anak</span>
-                <div class="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700">
-                  <i data-lucide="award" class="w-4 h-4"></i>
-                </div>
-              </div>
-              <div class="mt-3">
-                <h3 id="parent-kpi-avg-score" class="text-2xl font-extrabold text-brand-dark">88.4 / 100</h3>
-                <p class="text-[11px] text-emerald-700 font-semibold mt-1">Di atas KKM (75.0)</p>
-              </div>
+            <div class="bg-white px-5 py-4 rounded-2xl border border-brand-border shadow-sm">
+              <span class="text-xs font-medium text-brand-muted">Rata-Rata Nilai</span>
+              <h3 id="parent-kpi-avg-score" class="text-2xl font-bold text-brand-dark mt-1">88.4 / 100</h3>
+              <p class="text-[11px] text-emerald-700 font-medium mt-0.5">Standar KKM 75.0</p>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-brand-muted">Rapor Dikonfirmasi Wali</span>
-                <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
-                  <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-                </div>
-              </div>
-              <div class="mt-3">
-                <h3 id="parent-kpi-verified" class="text-2xl font-extrabold text-brand-dark">9 / 12</h3>
-                <p class="text-[11px] text-brand-muted mt-1">Sudah ditandatangani digital</p>
-              </div>
+            <div class="bg-white px-5 py-4 rounded-2xl border border-brand-border shadow-sm">
+              <span class="text-xs font-medium text-brand-muted">Rapor Terkonfirmasi</span>
+              <h3 id="parent-kpi-verified" class="text-2xl font-bold text-brand-dark mt-1">9 / 12</h3>
+              <p class="text-[11px] text-brand-muted mt-0.5">Konfirmasi wali murid</p>
             </div>
 
-            <div class="bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-brand-muted">Pesan Dukungan Wali</span>
-                <div class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                  <i data-lucide="heart-handshake" class="w-4 h-4"></i>
-                </div>
-              </div>
-              <div class="mt-3">
-                <h3 id="parent-kpi-messages" class="text-2xl font-extrabold text-brand-dark">14 Pesan</h3>
-                <p class="text-[11px] text-blue-700 font-semibold mt-1">Terkirim ke Sabak ESP32 anak</p>
-              </div>
+            <div class="bg-white px-5 py-4 rounded-2xl border border-brand-border shadow-sm">
+              <span class="text-xs font-medium text-brand-muted">Buku Penghubung</span>
+              <h3 id="parent-kpi-messages" class="text-2xl font-bold text-brand-dark mt-1">4 Pesan</h3>
+              <p class="text-[11px] text-brand-primary font-medium mt-0.5">Tersinkron ke Sabak</p>
             </div>
           </div>
 
-          <!-- Panel Utama Pencarian Nama Anak / Orang Tua & Filter -->
-          <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col gap-4">
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <!-- Bar Pencarian & Filter Anak -->
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-brand-border shadow-sm space-y-3.5">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div>
-                <div class="flex items-center gap-2">
-                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">KHUSUS WALI MURID & GURU</span>
-                  <h4 class="text-base font-bold text-brand-dark">Pencarian Cepat Nama Anak & Orang Tua</h4>
-                </div>
-                <p class="text-xs text-brand-muted mt-0.5">Ketik nama siswa atau nama orang tua/wali untuk melihat perkembangan belajar aksara Jawa & Bali secara lengkap</p>
+                <h4 class="text-sm sm:text-base font-bold text-brand-dark">Pantauan Belajar Putra / Putri</h4>
+                <p class="text-xs text-brand-muted">Cari nama siswa atau wali untuk melihat progres menulis aksara dan rapor guru.</p>
               </div>
 
-              <div class="flex flex-wrap items-center gap-2.5">
-                <div class="relative w-full sm:w-80">
-                  <i data-lucide="search" class="w-4 h-4 text-brand-primary absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                  <input type="text" id="parent-search-input" oninput="renderParentPortal()" placeholder="Cari nama siswa atau nama orang tua..." class="w-full pl-10 pr-8 py-2.5 text-xs font-medium bg-brand-bg border-2 border-brand-primary/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
-                  <button type="button" onclick="document.getElementById('parent-search-input').value=''; renderParentPortal();" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark text-xs font-bold">✕</button>
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="relative w-full sm:w-72">
+                  <i data-lucide="search" class="w-4 h-4 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <input type="text" id="parent-search-input" oninput="renderParentPortal()" placeholder="Cari nama anak atau wali..." class="w-full pl-9 pr-8 py-2 text-xs bg-brand-bg border border-brand-border rounded-xl text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-primary/15 focus:border-brand-primary transition">
+                  <button type="button" onclick="document.getElementById('parent-search-input').value=''; renderParentPortal();" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-brand-muted hover:text-brand-dark text-xs font-semibold">✕</button>
                 </div>
 
-                <select id="parent-filter-class" onchange="renderParentPortal()" class="text-xs bg-brand-bg border border-brand-border rounded-xl px-3 py-2.5 font-semibold text-brand-dark focus:outline-none focus:border-brand-primary">
-                  <option value="all">Semua Kelas (5A & 5B)</option>
+                <select id="parent-filter-class" onchange="renderParentPortal()" class="text-xs bg-brand-bg border border-brand-border rounded-xl px-3 py-2 font-medium text-brand-dark focus:outline-none focus:border-brand-primary">
+                  <option value="all">Semua Kelas</option>
                   <option value="5A">Kelas 5A</option>
                   <option value="5B">Kelas 5B</option>
                 </select>
 
-                <select id="parent-filter-status" onchange="renderParentPortal()" class="text-xs bg-brand-bg border border-brand-border rounded-xl px-3 py-2.5 font-semibold text-brand-dark focus:outline-none focus:border-brand-primary">
-                  <option value="all">Semua Status Belajar</option>
-                  <option value="TUNTAS">Tuntas / Lulus</option>
-                  <option value="REMEDIAL">Perlu Pendampingan</option>
+                <select id="parent-filter-status" onchange="renderParentPortal()" class="text-xs bg-brand-bg border border-brand-border rounded-xl px-3 py-2 font-medium text-brand-dark focus:outline-none focus:border-brand-primary">
+                  <option value="all">Semua Status</option>
+                  <option value="TUNTAS">Tuntas</option>
+                  <option value="REMEDIAL">Pendampingan</option>
                 </select>
               </div>
             </div>
 
-            <!-- Chip Pintasan Nama Siswa -->
-            <div class="pt-3 border-t border-brand-border/60 flex items-center gap-2 flex-wrap">
-              <span class="text-[11px] font-bold text-brand-muted flex items-center gap-1">
-                <i data-lucide="user-check" class="w-3.5 h-3.5 text-brand-primary"></i> Pilih Cepat Nama Anak:
-              </span>
+            <!-- Pintasan Nama Siswa -->
+            <div class="pt-3 border-t border-brand-border/60 flex items-center gap-1.5 flex-wrap">
+              <span class="text-[11px] font-semibold text-brand-muted mr-1">Filter cepat:</span>
               <div id="parent-student-chips" class="flex flex-wrap gap-1.5">
                 <!-- Populated via JS -->
               </div>
             </div>
           </div>
 
-          <!-- Grid Kartu Perkembangan Anak (Parent Cards) -->
-          <div id="parent-cards-container" class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <!-- Grid Kartu Perkembangan Anak -->
+          <div id="parent-cards-container" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <!-- Populated via JS -->
           </div>
+          <div id="parent-cards-toggle-wrap" class="hidden justify-center">
+            <button type="button" id="parent-cards-toggle-btn" onclick="toggleShowAllParentCards()" class="px-4 py-2 rounded-xl border border-brand-border bg-white hover:bg-brand-bg text-xs font-semibold text-brand-dark transition">
+              Tampilkan semua siswa
+            </button>
+          </div>
 
-          <!-- Konsol Komunikasi Orang Tua <-> Anak & Guru -->
-          <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <!-- Form Kirim Dukungan Orang Tua ke Sabak ESP32 Anak (2 Kolom) -->
-            <div class="lg:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between gap-4">
-              <div class="space-y-4">
+          <!-- Komunikasi Orang Tua & Buku Penghubung -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            <!-- Form Kirim Pesan Orang Tua (5 Kolom) -->
+            <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-brand-border shadow-sm space-y-4">
+              <div>
+                <h4 class="text-base font-bold text-brand-dark">Kirim Pesan Orang Tua</h4>
+                <p class="text-xs text-brand-muted mt-0.5">Pesan akan tampil di Sabak ESP32 anak dan tercatat untuk wali kelas.</p>
+              </div>
+
+              <div class="space-y-3">
                 <div>
-                  <h4 class="text-base font-bold text-brand-dark flex items-center gap-2">
-                    <i data-lucide="message-circle-heart" class="w-4 h-4 text-brand-accent"></i>
-                    <span>Kirim Semangat & Catatan Orang Tua</span>
-                  </h4>
-                  <p class="text-xs text-brand-muted mt-0.5">Pesan dari Ayah/Ibu akan tampil di layar Sabak ESP32 anak dan diterima oleh Wali Kelas</p>
-                </div>
-
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-bold text-brand-dark">Pilih Nama Anak:</label>
-                  <select id="parent-msg-student" class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl px-3.5 py-2.5 font-semibold text-brand-dark focus:outline-none focus:border-brand-primary">
+                  <label class="block text-xs font-semibold text-brand-dark mb-1" for="parent-msg-student">Nama Anak</label>
+                  <select id="parent-msg-student" onchange="syncParentSenderByStudent(this.value)" class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-2 font-medium text-brand-dark focus:outline-none focus:border-brand-primary">
                     <!-- Populated via JS -->
                   </select>
                 </div>
 
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-bold text-brand-dark">Nama Orang Tua / Wali Pengirim:</label>
-                  <input type="text" id="parent-msg-sender" placeholder="Contoh: Bpk. Wayan Sudarma (Ayah Raditya)" value="Bpk. Wayan Sudarma (Wali Murid)" class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl px-3.5 py-2.5 font-medium text-brand-dark focus:outline-none focus:border-brand-primary">
+                <div>
+                  <label class="block text-xs font-semibold text-brand-dark mb-1" for="parent-msg-sender">Pengirim (Orang Tua / Wali)</label>
+                  <input type="text" id="parent-msg-sender" placeholder="Contoh: Bpk. Wayan Sudarma" value="Bpk. I Wayan Sudarma (Wali I Putu Raditya)" class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl px-3 py-2 font-medium text-brand-dark focus:outline-none focus:border-brand-primary">
                 </div>
 
-                <div class="space-y-1.5">
-                  <span class="text-[11px] font-semibold text-brand-muted block">Template Pesan Orang Tua:</span>
+                <div>
+                  <span class="text-[11px] font-medium text-brand-muted block mb-1.5">Pilihan cepat:</span>
                   <div class="flex flex-wrap gap-1.5">
-                    <button type="button" onclick="setParentMessageText('Anak hebat Ayah & Ibu! Terus semangat belajar menulis aksara Jawa dan Bali ya! ❤️')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft border border-brand-border text-[11px] font-medium transition">
-                      ❤️ Semangat dari Ayah & Ibu
+                    <button type="button" onclick="setParentMessageText('Terus semangat belajar menulis aksara Jawa dan Bali ya. Ayah dan Ibu bangga padamu.')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft/60 border border-brand-border text-[11px] font-medium text-brand-dark transition">
+                      Dukungan Belajar
                     </button>
-                    <button type="button" onclick="setParentMessageText('Terima kasih Bapak/Ibu Guru, malam ini kami sudah mendampingi latihan mengulang aksara di rumah.')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft border border-brand-border text-[11px] font-medium transition">
-                      🏠 Konfirmasi Latihan di Rumah
+                    <button type="button" onclick="setParentMessageText('Terima kasih Bapak/Ibu Guru, malam ini kami sudah mendampingi anak berlatih ulang di rumah.')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft/60 border border-brand-border text-[11px] font-medium text-brand-dark transition">
+                      Konfirmasi Latihan
                     </button>
-                    <button type="button" onclick="setParentMessageText('Wah nilai rapormu bagus sekali Nak! Nanti pulang sekolah kita belajar bareng lagi ya 🌟')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft border border-brand-border text-[11px] font-medium transition">
-                      🌟 Apresiasi Nilai Bagus
+                    <button type="button" onclick="setParentMessageText('Hasil latihanmu hari ini bagus sekali. Nanti di rumah kita lanjutkan modul berikutnya.')" class="px-2.5 py-1 rounded-lg bg-brand-bg hover:bg-brand-soft/60 border border-brand-border text-[11px] font-medium text-brand-dark transition">
+                      Apresiasi Nilai
                     </button>
                   </div>
                 </div>
 
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-bold text-brand-dark">Isi Pesan / Catatan Wali:</label>
-                  <textarea id="parent-msg-text" rows="3" placeholder="Tulis pesan dukungan untuk anak atau catatan untuk guru..." class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl p-3.5 font-medium focus:outline-none focus:border-brand-primary transition">Anak hebat Ayah & Ibu! Terus semangat belajar menulis aksara Jawa dan Bali ya! ❤️</textarea>
+                <div>
+                  <label class="block text-xs font-semibold text-brand-dark mb-1" for="parent-msg-text">Isi Pesan / Catatan</label>
+                  <textarea id="parent-msg-text" rows="3" placeholder="Tulis pesan dukungan untuk anak atau catatan untuk guru..." class="w-full bg-brand-bg border border-brand-border text-xs rounded-xl p-3 font-medium text-brand-dark focus:outline-none focus:border-brand-primary transition">Terus semangat belajar menulis aksara Jawa dan Bali ya. Ayah dan Ibu bangga padamu.</textarea>
                 </div>
               </div>
 
-              <button type="button" onclick="sendParentMessage()" class="w-full py-3 px-4 bg-brand-accent hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-2">
-                <i data-lucide="send" class="w-4 h-4"></i>
-                <span>💌 Kirim Pesan Orang Tua ke Sabak & Guru</span>
+              <button type="button" onclick="sendParentMessage()" class="w-full py-2.5 px-4 bg-brand-primary hover:bg-brand-hover text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-2">
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span>Kirim Pesan ke Sabak &amp; Guru</span>
               </button>
             </div>
 
-            <!-- Tabel Riwayat Komunikasi Orang Tua & Guru (3 Kolom) -->
-            <div class="lg:col-span-3 bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between">
-              <div>
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                  <div>
-                    <h4 class="text-base font-bold text-brand-dark">Buku Penghubung Digital (Orang Tua & Guru)</h4>
-                    <p class="text-xs text-brand-muted">Riwayat pesan dukungan wali murid dan konfirmasi pendampingan belajar di rumah</p>
-                  </div>
-                  <div class="relative w-full sm:w-60">
-                    <i data-lucide="search" class="w-3.5 h-3.5 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
-                    <input type="text" id="parent-msg-search-input" oninput="renderParentMessages()" placeholder="Cari nama anak / wali..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-brand-bg border border-brand-border rounded-xl focus:outline-none focus:border-brand-primary transition">
-                  </div>
+            <!-- Buku Penghubung Digital (7 Kolom - Feed Rapi Tanpa Scroll Horizontal) -->
+            <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-brand-border shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-brand-border/70">
+                <div>
+                  <h4 class="text-base font-bold text-brand-dark">Buku Penghubung Orang Tua &amp; Guru</h4>
+                  <p class="text-xs text-brand-muted">Riwayat pesan wali murid dan konfirmasi belajar dari terbaru</p>
                 </div>
+                <div class="relative w-full sm:w-56 shrink-0">
+                  <i data-lucide="search" class="w-3.5 h-3.5 text-brand-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                  <input type="text" id="parent-msg-search-input" oninput="renderParentMessages()" placeholder="Cari nama anak / wali..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-brand-bg border border-brand-border rounded-xl focus:outline-none focus:border-brand-primary transition">
+                </div>
+              </div>
 
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left text-xs min-w-[520px]">
-                    <thead>
-                      <tr class="border-b border-brand-border text-brand-muted text-[10px] uppercase font-semibold">
-                        <th class="pb-2.5">Waktu</th>
-                        <th class="pb-2.5">Nama Anak</th>
-                        <th class="pb-2.5">Orang Tua / Wali</th>
-                        <th class="pb-2.5">Pesan / Catatan</th>
-                        <th class="pb-2.5 text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody id="parent-messages-tbody" class="divide-y divide-brand-border/60">
-                      <!-- Populated via JS -->
-                    </tbody>
-                  </table>
-                </div>
+              <div id="parent-messages-list" class="divide-y divide-brand-border/60">
+                <!-- Populated via JS -->
               </div>
             </div>
           </div>
@@ -1252,8 +1223,8 @@
                 <option value="Sabak #07 - Dewi Lestari (Aksara Da)">Perangkat #07 (Dewi Lestari - Aksara Da Lulus)</option>
                 <option value="Sabak #08 - Ketut Artawan (Aksara Ta)">Perangkat #08 (Ketut Artawan - Aksara Ta Sempurna)</option>
                 <option value="Sabak #09 - Gede Surya (Remedial Aksara Sa)">Perangkat #09 (Gede Surya - Remedial Aksara Sa)</option>
-                <option value="Siaran Seluruh Kelas 5A">📢 Siaran Seluruh Kelas 5A</option>
-                <option value="Siaran Seluruh Kelas 5B">📢 Siaran Seluruh Kelas 5B</option>
+                <option value="Siaran Seluruh Kelas 5A">Siaran Seluruh Kelas 5A</option>
+                <option value="Siaran Seluruh Kelas 5B">Siaran Seluruh Kelas 5B</option>
               </select>
             </div>
 
@@ -1262,16 +1233,16 @@
               <span class="text-xs font-semibold text-brand-muted">Templat Pesan Cepat:</span>
               <div class="flex flex-wrap gap-2">
                 <button type="button" onclick="setFeedbackText('Hebat sekali! Lekukan goresanmu sangat rapi dan presisi!')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary text-xs font-medium bg-brand-bg hover:bg-brand-soft/40 transition">
-                  🌟 Hebat & Presisi
+                  Hebat &amp; Presisi
                 </button>
                 <button type="button" onclick="setFeedbackText('Perhatikan lengkungan pada checkpoint, jangan terburu-buru!')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary text-xs font-medium bg-brand-bg hover:bg-brand-soft/40 transition">
-                  ⚠️ Koreksi Lekukan
+                  Koreksi Lekukan
                 </button>
                 <button type="button" onclick="setFeedbackText('Tinggal sedikit lagi! Ulangi modul materi aksara Dha ini 2 kali lagi ya.')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary text-xs font-medium bg-brand-bg hover:bg-brand-soft/40 transition">
-                  🔁 Dorongan Remedial
+                  Dorongan Remedial
                 </button>
                 <button type="button" onclick="setFeedbackText('Nilai materi sempurna 100! Kamu dapat bonus +100 XP!')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary text-xs font-medium bg-brand-bg hover:bg-brand-soft/40 transition">
-                  ⚡ Bonus XP Sempurna
+                  Bonus XP Sempurna
                 </button>
               </div>
             </div>
@@ -1286,7 +1257,7 @@
             <div>
               <button onclick="sendFeedbackToESP32()" class="py-3 px-6 bg-brand-primary hover:bg-brand-hover text-white rounded-xl text-xs font-bold shadow-md shadow-brand-primary/20 transition flex items-center gap-2">
                 <i data-lucide="send" class="w-4 h-4"></i>
-                <span>🚀 Kirim Feedback ke Sabak ESP32</span>
+                <span>Kirim Feedback ke Sabak ESP32</span>
               </button>
             </div>
 
@@ -1364,8 +1335,9 @@
 
               <div class="mt-4 pt-4 border-t border-brand-border/60 flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
-                  <button onclick="showToast('Sinyal PING terkirim ke ESP32! Respon: PONG 12ms')" class="px-3.5 py-2 rounded-xl border border-brand-border hover:border-brand-primary text-xs font-semibold text-brand-dark transition">
-                    ⚡ Ping Hardware ESP32
+                  <button onclick="showToast('Sinyal PING terkirim ke ESP32! Respon: PONG 12ms')" class="px-3.5 py-2 rounded-xl border border-brand-border hover:border-brand-primary text-xs font-semibold text-brand-dark transition flex items-center gap-1.5">
+                    <i data-lucide="activity" class="w-3.5 h-3.5 text-brand-primary"></i>
+                    <span>Ping Hardware ESP32</span>
                   </button>
                   <button onclick="showToast('Firmware versi v2.4 sudah mutakhir.')" class="px-3.5 py-2 rounded-xl bg-brand-soft text-brand-primary text-xs font-bold transition">
                     Cek Firmware
@@ -1425,7 +1397,7 @@
               <!-- Tombol Utama Uji Coba -->
               <button onclick="testAudioSound('Trek #04: Sempurna!')" class="mt-4 w-full py-3 px-4 bg-brand-primary hover:bg-brand-hover text-white rounded-xl text-xs font-bold shadow-md shadow-brand-primary/20 transition flex items-center justify-center gap-2">
                 <i data-lucide="volume-2" class="w-4 h-4"></i>
-                <span>🔊 Uji Coba Suara DFPlayer (Trek #04 - 'Sempurna!')</span>
+                <span>Uji Coba Suara DFPlayer (Trek #04 - 'Sempurna!')</span>
               </button>
             </div>
 
@@ -1485,7 +1457,6 @@
           <div class="text-right">
             <span class="text-xs font-semibold text-brand-muted">Total XP Didapat</span>
             <div class="text-2xl font-black text-amber-600 mt-1 flex items-center justify-end gap-1">
-              <span>⚡</span>
               <span id="rapor-xp-earned">+400 XP</span>
             </div>
           </div>
@@ -1581,7 +1552,7 @@
           </div>
           <div class="flex justify-between">
             <span class="text-brand-muted">Bonus XP Diperoleh:</span>
-            <span class="font-bold text-amber-600">+150 XP ⚡</span>
+            <span class="font-bold text-amber-600">+150 XP</span>
           </div>
         </div>
       </div>
@@ -1651,7 +1622,7 @@
           <span class="font-bold text-brand-dark block">Cara Menghubungkan Firebase Asli:</span>
           <p class="text-brand-muted">1. Buka file <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-brand-border text-brand-primary">web/firebase-keys.js</code></p>
           <p class="text-brand-muted">2. Tempelkan <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-brand-border text-brand-primary">apiKey</code> dan <code class="font-mono bg-white px-1.5 py-0.5 rounded border border-brand-border text-brand-primary">projectId</code> dari Firebase Console</p>
-          <p class="text-emerald-700 font-medium">🛡️ File tersebut otomatis masuk <code class="font-mono">.gitignore</code> dan tidak akan pernah ter-push ke GitHub.</p>
+          <p class="text-emerald-700 font-medium">File tersebut otomatis masuk <code class="font-mono">.gitignore</code> dan tidak akan pernah ter-push ke GitHub.</p>
         </div>
       </div>
 
@@ -1684,7 +1655,7 @@
     function parseItemTimestamp(item) {
       if (!item) return 0;
       
-      const rawCreated = item.createdAt;
+      const rawCreated = item.createdAt || item.updatedAt || item.timestamp || item.completedAt;
       if (rawCreated) {
         if (typeof rawCreated.toMillis === 'function') return rawCreated.toMillis();
         if (typeof rawCreated.toDate === 'function') return rawCreated.toDate().getTime();
@@ -1769,6 +1740,21 @@
       if (!isNaN(parsed)) return parsed;
 
       return 0;
+    }
+
+    /**
+     * Format timestamp Firebase (createdAt / timestamp / updatedAt) ke label waktu lokal browser.
+     */
+    function formatItemDisplayTime(item, fallbackField = 'time') {
+      if (!item) return '';
+      if (typeof formatFirebaseTimestamp === 'function') {
+        const raw = item.createdAt || item.updatedAt || item.timestamp || item.completedAt;
+        const formatted = formatFirebaseTimestamp(raw);
+        if (formatted) return formatted;
+      }
+      const rawFallback = item[fallbackField];
+      if (rawFallback) return rawFallback;
+      return item.time || item.completedDate || '-';
     }
 
     // DATA MASTER PENILAIAN MATERI (POINT AKHIR & XP) - Tersusun dari Terbaru ke Terlama
@@ -1986,7 +1972,7 @@
     let FEEDBACK_LOGS = [
       { time: "14:22", createdAt: new Date(Date.now() - 20 * 60000).toISOString(), target: "Sabak #01 (I Putu Raditya)", text: "Hebat sekali! Lekukan goresanmu sangat rapi dan presisi!", status: "Terkirim (COM3)" },
       { time: "11:15", createdAt: new Date(Date.now() - 200 * 60000).toISOString(), target: "Sabak #03 (Ahmad Rizki)", text: "Perhatikan lekukan aksara Dha ya! Ulangi modulnya.", status: "Terkirim (COM3)" },
-      { time: "Kemarin", createdAt: new Date(Date.now() - 86400000).toISOString(), target: "📢 Siaran Kelas 5A", text: "Selamat berlatih modul aksara Jawa hari ini!", status: "Broadcast Selesai" }
+      { time: "Kemarin", createdAt: new Date(Date.now() - 86400000).toISOString(), target: "Siaran Kelas 5A", text: "Selamat berlatih modul aksara Jawa hari ini!", status: "Broadcast Selesai" }
     ];
 
     // DATA DIREKTORI ORANG TUA / WALI MURID & PROFIL PENDAMPINGAN RUMAH
@@ -2130,7 +2116,7 @@
         studentName: "Ni Kadek Ayu",
         class: "5B",
         parentName: "Ibu Ketut Murni",
-        text: "Nilai rapor Kadek Ayu sudah kami periksa. Semangat terus anak Ibu sayang! ❤️",
+        text: "Nilai rapor Kadek Ayu sudah kami periksa. Semangat terus belajarnya ya!",
         status: "Tampil di Sabak #02"
       },
       {
@@ -2348,7 +2334,7 @@
           const role = isDesak ? "Guru Bahasa Bali" : "Wali Kelas 5A & 5B";
           const avatar = isDesak ? "BD" : "PG";
           executeLogin(name, role, avatar);
-          showToast(`🟢 Login Firebase Auth Berhasil (${email})`);
+          showToast(`Login Firebase Auth Berhasil (${email})`);
           return;
         } else {
           showToast(`Koneksi Firebase: ${res.error}. Masuk via sesi lokal.`);
@@ -2504,6 +2490,7 @@
           ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
           : 'bg-rose-50 text-rose-800 border-rose-200';
         const parentInfo = PARENT_DIRECTORY[item.studentName]?.parentName || '';
+        const displayDate = formatItemDisplayTime(item, 'completedDate');
 
         tr.innerHTML = `
           <td class="py-3 font-bold text-brand-dark flex items-center gap-2.5">
@@ -2514,7 +2501,7 @@
             </div>
           </td>
           <td class="py-3 font-semibold text-brand-dark">${item.materiTitle}</td>
-          <td class="py-3 text-brand-muted">${item.completedDate}</td>
+          <td class="py-3 text-brand-muted">${displayDate}</td>
           <td class="py-3 text-center">
             <span class="text-[10px] text-brand-muted">Presisi: <strong>${item.accuracyScore}%</strong> • Kecepatan: <strong>${item.speedScore}%</strong></span>
           </td>
@@ -2725,9 +2712,10 @@
                            item.status === 'Lulus' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                            'bg-rose-50 text-rose-800 border-rose-200';
 
+        const displayTime = formatItemDisplayTime(item, 'time');
         const tr = document.createElement('tr');
         tr.className = "hover:bg-brand-bg/50 cursor-pointer transition";
-        tr.onclick = () => openSubmissionDetail(item.name, 'Kelas ' + item.class, item.aksara, item.precision, item.score, item.status, item.time);
+        tr.onclick = () => openSubmissionDetail(item.name, 'Kelas ' + item.class, item.aksara, item.precision, item.score, item.status, displayTime);
 
         tr.innerHTML = `
           <td class="py-2.5 font-bold text-brand-dark flex items-center gap-2">
@@ -2736,7 +2724,7 @@
           </td>
           <td class="py-2.5 text-brand-dark font-medium">${item.aksara}</td>
           <td class="py-2.5 font-semibold ${item.precision >= 80 ? 'text-emerald-700' : 'text-rose-700'}">${item.precision}%</td>
-          <td class="py-2.5 text-brand-muted">${item.time}</td>
+          <td class="py-2.5 text-brand-muted">${displayTime}</td>
           <td class="py-2.5">
             <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor} border">
               ${item.status}
@@ -2789,10 +2777,11 @@
                            item.status === 'Lulus' ? 'bg-blue-50 text-blue-800 border-blue-200' :
                            'bg-rose-50 text-rose-800 border-rose-200';
         const parentInfo = PARENT_DIRECTORY[item.name]?.parentName || '';
+        const displayTime = formatItemDisplayTime(item, 'time');
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-brand-bg/50 cursor-pointer transition";
-        tr.onclick = () => openSubmissionDetail(item.name, 'Kelas ' + item.class, item.aksara, item.precision, item.score, item.status, item.time);
+        tr.onclick = () => openSubmissionDetail(item.name, 'Kelas ' + item.class, item.aksara, item.precision, item.score, item.status, displayTime);
 
         tr.innerHTML = `
           <td class="p-3 font-bold text-brand-dark flex items-center gap-2">
@@ -2810,7 +2799,7 @@
               ${item.status}
             </span>
           </td>
-          <td class="p-3 text-brand-muted">${item.time}</td>
+          <td class="p-3 text-brand-muted">${displayTime}</td>
           <td class="p-3 text-right font-extrabold text-sm ${item.score >= 80 ? 'text-brand-dark' : 'text-rose-700'}">${item.score}</td>
           <td class="p-3 text-center">
             <button class="px-3 py-1 bg-white hover:bg-brand-soft text-brand-primary border border-brand-border rounded-lg font-bold text-[11px] transition">
@@ -3024,10 +3013,27 @@
     // ==============================================================
     // FITUR PORTAL ORANG TUA / WALI MURID LENGKAP
     // ==============================================================
+    let showAllParentCards = false;
+
+    function toggleShowAllParentCards() {
+      showAllParentCards = !showAllParentCards;
+      renderParentPortal();
+    }
+
+    function syncParentSenderByStudent(studentName) {
+      const meta = PARENT_DIRECTORY[studentName];
+      const senderInput = document.getElementById('parent-msg-sender');
+      if (senderInput && meta) {
+        senderInput.value = `${meta.parentName.split('&')[0].trim()} (Wali ${studentName})`;
+      }
+    }
+
     function renderParentPortal() {
       const cardsContainer = document.getElementById('parent-cards-container');
       const chipsContainer = document.getElementById('parent-student-chips');
       const studentSelect = document.getElementById('parent-msg-student');
+      const toggleWrap = document.getElementById('parent-cards-toggle-wrap');
+      const toggleBtn = document.getElementById('parent-cards-toggle-btn');
       if (!cardsContainer) return;
 
       const allStudents = getUnifiedStudentsList();
@@ -3056,7 +3062,7 @@
       if (studentSelect && studentSelect.options.length !== allStudents.length) {
         const prevVal = studentSelect.value;
         studentSelect.innerHTML = allStudents.map(s =>
-          `<option value="${s.name}">${s.name} (Kelas ${s.class} - ${s.parentName.split('&')[0].trim()})</option>`
+          `<option value="${s.name}">${s.name} (Kelas ${s.class})</option>`
         ).join('');
         if (prevVal) studentSelect.value = prevVal;
       }
@@ -3066,8 +3072,8 @@
         chipsContainer.innerHTML = '';
         const allChip = document.createElement('button');
         allChip.type = 'button';
-        allChip.className = `px-2.5 py-1 rounded-lg text-[11px] font-bold transition ${!q ? 'bg-brand-primary text-white shadow-xs' : 'bg-brand-bg text-brand-muted hover:text-brand-dark border border-brand-border'}`;
-        allChip.innerText = 'Semua Anak';
+        allChip.className = `px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${!q ? 'bg-brand-primary text-white' : 'bg-brand-bg text-brand-muted hover:text-brand-dark border border-brand-border'}`;
+        allChip.innerText = 'Semua';
         allChip.onclick = () => selectParentStudentChip('');
         chipsContainer.appendChild(allChip);
 
@@ -3075,7 +3081,7 @@
           const isSelected = q && s.name.toLowerCase() === q;
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = `px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${isSelected ? 'bg-brand-primary text-white shadow-xs font-bold' : 'bg-brand-bg text-brand-dark hover:bg-brand-soft/60 border border-brand-border'}`;
+          btn.className = `px-2.5 py-1 rounded-lg text-[11px] font-medium transition ${isSelected ? 'bg-brand-primary text-white font-semibold' : 'bg-brand-bg text-brand-dark hover:bg-brand-soft/60 border border-brand-border'}`;
           btn.innerText = s.name;
           btn.onclick = () => selectParentStudentChip(s.name);
           chipsContainer.appendChild(btn);
@@ -3094,136 +3100,152 @@
         return matchClass && matchStatus && matchQuery;
       });
 
+      const isFiltered = Boolean(q || classVal !== 'all' || statusVal !== 'all');
+      const displayList = (!isFiltered && !showAllParentCards && filtered.length > 4)
+        ? filtered.slice(0, 4)
+        : filtered;
+
+      if (toggleWrap && toggleBtn) {
+        if (!isFiltered && filtered.length > 4) {
+          toggleWrap.classList.remove('hidden');
+          toggleWrap.classList.add('flex');
+          toggleBtn.innerText = showAllParentCards
+            ? 'Tampilkan lebih ringkas'
+            : `Tampilkan semua (${filtered.length} siswa)`;
+        } else {
+          toggleWrap.classList.add('hidden');
+          toggleWrap.classList.remove('flex');
+        }
+      }
+
       cardsContainer.innerHTML = '';
 
-      if (filtered.length === 0) {
+      if (displayList.length === 0) {
         cardsContainer.innerHTML = `
           <div class="lg:col-span-2 bg-white p-8 rounded-2xl border border-brand-border text-center">
             <p class="text-sm font-bold text-brand-dark">Data anak atau orang tua "${q}" tidak ditemukan</p>
-            <p class="text-xs text-brand-muted mt-1">Silakan gunakan kata kunci nama lain atau klik tombol "Semua Anak" di atas.</p>
+            <p class="text-xs text-brand-muted mt-1">Gunakan kata kunci nama lain atau pilih "Semua" di atas.</p>
           </div>
         `;
       } else {
-        filtered.forEach(s => {
-          const latestSubs = s.submissions.slice(0, 3);
-          const statusBadge = s.status === 'TUNTAS'
-            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+        displayList.forEach(s => {
+          const latestSubs = s.submissions.slice(0, 2);
+          const statusPillClass = s.status === 'TUNTAS'
+            ? (s.verified ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200')
             : 'bg-rose-50 text-rose-800 border-rose-200';
-          const verifiedBadge = s.verified
-            ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">✅ Sudah Diperiksa Orang Tua</span>`
-            : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">⏳ Menunggu Konfirmasi Wali</span>`;
+          const statusLabel = s.status === 'REMEDIAL'
+            ? 'Perlu Pendampingan'
+            : (s.verified ? 'Tuntas · Terkonfirmasi' : 'Tuntas · Menunggu Wali');
 
           const subsHtml = latestSubs.length > 0
-            ? latestSubs.map(sub => `
-                <div onclick="openSubmissionDetail('${sub.name}', 'Kelas ${sub.class}', '${sub.aksara}', ${sub.precision}, ${sub.score}, '${sub.status}', '${sub.time}')" class="p-2.5 rounded-xl bg-brand-bg hover:bg-brand-soft/40 border border-brand-border/70 flex items-center justify-between text-xs cursor-pointer transition">
-                  <div>
-                    <span class="font-bold text-brand-dark">${sub.aksara}</span>
-                    <span class="text-[10px] text-brand-muted ml-1.5">(${sub.script} • ${sub.time})</span>
+            ? latestSubs.map(sub => {
+                const subTime = formatItemDisplayTime(sub, 'time');
+                return `
+                <div onclick="openSubmissionDetail('${sub.name}', 'Kelas ${sub.class}', '${sub.aksara}', ${sub.precision}, ${sub.score}, '${sub.status}', '${subTime}')" class="py-1.5 flex items-center justify-between text-xs cursor-pointer hover:bg-brand-bg/70 px-1.5 -mx-1.5 rounded-lg transition">
+                  <div class="min-w-0 truncate">
+                    <span class="font-semibold text-brand-dark">${sub.aksara}</span>
+                    <span class="text-[11px] text-brand-muted ml-1.5">${sub.script} · ${subTime}</span>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <span class="text-[11px] font-semibold text-brand-muted">Presisi ${sub.precision}%</span>
-                    <span class="px-2 py-0.5 rounded-lg font-extrabold text-[11px] ${sub.score >= 80 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${sub.score} pts</span>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-[11px] text-brand-muted">Presisi ${sub.precision}%</span>
+                    <span class="font-bold text-xs ${sub.score >= 80 ? 'text-emerald-700' : 'text-rose-700'}">${sub.score}</span>
                   </div>
                 </div>
-              `).join('')
-            : `<p class="text-xs text-brand-muted italic">Belum ada riwayat latihan terekam.</p>`;
+              `;
+              }).join('')
+            : `<p class="text-xs text-brand-muted py-1">Belum ada riwayat latihan terekam.</p>`;
 
           const card = document.createElement('div');
-          card.className = "bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm hover:shadow-md transition flex flex-col justify-between gap-4";
+          card.className = "bg-white p-5 rounded-2xl border border-brand-border shadow-sm flex flex-col justify-between gap-4";
           card.innerHTML = `
-            <div class="space-y-4">
-              <!-- Header Profil Anak & Wali -->
-              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3.5 border-b border-brand-border/70">
-                <div class="flex items-start gap-3">
-                  <div class="w-12 h-12 rounded-2xl bg-brand-soft text-brand-primary font-extrabold text-sm flex items-center justify-center shrink-0 border border-brand-primary/20">
+            <div class="space-y-3.5">
+              <!-- Header Profil -->
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-xl bg-brand-soft text-brand-primary font-bold text-xs flex items-center justify-center shrink-0">
                     ${s.name.substring(0, 2).toUpperCase()}
                   </div>
-                  <div>
+                  <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
-                      <h5 class="text-base font-extrabold text-brand-dark">${s.name}</h5>
-                      <span class="px-2 py-0.5 rounded-md bg-brand-bg border border-brand-border text-[10px] font-bold text-brand-dark">Kelas ${s.class}</span>
-                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusBadge}">${s.status === 'TUNTAS' ? 'Tuntas KKM' : 'Perlu Pendampingan'}</span>
+                      <h5 class="text-sm font-bold text-brand-dark truncate">${s.name}</h5>
+                      <span class="text-[11px] font-medium text-brand-muted">Kelas ${s.class} · ${s.sabakId}</span>
                     </div>
-                    <p class="text-xs text-brand-muted mt-1">👨‍👩‍👧 <strong>Orang Tua / Wali:</strong> ${s.parentName}</p>
-                    <p class="text-[11px] text-brand-muted">📱 Kontak Wali: ${s.phone} • Perangkat: <strong>${s.sabakId}</strong></p>
+                    <p class="text-xs text-brand-muted truncate mt-0.5">Wali: ${s.parentName}</p>
                   </div>
                 </div>
-                <div class="shrink-0">
-                  ${verifiedBadge}
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 whitespace-nowrap ${statusPillClass}">
+                  ${statusLabel}
+                </span>
+              </div>
+
+              <!-- Ringkasan Nilai -->
+              <div class="grid grid-cols-3 divide-x divide-brand-border/60 py-2.5 border-y border-brand-border/60 text-center">
+                <div>
+                  <span class="text-[10px] text-brand-muted block">Nilai Rata-rata</span>
+                  <span class="text-base font-bold ${s.avgScore >= 75 ? 'text-brand-primary' : 'text-rose-700'}">${s.avgScore}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-brand-muted block">Presisi</span>
+                  <span class="text-base font-bold text-brand-dark">${s.acc}%</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-brand-muted block">Total XP</span>
+                  <span class="text-base font-bold text-brand-dark">${s.xp.toLocaleString()}</span>
                 </div>
               </div>
 
-              <!-- 3 Metrik Utama Anak -->
-              <div class="grid grid-cols-3 gap-2.5 text-center">
-                <div class="p-3 rounded-xl bg-brand-bg border border-brand-border/60">
-                  <span class="text-[10px] text-brand-muted font-semibold block">Rata-Rata Nilai</span>
-                  <span class="text-lg font-black ${s.avgScore >= 75 ? 'text-brand-primary' : 'text-rose-700'}">${s.avgScore}</span>
-                </div>
-                <div class="p-3 rounded-xl bg-brand-bg border border-brand-border/60">
-                  <span class="text-[10px] text-brand-muted font-semibold block">Presisi Goresan</span>
-                  <span class="text-lg font-black text-brand-dark">${s.acc}%</span>
-                </div>
-                <div class="p-3 rounded-xl bg-brand-bg border border-brand-border/60">
-                  <span class="text-[10px] text-brand-muted font-semibold block">Total Capaian XP</span>
-                  <span class="text-lg font-black text-amber-600">${s.xp.toLocaleString()}</span>
-                </div>
-              </div>
-
-              <!-- Progress Penguasaan Aksara Jawa & Bali -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div class="p-3 rounded-xl border border-brand-border/70 bg-white">
-                  <div class="flex justify-between text-xs font-bold mb-1">
-                    <span class="text-brand-dark">Carakan Aksara Jawa</span>
-                    <span class="text-brand-primary">${s.jawaMastery}%</span>
+              <!-- Progres Aksara -->
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <div class="flex justify-between text-[11px] font-semibold mb-1">
+                    <span class="text-brand-muted">Carakan Jawa</span>
+                    <span class="text-brand-dark">${s.jawaMastery}%</span>
                   </div>
-                  <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                  <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                     <div class="bg-brand-primary h-full rounded-full" style="width: ${s.jawaMastery}%"></div>
                   </div>
                 </div>
-                <div class="p-3 rounded-xl border border-brand-border/70 bg-white">
-                  <div class="flex justify-between text-xs font-bold mb-1">
-                    <span class="text-brand-dark">Wreastra Aksara Bali</span>
-                    <span class="text-brand-accent">${s.baliMastery}%</span>
+                <div>
+                  <div class="flex justify-between text-[11px] font-semibold mb-1">
+                    <span class="text-brand-muted">Wreastra Bali</span>
+                    <span class="text-brand-dark">${s.baliMastery}%</span>
                   </div>
-                  <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                  <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
                     <div class="bg-brand-accent h-full rounded-full" style="width: ${s.baliMastery}%"></div>
                   </div>
                 </div>
               </div>
 
-              <!-- Riwayat Goresan ESP32 Terbaru Anak -->
+              <!-- Latihan Terbaru -->
               <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-brand-muted block mb-2">Latihan Sabak ESP32 Terbaru (Terbaru ke Terlama):</span>
-                <div class="space-y-1.5">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-brand-muted block mb-1">Latihan Terbaru</span>
+                <div class="divide-y divide-brand-border/50">
                   ${subsHtml}
                 </div>
               </div>
 
-              <!-- Panduan Pendampingan Belajar di Rumah untuk Orang Tua -->
-              <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/80 text-xs">
-                <span class="font-bold text-amber-900 flex items-center gap-1.5 mb-0.5">
-                  💡 Saran Pendampingan Orang Tua di Rumah:
-                </span>
-                <p class="text-amber-800">${s.homeTip}</p>
-              </div>
+              <!-- Saran Pendampingan -->
+              <p class="border-l-2 border-brand-primary/40 pl-3 text-xs text-brand-muted leading-relaxed">
+                ${s.homeTip}
+              </p>
             </div>
 
-            <!-- Tombol Aksi Orang Tua -->
+            <!-- Aksi -->
             <div class="pt-3 border-t border-brand-border/60 flex flex-wrap items-center justify-between gap-2">
-              <div class="flex flex-wrap items-center gap-2">
-                <button type="button" onclick="openParentStudentRapor('${s.name}')" class="px-3 py-2 rounded-xl bg-brand-primary hover:bg-brand-hover text-white text-xs font-bold transition shadow-xs">
-                  📄 Buka Rapor Anak
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="openParentStudentRapor('${s.name}')" class="px-3 py-1.5 rounded-lg bg-brand-primary hover:bg-brand-hover text-white text-xs font-semibold transition">
+                  Lihat Rapor
                 </button>
-                <button type="button" onclick="toggleParentVerification('${s.name}')" class="px-3 py-2 rounded-xl border border-brand-border hover:border-brand-primary bg-white text-xs font-bold text-brand-dark transition">
-                  ${s.verified ? '✅ Sudah Dikonfirmasi' : '✍️ Konfirmasi Rapor'}
+                <button type="button" onclick="toggleParentVerification('${s.name}')" class="px-3 py-1.5 rounded-lg border border-brand-border hover:border-brand-primary bg-white text-xs font-semibold text-brand-dark transition">
+                  ${s.verified ? 'Terkonfirmasi' : 'Konfirmasi Rapor'}
                 </button>
               </div>
               <div class="flex items-center gap-2">
-                <button type="button" onclick="prefillParentSupportMessage('${s.name}')" class="px-3 py-2 rounded-xl bg-brand-soft hover:bg-brand-primary hover:text-white text-brand-primary text-xs font-bold transition">
-                  💌 Kirim Semangat
+                <button type="button" onclick="prefillParentSupportMessage('${s.name}')" class="px-2.5 py-1.5 rounded-lg bg-brand-soft/70 hover:bg-brand-soft text-brand-primary text-xs font-semibold transition">
+                  Kirim Pesan
                 </button>
-                <button type="button" onclick="shareStudentReportWA('${s.name}')" class="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition">
-                  📲 WA Wali
+                <button type="button" onclick="shareStudentReportWA('${s.name}')" class="px-2.5 py-1.5 rounded-lg border border-brand-border hover:bg-brand-bg text-brand-muted hover:text-brand-dark text-xs font-medium transition">
+                  WA Wali
                 </button>
               </div>
             </div>
@@ -3242,9 +3264,7 @@
       if (studentName) {
         const select = document.getElementById('parent-msg-student');
         if (select) select.value = studentName;
-        const meta = PARENT_DIRECTORY[studentName];
-        const senderInput = document.getElementById('parent-msg-sender');
-        if (senderInput && meta) senderInput.value = `${meta.parentName.split('&')[0].trim()} (Wali ${studentName})`;
+        syncParentSenderByStudent(studentName);
       }
       renderParentPortal();
     }
@@ -3266,8 +3286,8 @@
       const isVer = PARENT_DIRECTORY[studentName].verified;
       renderParentPortal();
       showToast(isVer
-        ? `✅ Rapor ${studentName} telah dikonfirmasi & ditandatangani digital oleh Orang Tua!`
-        : `Status konfirmasi rapor ${studentName} diubah.`);
+        ? `Rapor ${studentName} telah dikonfirmasi oleh Orang Tua.`
+        : `Status konfirmasi rapor ${studentName} diperbarui.`);
       playMascotChime();
     }
 
@@ -3296,18 +3316,14 @@
     function prefillParentSupportMessage(studentName) {
       const select = document.getElementById('parent-msg-student');
       if (select) select.value = studentName;
-      const meta = PARENT_DIRECTORY[studentName];
-      const senderInput = document.getElementById('parent-msg-sender');
-      if (senderInput && meta) {
-        senderInput.value = `${meta.parentName.split('&')[0].trim()} (Wali ${studentName})`;
-      }
+      syncParentSenderByStudent(studentName);
       const msgBox = document.getElementById('parent-msg-text');
       if (msgBox) {
-        msgBox.value = `Semangat terus belajarnya ya ${studentName}! Ayah & Ibu bangga melihat progres menulis aksara Jawa dan Balimu hari ini ❤️`;
+        msgBox.value = `Semangat terus belajarnya ya ${studentName}. Ayah dan Ibu bangga melihat progres menulis aksara Jawa dan Balimu hari ini.`;
         msgBox.focus();
         msgBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-      showToast(`Form dukungan orang tua disiapkan untuk ${studentName}`);
+      showToast(`Form pesan disiapkan untuk ${studentName}`);
     }
 
     function setParentMessageText(txt) {
@@ -3321,7 +3337,7 @@
       const text = (document.getElementById('parent-msg-text')?.value || '').trim();
 
       if (!text) {
-        showToast("Tuliskan pesan dukungan orang tua terlebih dahulu!");
+        showToast("Tuliskan pesan terlebih dahulu.");
         return;
       }
 
@@ -3329,9 +3345,12 @@
       const sabakId = st ? st.sabakId : 'Sabak #01';
       const cls = st ? st.class : '5A';
 
+      const nowIso = new Date().toISOString();
+      const formattedTime = formatItemDisplayTime({ createdAt: nowIso });
+
       const newMsg = {
-        time: "Baru saja",
-        createdAt: new Date().toISOString(),
+        time: formattedTime,
+        createdAt: nowIso,
         studentName: studentName,
         class: cls,
         parentName: sender,
@@ -3344,8 +3363,8 @@
 
       // Catat juga ke log feedback ESP32 agar tampil di layar Sabak anak
       const feedbackPayload = {
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        createdAt: new Date().toISOString(),
+        time: formattedTime,
+        createdAt: nowIso,
         target: `${sabakId} (${studentName} - Pesan Wali)`,
         text: `[Orang Tua] ${text}`,
         status: "Terkirim ke Sabak"
@@ -3358,14 +3377,14 @@
       FEEDBACK_LOGS.unshift(feedbackPayload);
       renderParentPortal();
       renderFeedbackLogs();
-      showToast(`💌 Pesan dukungan untuk ${studentName} terkirim ke ${sabakId} & Guru!`);
+      showToast(`Pesan untuk ${studentName} terkirim ke ${sabakId} & Guru.`);
       playMascotChime();
     }
 
     function renderParentMessages() {
-      const tbody = document.getElementById('parent-messages-tbody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
+      const list = document.getElementById('parent-messages-list');
+      if (!list) return;
+      list.innerHTML = '';
 
       const q = (document.getElementById('parent-msg-search-input')?.value || '').toLowerCase().trim();
       const sorted = PARENT_MESSAGES.slice().sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
@@ -3377,28 +3396,36 @@
       );
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-5 text-center text-xs text-brand-muted">Tidak ada pesan wali untuk pencarian "${q}".</td></tr>`;
+        list.innerHTML = `<p class="py-6 text-center text-xs text-brand-muted">Tidak ada pesan untuk pencarian "${q}".</p>`;
         return;
       }
 
       filtered.forEach(m => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-brand-bg/50 transition text-xs";
-        tr.innerHTML = `
-          <td class="py-2.5 text-brand-muted whitespace-nowrap">${m.time}</td>
-          <td class="py-2.5 font-bold text-brand-dark">${m.studentName} <span class="text-[10px] font-normal text-brand-muted">(${m.class})</span></td>
-          <td class="py-2.5 text-brand-dark font-medium">${m.parentName}</td>
-          <td class="py-2.5 text-brand-dark italic max-w-xs truncate">"${m.text}"</td>
-          <td class="py-2.5 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">${m.status}</span></td>
+        const item = document.createElement('div');
+        item.className = "py-3.5 space-y-1.5";
+        item.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="text-xs min-w-0">
+              <span class="font-bold text-brand-dark">${m.studentName}</span>
+              <span class="text-brand-muted font-normal">(${m.class})</span>
+              <span class="text-brand-muted mx-1.5">·</span>
+              <span class="text-brand-muted font-medium">${m.parentName}</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[11px] text-brand-muted">${formatItemDisplayTime(m, 'time')}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap">${m.status}</span>
+            </div>
+          </div>
+          <p class="text-xs text-brand-dark/90 leading-relaxed">"${m.text}"</p>
         `;
-        tbody.appendChild(tr);
+        list.appendChild(item);
       });
     }
 
     function shareStudentReportWA(studentName) {
       const st = getUnifiedStudentsList().find(s => s.name === studentName);
       if (!st) return;
-      showToast(`📲 Ringkasan Rapor ${st.name} (Nilai: ${st.avgScore}, XP: ${st.xp}) siap dikirim ke WhatsApp ${st.parentName}!`);
+      showToast(`Ringkasan Rapor ${st.name} (Nilai: ${st.avgScore}, XP: ${st.xp}) siap dikirim ke WhatsApp ${st.parentName}.`);
       playMascotChime();
     }
 
@@ -3444,7 +3471,7 @@
         const tr = document.createElement('tr');
         tr.className = "text-xs";
         tr.innerHTML = `
-          <td class="py-2 text-brand-muted">${log.time}</td>
+          <td class="py-2 text-brand-muted">${formatItemDisplayTime(log, 'time')}</td>
           <td class="py-2 font-bold text-brand-dark">${log.target}</td>
           <td class="py-2 text-brand-dark italic truncate max-w-xs">"${log.text}"</td>
           <td class="py-2 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">${log.status}</span></td>
@@ -3552,7 +3579,7 @@
       if (typeof firebaseSaveHardwareSettings === 'function') {
         const res = await firebaseSaveHardwareSettings(settings);
         if (res.success) {
-          showToast("🟢 Setelan berhasil disimpan ke Firebase Cloud & disinkronkan ke ESP32!");
+          showToast("Setelan berhasil disimpan ke Firebase Cloud & disinkronkan ke ESP32.");
           playMascotChime();
           return;
         }
@@ -3706,6 +3733,7 @@
       const randPrecision = Math.floor(Math.random() * 25) + 75; // 75 - 99%
       const randScore = Math.min(100, randPrecision + Math.floor(Math.random() * 4));
 
+      const nowIso = new Date().toISOString();
       const newSub = {
         name: randName,
         class: randCls,
@@ -3714,19 +3742,19 @@
         precision: randPrecision,
         score: randScore,
         status: randScore >= 90 ? "Sempurna" : (randScore >= 75 ? "Lulus" : "Remedial"),
-        time: "Baru saja",
-        createdAt: new Date().toISOString()
+        time: formatItemDisplayTime({ createdAt: nowIso }),
+        createdAt: nowIso
       };
 
       if (typeof firebaseSaveSubmission === 'function' && window.FirebaseState && window.FirebaseState.isConnected) {
         await firebaseSaveSubmission(newSub);
-        showToast(`⚡ Tracing ${randName} (${randScript.aksara}) tersimpan ke Cloud Firestore!`);
+        showToast(`Tracing ${randName} (${randScript.aksara}) tersimpan ke Cloud Firestore.`);
       } else {
         ALL_SUBMISSIONS.unshift(newSub);
         ALL_SUBMISSIONS.sort((a, b) => parseItemTimestamp(b) - parseItemTimestamp(a));
         renderOverviewSubmissions();
         renderSubmissions(ALL_SUBMISSIONS);
-        showToast(`⚡ Simulasi lokal: Tracing ${randName} (${randScript.aksara}) berhasil ditambahkan!`);
+        showToast(`Simulasi lokal: Tracing ${randName} (${randScript.aksara}) berhasil ditambahkan.`);
       }
       playMascotChime();
       closeDatabaseModal();
@@ -3738,7 +3766,7 @@
         showToast("Mengunggah data master ke Firestore...");
         const success = await firebaseSeedDefaultData(ALL_SUBMISSIONS, MATERI_ASSESSMENTS, STUDENTS_LEADERBOARD, FEEDBACK_LOGS);
         if (success) {
-          showToast("🟢 Seluruh data master berhasil dimigrasikan ke Firestore!");
+          showToast("Seluruh data master berhasil dimigrasikan ke Firestore.");
           closeDatabaseModal();
         }
       }
@@ -3757,7 +3785,7 @@
         filterSubmissions();
         renderParentPortal();
         renderSettingsDeviceList();
-        showToast("⚡ Realtime Sync: Data submission diperbarui dari Firestore!");
+        showToast("Realtime Sync: Data submission diperbarui dari Firestore.");
       }
     };
 

@@ -153,13 +153,24 @@ void send_score_telemetry(const char* script, const char* letter, int score, flo
 
 ```
 web/
-├── fonts/
-│   ├── NotoSansBalinese-Regular.ttf   # Font resmi Aksara Bali
-│   └── NotoSansJavanese-Regular.ttf   # Font resmi Aksara Jawa
-├── index.html                        # Tampilan dashboard modern (Tailwind, Lucide, Chart.js)
-├── app.js                            # Logika interaktif, SSE, filter, chart, simulator & Telegram
-├── server.js                         # Backend server ringan Node.js (REST API, SSE & Telegram Relay)
+├── assets/                           # Aset grafis (Maskot AksaraBuddy)
+│   └── aksarabuddy-mascot.png
+├── fonts/                            # Font resmi sistem operasi & web
+│   ├── NotoSansBalinese-Regular.ttf  # Font resmi Aksara Bali
+│   └── NotoSansJavanese-Regular.ttf  # Font resmi Aksara Jawa
+├── legacy/                           # Arsip berkas versi lama (v1)
+│   ├── app.js
+│   └── index_legacy.html
+├── screenshots/                      # Cuplikan antarmuka & dokumentasi
+│   ├── all_boards.png
+│   └── page_1_overview.png s/d page_6_setelan.png
+├── firebase-config.js                # Driver sinkronisasi Cloud Firestore & Realtime Listeners
+├── firebase-keys.js                  # Konfigurasi kredensial Firebase project
+├── firebase-keys.example.js          # Template konfigurasi kunci Firebase
+├── index.html                        # Dashboard modern Guru & Portal Wali Murid
+├── server.js                         # Backend Node.js (REST API, SSE, Proxy Firebase & Router 3D/Waypoint)
 ├── start_server.bat                  # Script 1-klik untuk menjalankan server di Windows
-└── README.md                         # Dokumentasi lengkap
+├── students_data.json                # Master data awal siswa & penilaian
+└── README.md                         # Dokumentasi panduan web
 ```
 

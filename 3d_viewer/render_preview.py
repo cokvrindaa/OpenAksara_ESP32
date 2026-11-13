@@ -5,11 +5,19 @@ import numpy as np
 import os
 from matplotlib.patches import FancyBboxPatch, Rectangle, Circle
 
-artifact_dir = r"C:\Users\cokvr\.gemini\antigravity\brain\f157119b-0846-4ce9-850e-bbbf528be1df"
+script_dir = os.path.dirname(os.path.abspath(__file__))
+artifact_dir = r"C:\Users\cokvr\.gemini\antigravity\brain\7b259053-4c67-48f7-bd35-57a459999eab"
 
 def render_views():
-    top_mesh = trimesh.load("casing_atas.stl")
-    bottom_mesh = trimesh.load("tutup_bawah.stl")
+    top_path = os.path.join(script_dir, "casing_atas.stl")
+    bot_path = os.path.join(script_dir, "tutup_bawah.stl")
+    if not os.path.exists(top_path):
+        top_path = os.path.join(script_dir, "models", "casing_atas.stl")
+    if not os.path.exists(bot_path):
+        bot_path = os.path.join(script_dir, "models", "tutup_bawah.stl")
+
+    top_mesh = trimesh.load(top_path)
+    bottom_mesh = trimesh.load(bot_path)
     
     fig = plt.figure(figsize=(16, 12), dpi=150)
     
@@ -143,11 +151,14 @@ def render_views():
     
     plt.tight_layout()
     
-    out_workspace = "casing_preview.png"
-    out_artifact = os.path.join(artifact_dir, "casing_preview.png")
+    out_workspace = os.path.join(script_dir, "casing_preview.png")
     plt.savefig(out_workspace, dpi=150, bbox_inches='tight')
-    plt.savefig(out_artifact, dpi=150, bbox_inches='tight')
-    print(f"Preview updated: {out_workspace} and {out_artifact}")
+    if os.path.isdir(artifact_dir):
+        out_artifact = os.path.join(artifact_dir, "casing_preview.png")
+        plt.savefig(out_artifact, dpi=150, bbox_inches='tight')
+        print(f"Preview updated: {out_workspace} and {out_artifact}")
+    else:
+        print(f"Preview updated: {out_workspace}")
 
 if __name__ == '__main__':
     render_views()

@@ -236,10 +236,17 @@ if __name__ == '__main__':
     bottom = build_bottom_lid()
     print("Bottom lid generated. Vertices:", bottom.num_vert(), "Triangles:", bottom.num_tri())
     
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    models_dir = os.path.join(script_dir, "models")
+    os.makedirs(models_dir, exist_ok=True)
+
     def export_stl(manifold_obj, filename):
         mesh_data = manifold_obj.to_mesh()
         mesh = trimesh.Trimesh(vertices=mesh_data.vert_properties, faces=mesh_data.tri_verts)
-        mesh.export(filename)
+        target1 = os.path.join(script_dir, filename)
+        target2 = os.path.join(models_dir, filename)
+        mesh.export(target1)
+        mesh.export(target2)
         print(f"Exported {filename} (Watertight: {mesh.is_watertight}, Volume: {mesh.volume/1000:.1f} cm3)")
 
     export_stl(top, "casing_atas.stl")
@@ -247,4 +254,4 @@ if __name__ == '__main__':
     
     assembly = top + bottom
     export_stl(assembly, "casing_lengkap_assembly.stl")
-    print("All STL files updated successfully!")
+    print("All STL files updated successfully in 3d_viewer/ and 3d_viewer/models/!")

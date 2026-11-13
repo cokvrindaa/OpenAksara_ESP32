@@ -40,20 +40,43 @@ struct SyncQueueItem {
 static QueueHandle_t sync_queue = NULL;
 static TaskHandle_t sync_task_handle = NULL;
 
-// Helper format timestamp ISO-8601 standar Cloud Firestore
-static String get_iso_timestamp() {
+// Pastikan SNTP sudah tersinkronisasi (Core 0 worker only, tunggu singkat maks ~1.2 detik jika baru connect)
+static bool ensure_ntp_synced() {
   time_t now = time(nullptr);
-  if (now > 1600000000) {
+  if (now > 1700000000) return true;
+  if (WiFi.status() == WL_CONNECTED) {
+    configTime(8 * 3600, 0, "pool.ntp.org", "time.google.com", "time.cloudflare.com");
+    for (int i = 0; i < 10; i++) {
+      vTaskDelay(pdMS_TO_TICKS(120));
+      now = time(nullptr);
+      if (now > 1700000000) return true;
+    }
+  }
+  return false;
+}
+
+// Helper format timestamp ISO-8601 UTC standar Cloud Firestore (hanya valid jika NTP synced)
+static String get_iso_timestamp(bool& has_ntp) {
+  has_ntp = ensure_ntp_synced();
+  if (has_ntp) {
+    time_t now = time(nullptr);
     char buf[32];
     struct tm* t = gmtime(&now);
     strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", t);
     return String(buf);
   }
-  char buf[32];
-  snprintf(buf, sizeof(buf), "2026-11-12T%02lu:%02lu:%02luZ",
-           (millis() / 3600000) % 24,
-           (millis() / 60000) % 60,
-           (millis() / 1000) % 60);
+  return String("");
+}
+
+// Helper format label waktu lokal terbaca ("13 Nov, 09:15") bila NTP tersedia
+static String get_display_time_label(bool has_ntp, const char* fallback_label) {
+  if (!has_ntp) return String(fallback_label);
+  static const char* BULAN[] = {"Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"};
+  time_t now = time(nullptr);
+  struct tm* t = localtime(&now);
+  if (!t || t->tm_mon < 0 || t->tm_mon > 11) return String(fallback_label);
+  char buf[24];
+  snprintf(buf, sizeof(buf), "%d %s, %02d:%02d", t->tm_mday, BULAN[t->tm_mon], t->tm_hour, t->tm_min);
   return String(buf);
 }
 
@@ -99,9 +122,11 @@ static void send_submission_http(const SyncQueueItem& item) {
     https.addHeader("User-Agent", "OpenAksara-ESP32");
     https.addHeader("Connection", "close");
 
-    String isoTime = get_iso_timestamp();
+    bool has_ntp = false;
+    String isoTime = get_iso_timestamp(has_ntp);
+    String displayTime = get_display_time_label(has_ntp, "Baru saja");
     String body;
-    body.reserve(420);
+    body.reserve(440);
     body = "{";
     body += "\"fields\":{";
     body += "\"name\":{\"stringValue\":\"" + String(item.str1) + "\"},";
@@ -111,8 +136,10 @@ static void send_submission_http(const SyncQueueItem& item) {
     body += "\"precision\":{\"integerValue\":" + String(item.num1) + "},";
     body += "\"score\":{\"integerValue\":" + String(item.num2) + "},";
     body += "\"status\":{\"stringValue\":\"" + String(item.str5) + "\"},";
-    body += "\"time\":{\"stringValue\":\"Baru saja\"},";
-    body += "\"createdAt\":{\"stringValue\":\"" + isoTime + "\"}";
+    body += "\"time\":{\"stringValue\":\"" + displayTime + "\"}";
+    if (has_ntp && isoTime.length() > 0) {
+      body += ",\"createdAt\":{\"timestampValue\":\"" + isoTime + "\"}";
+    }
     body += "}}";
 
     int httpCode = https.POST(body);
@@ -162,9 +189,11 @@ static void send_assessment_http(const SyncQueueItem& item) {
     https.addHeader("User-Agent", "OpenAksara-ESP32");
     https.addHeader("Connection", "close");
 
-    String isoTime = get_iso_timestamp();
+    bool has_ntp = false;
+    String isoTime = get_iso_timestamp(has_ntp);
+    String displayDate = get_display_time_label(has_ntp, "Hari ini");
     String body;
-    body.reserve(520);
+    body.reserve(540);
     body = "{";
     body += "\"fields\":{";
     body += "\"studentName\":{\"stringValue\":\"" + String(item.str1) + "\"},";
@@ -176,8 +205,10 @@ static void send_assessment_http(const SyncQueueItem& item) {
     body += "\"totalXp\":{\"integerValue\":" + String(item.num2) + "},";
     body += "\"status\":{\"stringValue\":\"TUNTAS\"},";
     body += "\"feedback\":{\"stringValue\":\"" + String(item.str6) + "\"},";
-    body += "\"completedDate\":{\"stringValue\":\"Hari ini\"},";
-    body += "\"createdAt\":{\"stringValue\":\"" + isoTime + "\"}";
+    body += "\"completedDate\":{\"stringValue\":\"" + displayDate + "\"}";
+    if (has_ntp && isoTime.length() > 0) {
+      body += ",\"createdAt\":{\"timestampValue\":\"" + isoTime + "\"}";
+    }
     body += "}}";
 
     int httpCode = https.POST(body);
@@ -336,7 +367,7 @@ void firebase_sync_update() {
     prev_wifi_status = curr;
     if (curr) {
       Serial.printf("[Wi-Fi] 🟢 Terhubung ke jaringan! IP ESP32: %s\n", WiFi.localIP().toString().c_str());
-      configTime(7 * 3600, 0, "pool.ntp.org", "time.google.com");
+      configTime(8 * 3600, 0, "pool.ntp.org", "time.google.com", "time.cloudflare.com");
     } else {
       Serial.println(F("[Wi-Fi] 🔴 Terputus dari jaringan Wi-Fi."));
     }
