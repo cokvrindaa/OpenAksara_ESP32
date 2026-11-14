@@ -3,10 +3,12 @@
 #include <TFT_eSPI.h>
 #include "audio_player.h"
 #include "firebase_sync.h"
+#include "battery_monitor.h"
 #include "ui_home.h"
 #include "ui_jawa.h"
 #include "ui_bali.h"
 #include "ui_learn.h"
+#include "ui_settings.h"
 
 TFT_eSPI tft = TFT_eSPI();
 uint16_t calData[5] = { 262, 3665, 291, 3496, 7 };   // kalibrasi, rotasi 1
@@ -114,9 +116,12 @@ void onAllAksara(AksaraType type) {
 }
 
 void onSettings() {
-  Serial.println(F("[OpenAksara] Buka setelan hardware"));
-  // Kirim sinyal telemetri real-time ke Cloud
-  firebase_sync_send_telemetry(4.98f, 18, 24);
+  Serial.println(F("[OpenAksara] Buka halaman setelan perangkat"));
+  BatteryStatus batt = battery_monitor_read();
+  float v = batt.valid_battery ? batt.voltage : 0.0f;
+  // Kirim sinyal telemetri real-time ke Cloud (atau Serial jika offline)
+  firebase_sync_send_telemetry(v, 18, 24);
+  ui_settings_show();
 }
 
 AppCallbacks appCbs = {
@@ -130,6 +135,7 @@ AppCallbacks appCbs = {
 void setup() {
   Serial.begin(115200);
   audio_init();
+  battery_monitor_init();
 
   // Inisialisasi Sinkronisasi Firebase Firestore & USB Telemetri
   firebase_sync_init();

@@ -1,6 +1,7 @@
 #include "ui_bali.h"
 #include "ui_home.h"
 #include "ui_learn.h"
+#include "ui_settings.h"
 #include "firebase_sync.h"
 #include <stdio.h>
 
@@ -558,6 +559,9 @@ static void on_check_write_click(lv_event_t* e) {
       strncpy(aksara_label, "Na (ᬦ)", sizeof(aksara_label) - 1);
     }
     firebase_sync_send_submission("Ni Kadek Ayu", "5B", "Bali", aksara_label, prec, 92, "Lulus");
+    if (!firebase_sync_is_connected()) {
+      ui_show_toast("Wi-Fi mati: hasil disimpan di Sesi Sementara");
+    }
   } else {
     audio_play(SOUND_ERROR);
     if (write_feedback_lbl) {
@@ -882,6 +886,12 @@ static void build_write_view(lv_obj_t* parent) {
   lv_obj_center(btnCheckLbl);
 }
 
+static void on_open_device_settings(lv_event_t* e) {
+  (void)e;
+  audio_play(SOUND_CLICK);
+  ui_settings_show();
+}
+
 // ---------- 3. Tampilan Setelan Aksara Bali ----------
 static void build_settings_view(lv_obj_t* parent) {
   view_settings = lv_obj_create(parent);
@@ -895,6 +905,12 @@ static void build_settings_view(lv_obj_t* parent) {
 
   lv_obj_t* sTitle = ui_make_label(cardSet, "Setelan Pembelajaran Bali", &lv_font_montserrat_20, C_TEXT);
   lv_obj_set_pos(sTitle, 16, 12);
+
+  lv_obj_t* btnDevSet = ui_make_card(cardSet, 308, 10, 124, 28, C_BALI_1, C_BALI_2, 8);
+  ui_set_pressed(btnDevSet, C_BALI_2, C_BALI_2);
+  lv_obj_add_event_cb(btnDevSet, on_open_device_settings, LV_EVENT_CLICKED, NULL);
+  lv_obj_t* devSetLbl = ui_make_label(btnDevSet, LV_SYMBOL_WIFI " Wi-Fi & Daya", &lv_font_montserrat_12, lv_color_hex(0xFFFFFF));
+  lv_obj_center(devSetLbl);
 
   // Baris 1: Panduan Goresan
   lv_obj_t* row1 = ui_make_card(cardSet, 16, 46, 416, 44, C_CARD_PR, C_CARD_PR, 10);

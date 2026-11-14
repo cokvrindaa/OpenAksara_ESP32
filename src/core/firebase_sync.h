@@ -22,6 +22,17 @@ void firebase_sync_update();
 // Cek apakah Wi-Fi & Firebase siap
 bool firebase_sync_is_connected();
 
+// Informasi status Wi-Fi & Antrian Sesi Sementara (Offline Buffer)
+int firebase_sync_get_wifi_status_code();
+const char* firebase_sync_get_ssid();
+void firebase_sync_get_ip(char* buf, size_t len);
+int firebase_sync_get_rssi();
+int firebase_sync_get_offline_count();
+int firebase_sync_get_offline_capacity();
+uint32_t firebase_sync_get_offline_synced_total();
+void firebase_sync_trigger_reconnect();
+void firebase_sync_trigger_flush();
+
 // Kirim hasil latihan goresan siswa (Koleksi 'submissions')
 bool firebase_sync_send_submission(
     const char* student_name,

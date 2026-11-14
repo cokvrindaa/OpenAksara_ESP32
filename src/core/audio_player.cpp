@@ -35,23 +35,29 @@ static void send_df_cmd(uint8_t cmd, uint16_t param) {
 
 static unsigned long last_init_retry = 0;
 static bool vol_initialized = false;
-static unsigned long last_ping = 0;
+static uint8_t current_volume = 22; // Volume 22 (sweet spot: kencang, adem, dan MicroSD card stabil)
+static uint8_t boot_0x3f_count = 0;
 
-static const uint8_t DEFAULT_VOLUME = 22; // Volume 22 (sweet spot: kencang, adem, dan MicroSD card stabil)
+static void apply_df_volume_only() {
+  // Cukup kirim 0x06 (Set Volume). JANGAN kirim 0x09 (Select TF) di dalam handler 0x3F
+  // karena 0x09 memicu DFPlayer mount ulang MicroSD dan mengirim 0x3F lagi (infinite loop)!
+  send_df_cmd(0x06, (uint16_t)current_volume);
+  vol_initialized = true;
+}
 
 void audio_init() {
   // ESP32 RX2: GPIO 16 (hubungkan ke pin TX DFPlayer)
   // ESP32 TX2: GPIO 17 (hubungkan ke pin RX DFPlayer)
   Serial2.begin(9600, SERIAL_8N1, 16, 17);
   Serial.println(F("[Audio] Inisialisasi DFPlayer Mini di RX2:GPIO16, TX2:GPIO17 (9600 baud)..."));
-  
-  delay(100);
-  // Pilih sumber media MicroSD (0x02)
+
+  delay(250);
   send_df_cmd(0x09, 0x0002);
   delay(50);
-  // Set volume maksimal (dengan resistor 47 ohm terpasang, arus sudah terproteksi aman)
-  send_df_cmd(0x06, DEFAULT_VOLUME);
+  send_df_cmd(0x06, (uint16_t)current_volume);
 
+  vol_initialized = false;
+  boot_0x3f_count = 0;
   last_init_retry = millis();
 }
 
@@ -85,12 +91,18 @@ void audio_play(int track) {
 void audio_set_volume(int vol) {
   if (vol < 0) vol = 0;
   if (vol > 30) vol = 30;
+  current_volume = (uint8_t)vol;
   send_df_cmd(0x06, (uint16_t)vol);
   Serial.printf("[Audio] Set Volume: %d\n", vol);
 }
 
-// Pantau pesan balik dari DFPlayer
+// Pantau pesan balik dari DFPlayer & pastikan volume aktif setelah DFPlayer selesai boot
 void audio_update() {
+  if (!vol_initialized && (millis() - last_init_retry >= 1200)) {
+    Serial.println(F("[Audio] Set volume DFPlayer pasca-boot..."));
+    apply_df_volume_only();
+  }
+
   static uint8_t rx_buf[10];
   static uint8_t rx_idx = 0;
 
@@ -110,18 +122,32 @@ void audio_update() {
           uint16_t param = (rx_buf[5] << 8) | rx_buf[6];
           
           if (cmd == 0x3F) {
-            Serial.println(F("[Audio-DFPlayer] Status: MicroSD Card Online (0x3F)"));
+            boot_0x3f_count++;
+            Serial.printf("[Audio-DFPlayer] Status: MicroSD Card Online (0x3F, #%u)\n", boot_0x3f_count);
+            if (boot_0x3f_count > 2) {
+              Serial.println(F("[Audio-DFPlayer] ⚠️ DFPlayer ter-reset berulang! Cek VCC 5V/GND/tegangan drop."));
+            }
+            apply_df_volume_only();
           } else if (cmd == 0x3A) {
             Serial.println(F("[Audio-DFPlayer] Status: MicroSD Card Dimasukkan"));
+            apply_df_volume_only();
           } else if (cmd == 0x3B) {
             Serial.println(F("[Audio-DFPlayer] Status: MicroSD Card Dicabut!"));
           } else if (cmd == 0x3D) {
             Serial.printf("[Audio-DFPlayer] Selesai memutar trek #%d\n", param);
           } else if (cmd == 0x40) {
             if (param == 0x01) {
-              Serial.println(F("[Audio-DFPlayer] ERROR 0x01: MicroSD Card tidak terdeteksi!"));
+              Serial.println(F("[Audio-DFPlayer] ERROR 0x01: MicroSD Card tidak terdeteksi / module busy!"));
+            } else if (param == 0x03) {
+              Serial.println(F("[Audio-DFPlayer] ERROR 0x03: Serial RX DFPlayer putus / timeout!"));
+            } else if (param == 0x04) {
+              Serial.println(F("[Audio-DFPlayer] ERROR 0x04: Checksum UART salah!"));
+            } else if (param == 0x05) {
+              Serial.println(F("[Audio-DFPlayer] ERROR 0x05: File di luar rentang indeks MicroSD!"));
             } else if (param == 0x06) {
               Serial.println(F("[Audio-DFPlayer] ERROR 0x06: File MP3 tidak ditemukan di MicroSD!"));
+            } else {
+              Serial.printf("[Audio-DFPlayer] ERROR 0x%02X dari DFPlayer!\n", param);
             }
           }
         }

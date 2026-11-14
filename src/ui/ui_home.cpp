@@ -2,6 +2,7 @@
 #include "ui_jawa.h"
 #include "ui_bali.h"
 #include "ui_learn.h"
+#include "ui_settings.h"
 
 static const AppCallbacks* home_cbs = nullptr;
 static lv_obj_t* scr_home = nullptr;
@@ -30,9 +31,10 @@ static void on_select_bali_click(lv_event_t* e) {
 static void on_settings_click(lv_event_t* e) {
   (void)e;
   audio_play(SOUND_CLICK);
-  ui_show_toast("Buka Setelan");
   if (home_cbs && home_cbs->onSettings) {
     home_cbs->onSettings();
+  } else {
+    ui_settings_show();
   }
 }
 
@@ -138,10 +140,11 @@ void ui_init(const AppCallbacks* callbacks) {
   // Bangun Layar Home
   build_home_screen();
 
-  // Inisialisasi Layar Khusus Aksara Jawa dan Aksara Bali secara terpisah
+  // Inisialisasi Layar Khusus Aksara Jawa, Aksara Bali, Latihan, dan Setelan Perangkat
   ui_jawa_init(callbacks);
   ui_bali_init(callbacks);
   ui_learn_init(callbacks);
+  ui_settings_init();
 
   // Tampilkan Layar Home
   lv_scr_load(scr_home);

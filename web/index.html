@@ -1420,12 +1420,12 @@
             </div>
           </div>
 
-          <!-- Integrasi Firebase -> Telegram Bot (Otomatis Setiap Data Baru) -->
+          <!-- Integrasi Firebase -> Telegram Bot (Web & Vercel Real-time Bridge) -->
           <div class="bg-white p-5 sm:p-6 rounded-2xl border border-brand-border shadow-sm flex flex-col gap-5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h4 class="text-base font-bold text-brand-dark">Notifikasi Otomatis Telegram (Firebase → Telegram)</h4>
-                <p class="text-xs text-brand-muted">Setiap data latihan, rapor materi, atau pesan baru yang masuk ke Firebase otomatis diteruskan ke Bot Telegram Guru / Grup Orang Tua.</p>
+                <h4 class="text-base font-bold text-brand-dark">Integrasi Web Telegram (Firebase → Telegram / Vercel)</h4>
+                <p class="text-xs text-brand-muted">Berjalan langsung lewat Web EduCloud &amp; Serverless Vercel API (<code>/api/telegram</code>). Data latihan, rapor XP, dan feedback otomatis diteruskan ke Telegram.</p>
               </div>
               <span id="tg-bridge-badge" class="self-start sm:self-auto text-[11px] font-bold px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 whitespace-nowrap">
                 Menunggu Konfigurasi
@@ -1434,9 +1434,9 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-xs font-semibold text-brand-dark mb-1.5" for="tg-bot-token">Bot Token (dari @BotFather)</label>
+                <label class="block text-xs font-semibold text-brand-dark mb-1.5" for="tg-bot-token">Bot Token (dari @BotFather / Vercel Env)</label>
                 <div class="relative">
-                  <input type="password" id="tg-bot-token" placeholder="7123456789:AAHq..." class="w-full pr-16 pl-3.5 py-2.5 text-xs bg-brand-bg border border-brand-border rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
+                  <input type="password" id="tg-bot-token" placeholder="7123456789:AAHq... (opsional jika sudah di Vercel Env)" class="w-full pr-16 pl-3.5 py-2.5 text-xs bg-brand-bg border border-brand-border rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition">
                   <button type="button" onclick="toggleTgTokenVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-brand-primary hover:underline px-1.5">Lihat</button>
                 </div>
               </div>
@@ -1459,14 +1459,20 @@
                 <button type="button" onclick="testTelegramConnection()" class="px-4 py-2 rounded-xl border border-brand-border hover:border-brand-primary bg-white text-xs font-semibold text-brand-dark transition">
                   Tes Kirim Telegram
                 </button>
+                <button type="button" onclick="syncFirebaseToTelegramNow()" class="px-4 py-2 rounded-xl border border-sky-200 hover:border-sky-400 bg-sky-50 text-xs font-semibold text-sky-800 transition">
+                  Sinkron Firebase → Telegram
+                </button>
+                <button type="button" onclick="sendClassSummaryToTelegram()" class="px-4 py-2 rounded-xl border border-emerald-200 hover:border-emerald-400 bg-emerald-50 text-xs font-semibold text-emerald-800 transition">
+                  Kirim Rekap Kelas
+                </button>
               </div>
             </div>
 
             <div class="p-3.5 rounded-xl bg-brand-bg border border-brand-border/80 text-[11px] text-brand-muted space-y-1">
-              <p class="font-bold text-brand-dark">Cara Cepat Setup Bot Telegram:</p>
-              <p>1. Buka Telegram, cari <strong>@BotFather</strong> → ketik <code>/newbot</code> → salin <strong>HTTP API Token</strong> yang diberikan.</p>
-              <p>2. Cari bot baru kamu di Telegram lalu klik <strong>Start</strong> (atau masukkan bot ke Grup kelas bila ingin notif grup).</p>
-              <p>3. Cari <strong>@userinfobot</strong> (untuk Chat ID pribadi) atau buka <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> setelah chat ke bot untuk melihat angka <strong>Chat ID</strong>.</p>
+              <p class="font-bold text-brand-dark">Cara Setup Telegram Web / Vercel:</p>
+              <p>1. Buat bot di <strong>@BotFather</strong> (<code>/newbot</code>) untuk dapat <strong>Bot Token</strong>, lalu ambil <strong>Chat ID</strong> dari <strong>@userinfobot</strong>.</p>
+              <p>2. Untuk deploy di <strong>Vercel</strong>: tambahkan Environment Variables <code>TELEGRAM_BOT_TOKEN</code> &amp; <code>TELEGRAM_CHAT_ID</code> (plus variabel <code>FIREBASE_*</code>), atau isi langsung di form di atas untuk disimpan di browser.</p>
+              <p>3. Saat dashboard web dibuka, setiap data baru di Firebase langsung dikirim otomatis via <code>/api/telegram</code>. Endpoint <code>/api/telegram/sync</code> juga bisa dipanggil untuk menarik data baru dari Firebase kapan saja.</p>
             </div>
 
             <div class="border-t border-brand-border/70 pt-3">
@@ -3833,15 +3839,21 @@
     }
 
     // ==============================================================
-    // INTEGRASI FIREBASE -> TELEGRAM BOT (SERVER BRIDGE & FALLBACK)
+    // INTEGRASI FIREBASE -> TELEGRAM BOT (WEB / VERCEL BRIDGE & NODE)
     // ==============================================================
     const TG_LOCAL_KEY = 'aksara_tg_bridge_cfg_v1';
+    const TG_LOGS_KEY = 'aksara_tg_web_logs_v1';
     const tgState = {
+      mode: 'browser',
       serverActive: false,
+      watcherActive: false,
+      serverHasToken: false,
+      serverChatId: '',
       hasToken: false,
       isDummy: true,
       autoForward: true,
       chatId: '',
+      bootAt: Date.now(),
       baselineInit: { submissions: false, assessments: false, feedbacks: false },
       seenIds: { submissions: new Set(), assessments: new Set(), feedbacks: new Set() }
     };
@@ -3857,13 +3869,67 @@
       inp.type = inp.type === 'password' ? 'text' : 'password';
     }
 
+    function getLocalTgConfig() {
+      try {
+        return JSON.parse(localStorage.getItem(TG_LOCAL_KEY) || '{}');
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function getLocalTgLogs() {
+      try {
+        const arr = JSON.parse(localStorage.getItem(TG_LOGS_KEY) || '[]');
+        return Array.isArray(arr) ? arr : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function pushWebTelegramLog(entry) {
+      if (!entry) return;
+      const logs = getLocalTgLogs();
+      logs.unshift({
+        id: entry.id || ('TG-' + Date.now().toString().slice(-6)),
+        timestamp: entry.timestamp || new Date().toISOString(),
+        type: entry.type || 'web_relay',
+        title: entry.title || 'Notifikasi Telegram',
+        recipient: entry.recipient || tgState.chatId || '-',
+        status: entry.status || 'Delivered',
+        is_dummy: !!entry.is_dummy
+      });
+      if (logs.length > 25) logs.length = 25;
+      try { localStorage.setItem(TG_LOGS_KEY, JSON.stringify(logs)); } catch (_) {}
+      if (!tgState.watcherActive) {
+        renderTelegramBridgeLogs(logs);
+      }
+    }
+
+    function getEffectiveTgCredentials() {
+      const saved = getLocalTgConfig();
+      const inputToken = (document.getElementById('tg-bot-token')?.value || '').trim();
+      const inputChatId = (document.getElementById('tg-chat-id')?.value || '').trim();
+      const token = inputToken || (saved.botToken || '').trim();
+      const chatId = inputChatId || (saved.chatId || tgState.serverChatId || '').trim();
+      return {
+        token,
+        chatId,
+        hasAnyToken: !!(token || tgState.serverHasToken),
+        hasAnyChatId: !!chatId
+      };
+    }
+
     function updateTgBadgeUI() {
       const badge = document.getElementById('tg-bridge-badge');
       if (!badge) return;
-      if (tgState.serverActive && !tgState.isDummy && tgState.hasToken && tgState.chatId) {
+      const creds = getEffectiveTgCredentials();
+      if (tgState.watcherActive && creds.hasAnyToken && creds.hasAnyChatId && !tgState.isDummy) {
         badge.className = "self-start sm:self-auto text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap";
-        badge.textContent = "Server Bridge Aktif (Auto)";
-      } else if (!tgState.serverActive && tgState.hasToken && tgState.chatId && tgState.autoForward) {
+        badge.textContent = "Server Watcher Aktif (Auto)";
+      } else if (tgState.serverActive && !tgState.watcherActive && creds.hasAnyToken && creds.hasAnyChatId && tgState.autoForward) {
+        badge.className = "self-start sm:self-auto text-[11px] font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 whitespace-nowrap";
+        badge.textContent = "Web Bridge Vercel Aktif (Real-time)";
+      } else if (!tgState.serverActive && creds.token && creds.chatId && tgState.autoForward) {
         badge.className = "self-start sm:self-auto text-[11px] font-bold px-3 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 whitespace-nowrap";
         badge.textContent = "Browser Mode Aktif";
       } else {
@@ -3898,20 +3964,29 @@
     }
 
     async function refreshTelegramLogs() {
-      if (!tgState.serverActive) return;
-      try {
-        const res = await fetch('/api/telegram/logs');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.logs) renderTelegramBridgeLogs(data.logs);
-        }
-      } catch (_) {}
+      if (tgState.watcherActive) {
+        try {
+          const res = await fetch('/api/telegram/logs');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.logs) renderTelegramBridgeLogs(data.logs);
+          }
+        } catch (_) {}
+        return;
+      }
+      renderTelegramBridgeLogs(getLocalTgLogs());
     }
 
     async function initTelegramIntegration() {
       const tokenInput = document.getElementById('tg-bot-token');
       const chatInput = document.getElementById('tg-chat-id');
       const autoCheck = document.getElementById('tg-auto-forward');
+      const saved = getLocalTgConfig();
+
+      if (saved.botToken && tokenInput) tokenInput.value = saved.botToken;
+      if (saved.chatId && chatInput) chatInput.value = saved.chatId;
+      tgState.autoForward = saved.autoForward !== false;
+      if (autoCheck) autoCheck.checked = tgState.autoForward;
 
       if (location.protocol !== 'file:') {
         try {
@@ -3920,13 +3995,25 @@
             const data = await res.json();
             const cfg = data.config || {};
             tgState.serverActive = true;
-            tgState.hasToken = !!cfg.has_token;
-            tgState.isDummy = cfg.is_dummy_mode !== false;
-            tgState.autoForward = cfg.firebase_auto_forward !== false;
-            tgState.chatId = cfg.chat_id || '';
-            if (chatInput && cfg.chat_id) chatInput.value = cfg.chat_id;
-            if (autoCheck) autoCheck.checked = tgState.autoForward;
-            if (tokenInput && cfg.has_token) tokenInput.placeholder = "Token tersimpan di server (.env / telegram_config.json)";
+            tgState.mode = cfg.mode || (cfg.watcher_active ? 'node_server' : 'vercel');
+            tgState.watcherActive = !!cfg.watcher_active;
+            tgState.serverHasToken = !!cfg.has_token;
+            tgState.serverChatId = (cfg.chat_id || '').trim();
+            tgState.hasToken = !!(tgState.serverHasToken || saved.botToken);
+            tgState.isDummy = cfg.is_dummy_mode !== false && !(saved.botToken && saved.chatId);
+            if (!saved.chatId && tgState.serverChatId && chatInput) {
+              chatInput.value = tgState.serverChatId;
+            }
+            tgState.chatId = (saved.chatId || tgState.serverChatId || '').trim();
+            if (tgState.watcherActive && cfg.firebase_auto_forward !== undefined) {
+              tgState.autoForward = !!cfg.firebase_auto_forward;
+              if (autoCheck) autoCheck.checked = tgState.autoForward;
+            }
+            if (tokenInput && tgState.serverHasToken && !saved.botToken) {
+              tokenInput.placeholder = tgState.watcherActive
+                ? "Token tersimpan di server (.env / telegram_config.json)"
+                : "Token aktif via Vercel Environment Variables (kosongkan jika pakai Env)";
+            }
             updateTgBadgeUI();
             refreshTelegramLogs();
             return;
@@ -3934,27 +4021,24 @@
         } catch (_) {}
       }
 
-      // Mode fallback lokal (jika index.html dibuka tanpa web/server.js)
-      try {
-        const saved = JSON.parse(localStorage.getItem(TG_LOCAL_KEY) || '{}');
-        if (saved.botToken) {
-          if (tokenInput) tokenInput.value = saved.botToken;
-          tgState.hasToken = true;
-        }
-        if (saved.chatId) {
-          if (chatInput) chatInput.value = saved.chatId;
-          tgState.chatId = saved.chatId;
-        }
-        tgState.autoForward = saved.autoForward !== false;
-        if (autoCheck) autoCheck.checked = tgState.autoForward;
-      } catch (_) {}
+      // Mode fallback lokal (tanpa backend API)
+      tgState.hasToken = !!saved.botToken;
+      tgState.chatId = (saved.chatId || '').trim();
+      tgState.isDummy = !(tgState.hasToken && tgState.chatId);
       updateTgBadgeUI();
+      refreshTelegramLogs();
     }
 
     async function saveTelegramSettings() {
       const token = (document.getElementById('tg-bot-token')?.value || '').trim();
       const chatId = (document.getElementById('tg-chat-id')?.value || '').trim();
       const autoForward = !!document.getElementById('tg-auto-forward')?.checked;
+
+      // Selalu simpan preferensi sesi di browser (dipakai di Vercel maupun mode statis)
+      localStorage.setItem(TG_LOCAL_KEY, JSON.stringify({ botToken: token, chatId, autoForward }));
+      tgState.autoForward = autoForward;
+      tgState.chatId = chatId || tgState.serverChatId;
+      tgState.hasToken = !!(token || tgState.serverHasToken);
 
       if (tgState.serverActive) {
         try {
@@ -3967,12 +4051,14 @@
           });
           const data = await res.json();
           if (!res.ok || !data.success) throw new Error(data.error || 'Gagal menyimpan');
-          tgState.hasToken = !!data.has_token;
-          tgState.isDummy = !!data.is_dummy_mode;
-          tgState.chatId = chatId;
-          tgState.autoForward = autoForward;
+          tgState.hasToken = !!(data.has_token || token || tgState.serverHasToken);
+          tgState.isDummy = !!(data.is_dummy_mode && !(token && chatId));
           updateTgBadgeUI();
-          showToast('Konfigurasi Telegram tersimpan di server! Data baru Firebase otomatis diteruskan.');
+          showToast(
+            tgState.watcherActive
+              ? 'Konfigurasi Telegram tersimpan di Node Server!'
+              : 'Konfigurasi Web Vercel Telegram disimpan! Data baru Firebase siap diteruskan.'
+          );
           return;
         } catch (err) {
           showToast('Gagal menyimpan konfigurasi Telegram: ' + err.message);
@@ -3980,14 +4066,9 @@
         }
       }
 
-      // Fallback simpan di browser
-      localStorage.setItem(TG_LOCAL_KEY, JSON.stringify({ botToken: token, chatId, autoForward }));
-      tgState.hasToken = !!token;
-      tgState.chatId = chatId;
-      tgState.autoForward = autoForward;
       tgState.isDummy = !(token && chatId);
       updateTgBadgeUI();
-      showToast('Konfigurasi Telegram disimpan di browser (aktif selama tab ini terbuka).');
+      showToast('Konfigurasi Telegram disimpan di browser.');
     }
 
     async function sendTelegramViaBrowser(botToken, chatId, htmlText) {
@@ -4004,9 +4085,41 @@
       return json;
     }
 
+    async function dispatchTelegramPayload(message, title, type = 'web_relay') {
+      const creds = getEffectiveTgCredentials();
+      if (!creds.hasAnyToken || !creds.hasAnyChatId) {
+        throw new Error('Bot Token atau Chat ID belum lengkap.');
+      }
+
+      if (tgState.serverActive) {
+        const res = await fetch('/api/telegram/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bot_token: creds.token,
+            chat_id: creds.chatId,
+            message,
+            title,
+            type
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'Gagal kirim via /api/telegram/send');
+        pushWebTelegramLog(data.log || { title, recipient: creds.chatId, status: 'Delivered', type });
+        return data;
+      }
+
+      await sendTelegramViaBrowser(creds.token, creds.chatId, message);
+      pushWebTelegramLog({ title, recipient: creds.chatId, status: 'Delivered', type });
+      return { success: true };
+    }
+
     async function testTelegramConnection() {
-      const token = (document.getElementById('tg-bot-token')?.value || '').trim();
-      const chatId = (document.getElementById('tg-chat-id')?.value || '').trim();
+      const creds = getEffectiveTgCredentials();
+      if (!creds.hasAnyToken || !creds.hasAnyChatId) {
+        showToast('Isi Bot Token & Chat ID terlebih dahulu (atau atur di Vercel Env).');
+        return;
+      }
 
       if (tgState.serverActive) {
         try {
@@ -4014,56 +4127,149 @@
           const res = await fetch('/api/telegram/test', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bot_token: token, chat_id: chatId })
+            body: JSON.stringify({ bot_token: creds.token, chat_id: creds.chatId })
           });
           const data = await res.json();
           if (!res.ok || !data.success) throw new Error(data.error || 'Gagal kirim ke Telegram');
+          pushWebTelegramLog(data.log || { title: 'Tes Koneksi Telegram Bot', recipient: creds.chatId, status: 'Delivered', type: 'test_connection' });
           showToast('Berhasil! Cek chat/grup Telegram kamu sekarang.');
-          refreshTelegramLogs();
+          if (tgState.watcherActive) refreshTelegramLogs();
         } catch (err) {
+          pushWebTelegramLog({ title: 'Tes Koneksi Gagal: ' + err.message, recipient: creds.chatId, status: 'Failed', type: 'test_connection' });
           showToast('Tes Telegram gagal: ' + err.message);
         }
         return;
       }
 
-      if (!token || !chatId) {
-        showToast('Isi Bot Token dan Chat ID terlebih dahulu.');
-        return;
-      }
       try {
-        await sendTelegramViaBrowser(token, chatId, '✅ <b>Tes Koneksi OpenAksara ↔ Telegram Berhasil!</b>\nDashboard siap meneruskan data baru dari Firebase.');
+        await sendTelegramViaBrowser(creds.token, creds.chatId, '✅ <b>Tes Koneksi OpenAksara Web ↔ Telegram Berhasil!</b>\nDashboard siap meneruskan data baru dari Firebase.');
+        pushWebTelegramLog({ title: 'Tes Koneksi Telegram (Browser)', recipient: creds.chatId, status: 'Delivered', type: 'test_connection' });
         showToast('Berhasil! Pesan tes terkirim ke Telegram.');
       } catch (err) {
+        pushWebTelegramLog({ title: 'Tes Koneksi Gagal: ' + err.message, recipient: creds.chatId, status: 'Failed', type: 'test_connection' });
         showToast('Tes Telegram gagal: ' + err.message);
       }
     }
 
+    async function syncFirebaseToTelegramNow() {
+      if (!tgState.serverActive || tgState.watcherActive) {
+        showToast(tgState.watcherActive
+          ? 'Node Server Watcher sudah memantau Firebase otomatis.'
+          : 'Fitur sinkron server membutuhkan hosting Vercel (/api/telegram/sync).');
+        return;
+      }
+      const creds = getEffectiveTgCredentials();
+      if (!creds.hasAnyToken || !creds.hasAnyChatId) {
+        showToast('Isi Bot Token & Chat ID dahulu untuk sinkronisasi Telegram.');
+        return;
+      }
+      try {
+        showToast('Menarik data terbaru Firebase untuk Telegram...');
+        const fbCfg = (window.FirebaseState && window.FirebaseState.config) ? window.FirebaseState.config : {};
+        const res = await fetch('/api/telegram/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bot_token: creds.token,
+            chat_id: creds.chatId,
+            project_id: fbCfg.projectId || '',
+            api_key: fbCfg.apiKey || ''
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'Gagal sinkronisasi Firebase');
+        if (Array.isArray(data.logs)) {
+          data.logs.forEach(l => pushWebTelegramLog(l));
+        }
+        if (data.forwardedCount > 0) {
+          showToast(`Berhasil meneruskan ${data.forwardedCount} data baru Firebase ke Telegram!`);
+        } else {
+          showToast('Semua data Firebase terbaru sudah tersinkron dengan Telegram.');
+        }
+      } catch (err) {
+        showToast('Sinkron Firebase → Telegram gagal: ' + err.message);
+      }
+    }
+
+    async function sendClassSummaryToTelegram() {
+      const creds = getEffectiveTgCredentials();
+      if (!creds.hasAnyToken || !creds.hasAnyChatId) {
+        showToast('Isi Bot Token & Chat ID dahulu sebelum mengirim rekap.');
+        return;
+      }
+      const totalSub = ALL_SUBMISSIONS.length;
+      const totalAss = MATERI_ASSESSMENTS.length;
+      const totalSiswa = STUDENTS_LEADERBOARD.length;
+      const avgScore = totalSub > 0
+        ? (ALL_SUBMISSIONS.reduce((s, x) => s + (Number(x.score) || 0), 0) / totalSub).toFixed(1)
+        : '-';
+      const avgPrec = totalSub > 0
+        ? (ALL_SUBMISSIONS.reduce((s, x) => s + (Number(x.precision) || 0), 0) / totalSub).toFixed(1)
+        : '-';
+      const topSiswa = totalSiswa > 0 ? STUDENTS_LEADERBOARD[0] : null;
+      const msg =
+        `📊 <b>REKAP BELAJAR AKSARA • OPENAKSARA WEB</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `👥 <b>Total Siswa:</b> ${escapeTgHtml(totalSiswa)} siswa\n` +
+        `✍️ <b>Latihan Goresan Masuk:</b> ${escapeTgHtml(totalSub)} data\n` +
+        `🏅 <b>Rapor Materi Tuntas:</b> ${escapeTgHtml(totalAss)} data\n` +
+        `🏆 <b>Rata-rata Skor:</b> ${escapeTgHtml(avgScore)} | 🎯 <b>Presisi:</b> ${escapeTgHtml(avgPrec)}%\n` +
+        (topSiswa ? `⭐ <b>Peringkat #1:</b> ${escapeTgHtml(topSiswa.name || '-')} (${escapeTgHtml(topSiswa.xp || 0)} XP)\n` : '') +
+        `🕒 ${escapeTgHtml(new Date().toLocaleString('id-ID'))}`;
+
+      try {
+        showToast('Mengirim rekap kelas ke Telegram...');
+        await dispatchTelegramPayload(msg, 'Rekap Belajar Kelas (Web)', 'class_summary');
+        showToast('Rekap kelas berhasil dikirim ke Telegram!');
+      } catch (err) {
+        pushWebTelegramLog({ title: 'Gagal Rekap: ' + err.message, recipient: creds.chatId, status: 'Failed', type: 'class_summary' });
+        showToast('Gagal kirim rekap Telegram: ' + err.message);
+      }
+    }
+
     function processBrowserTelegramFallback(colName, items) {
-      // Jangan kirim ganda jika Node server.js aktif menangani watcher
-      if (tgState.serverActive || !tgState.autoForward) return;
-      const saved = JSON.parse(localStorage.getItem(TG_LOCAL_KEY) || '{}');
-      const token = (saved.botToken || '').trim();
-      const chatId = (saved.chatId || '').trim();
-      if (!token || !chatId || !Array.isArray(items)) return;
+      // Lewati hanya jika Node server.js lokal punya background watcher persisten.
+      // Di Vercel & browser statis (watcherActive === false), Web EduCloud menjadi jembatan real-time!
+      if (tgState.watcherActive || !tgState.autoForward) return;
+      const creds = getEffectiveTgCredentials();
+      if (!creds.hasAnyToken || !creds.hasAnyChatId || !Array.isArray(items)) return;
 
       if (!tgState.baselineInit[colName]) {
-        items.forEach(it => { if (it.id) tgState.seenIds[colName].add(it.id); });
         tgState.baselineInit[colName] = true;
-        return;
+        if (Date.now() - tgState.bootAt < 4500) {
+          // Tandai data historis saat awal buka tab agar tidak spam notifikasi lama
+          items.forEach(it => { if (it.id) tgState.seenIds[colName].add(it.id); });
+          return;
+        }
+        // Jika koleksi kosong saat awal buka tab dan baru terisi belakangan, hanya tandai data > 1 menit lalu
+        items.forEach(it => {
+          const ts = parseItemTimestamp(it);
+          if (it.id && ts > 0 && ts < tgState.bootAt - 60000) {
+            tgState.seenIds[colName].add(it.id);
+          }
+        });
       }
 
       items.forEach(async (it) => {
         if (!it.id || tgState.seenIds[colName].has(it.id)) return;
         tgState.seenIds[colName].add(it.id);
         let msg = '';
+        let logTitle = 'Notifikasi Firebase';
         if (colName === 'submissions') {
-          msg = `✍️ <b>DATA BARU FIREBASE • LATIHAN AKSARA</b>\n👤 <b>Siswa:</b> ${escapeTgHtml(it.name)} (${escapeTgHtml(it.class)})\n🔤 <b>Aksara:</b> ${escapeTgHtml(it.aksara)} (${escapeTgHtml(it.script)})\n🎯 <b>Presisi:</b> ${escapeTgHtml(it.precision)}% | 🏆 <b>Skor:</b> ${escapeTgHtml(it.score)} (${escapeTgHtml(it.status)})\n🕒 ${escapeTgHtml(formatItemDisplayTime(it, 'time'))}`;
+          logTitle = `Latihan: ${it.name || 'Siswa'} (${it.aksara || '-'})`;
+          msg = `✍️ <b>DATA BARU FIREBASE • LATIHAN AKSARA</b>\n━━━━━━━━━━━━━━━━━━━━━━━\n👤 <b>Siswa:</b> ${escapeTgHtml(it.name)} (Kelas ${escapeTgHtml(it.class)})\n🔤 <b>Aksara:</b> ${escapeTgHtml(it.aksara)} (${escapeTgHtml(it.script)})\n🎯 <b>Presisi:</b> ${escapeTgHtml(it.precision)}% | 🏆 <b>Skor:</b> ${escapeTgHtml(it.score)} (${escapeTgHtml(it.status)})\n🕒 ${escapeTgHtml(formatItemDisplayTime(it, 'time'))}`;
         } else if (colName === 'assessments') {
-          msg = `🏅 <b>DATA BARU FIREBASE • RAPOR MATERI</b>\n👤 <b>Siswa:</b> ${escapeTgHtml(it.studentName)} (${escapeTgHtml(it.class)})\n📚 ${escapeTgHtml(it.materiTitle)}\n🏆 <b>Nilai:</b> ${escapeTgHtml(it.finalScore)} (${escapeTgHtml(it.grade)}) · +${escapeTgHtml(it.totalXp)} XP`;
+          logTitle = `Rapor: ${it.studentName || 'Siswa'} (+${it.totalXp || 0} XP)`;
+          msg = `🏅 <b>DATA BARU FIREBASE • RAPOR MATERI</b>\n━━━━━━━━━━━━━━━━━━━━━━━\n👤 <b>Siswa:</b> ${escapeTgHtml(it.studentName)} (Kelas ${escapeTgHtml(it.class)})\n📚 ${escapeTgHtml(it.materiTitle)} (${escapeTgHtml(it.script)})\n🏆 <b>Nilai:</b> ${escapeTgHtml(it.finalScore)} (${escapeTgHtml(it.grade)}) · +${escapeTgHtml(it.totalXp)} XP`;
         } else {
-          msg = `💬 <b>DATA BARU FIREBASE • PESAN / FEEDBACK</b>\n📱 <b>Target:</b> ${escapeTgHtml(it.target)}\n📝 "${escapeTgHtml(it.text)}"`;
+          logTitle = `Feedback: ${it.target || 'ESP32'}`;
+          msg = `💬 <b>DATA BARU FIREBASE • PESAN / FEEDBACK</b>\n━━━━━━━━━━━━━━━━━━━━━━━\n📱 <b>Target:</b> ${escapeTgHtml(it.target)}\n📝 "${escapeTgHtml(it.text)}"`;
         }
-        try { await sendTelegramViaBrowser(token, chatId, msg); } catch (_) {}
+        try {
+          await dispatchTelegramPayload(msg, logTitle, colName);
+        } catch (err) {
+          pushWebTelegramLog({ title: `${logTitle} (Gagal: ${err.message})`, recipient: creds.chatId, status: 'Failed', type: colName });
+        }
       });
     }
 

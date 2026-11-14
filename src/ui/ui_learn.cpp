@@ -1912,7 +1912,11 @@ static void build_stage_guess() {
 static void on_finish_learn_click(lv_event_t* e) {
   (void)e;
   audio_play(SOUND_REWARD);
-  ui_show_toast("Selamat! Latihan Selesai, XP Bertambah.");
+  if (firebase_sync_is_connected()) {
+    ui_show_toast("Selamat! Latihan Selesai, XP Bertambah.");
+  } else {
+    ui_show_toast("Latihan Selesai! Disimpan ke Sesi Sementara (Offline)");
+  }
 
   // Kirim capaian penilaian materi & XP ke Cloud Firestore & Serial USB
   const char* scriptName = (current_script == AKSARA_JAWA) ? "Jawa" : "Bali";
