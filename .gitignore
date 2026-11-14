@@ -12,7 +12,6 @@
 .env.*.local
 *.env
 web/.env
-web/firebase-keys.js
 include/secrets.h
 telegram_config.json
 web/telegram_config.json

@@ -1,0 +1,27 @@
+# PlatformIO & Embedded Firmware
+.pio
+.vscode
+src
+include
+lib
+asset
+test
+platformio.ini
+
+# Windows Local Scripts
+*.bat
+*.ps1
+web/start_server.bat
+update_waypoint.bat
+
+# Python Generators
+*.py
+3d_viewer/*.py
+
+# Git & Local Configs
+.git
+.gitignore
+.env
+.env.local
+telegram_config.json
+web/telegram_config.json
