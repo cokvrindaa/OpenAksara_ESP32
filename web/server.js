@@ -68,19 +68,31 @@ let telegramLogs = [
 ];
 
 function loadTelegramConfig() {
+  const envToken = (process.env.TELEGRAM_BOT_TOKEN || '').trim();
+  const envChatId = (process.env.TELEGRAM_CHAT_ID || '').trim();
+  let cfg = {
+    is_dummy_mode: !(envToken && envChatId),
+    firebase_auto_forward: true,
+    bot_token: envToken,
+    chat_id: envChatId,
+    bot_name: "@OpenAksaraBot"
+  };
+
   try {
     if (fs.existsSync(TELEGRAM_CONFIG_FILE)) {
-      return JSON.parse(fs.readFileSync(TELEGRAM_CONFIG_FILE, 'utf8'));
+      const fileCfg = JSON.parse(fs.readFileSync(TELEGRAM_CONFIG_FILE, 'utf8'));
+      cfg = {
+        ...cfg,
+        ...fileCfg,
+        bot_token: (fileCfg.bot_token || envToken || '').trim(),
+        chat_id: (fileCfg.chat_id || envChatId || '').trim()
+      };
+      if (cfg.firebase_auto_forward === undefined) cfg.firebase_auto_forward = true;
     }
   } catch (e) {
     console.warn('[Telegram] Gagal membaca telegram_config.json, menggunakan konfigurasi default');
   }
-  return {
-    is_dummy_mode: true,
-    bot_token: "",
-    chat_id: "",
-    bot_name: "@OpenAksaraBot"
-  };
+  return cfg;
 }
 
 function saveTelegramConfig(cfg) {
@@ -587,6 +599,14 @@ const server = http.createServer((req, res) => {
             telegramLogs.unshift(autoTgMsg);
             if (telegramLogs.length > 30) telegramLogs.pop();
             broadcastEvent('telegram_message_sent', autoTgMsg);
+            if (!telegramConfig.is_dummy_mode && telegramConfig.bot_token && telegramConfig.chat_id) {
+              sendActualTelegramMessage(telegramConfig.bot_token, telegramConfig.chat_id, autoTgMsg.content, (err) => {
+                if (err) {
+                  console.error("[Telegram API Error]", err.message);
+                  autoTgMsg.status = "Failed";
+                }
+              });
+            }
           }
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -607,14 +627,18 @@ const server = http.createServer((req, res) => {
 
   // 6. API: GET /api/telegram/config
   if (pathname === '/api/telegram/config' && req.method === 'GET') {
+    const fbCfg = loadFirebaseConfigForWatcher();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       success: true,
       config: {
         is_dummy_mode: telegramConfig.is_dummy_mode !== false,
+        firebase_auto_forward: telegramConfig.firebase_auto_forward !== false,
         has_token: !!telegramConfig.bot_token,
         chat_id: telegramConfig.chat_id || '',
-        bot_name: telegramConfig.bot_name || '@OpenAksaraBot'
+        bot_name: telegramConfig.bot_name || '@OpenAksaraBot',
+        watcher_active: !!fbCfg.projectId && !!fbCfg.apiKey,
+        firebase_project_id: fbCfg.projectId || ''
       }
     }));
     return;
@@ -628,12 +652,76 @@ const server = http.createServer((req, res) => {
       try {
         const payload = JSON.parse(body);
         if (payload.is_dummy_mode !== undefined) telegramConfig.is_dummy_mode = !!payload.is_dummy_mode;
-        if (payload.bot_token !== undefined) telegramConfig.bot_token = payload.bot_token.trim();
+        if (payload.firebase_auto_forward !== undefined) telegramConfig.firebase_auto_forward = !!payload.firebase_auto_forward;
+        if (payload.bot_token !== undefined && payload.bot_token.trim() !== '') {
+          telegramConfig.bot_token = payload.bot_token.trim();
+        }
         if (payload.chat_id !== undefined) telegramConfig.chat_id = payload.chat_id.trim();
         if (payload.bot_name !== undefined) telegramConfig.bot_name = payload.bot_name.trim();
+        // Otomatis aktifkan live mode bila token & chat_id lengkap dan is_dummy_mode tidak dipaksa true
+        if (payload.is_dummy_mode === undefined && telegramConfig.bot_token && telegramConfig.chat_id) {
+          telegramConfig.is_dummy_mode = false;
+        }
         saveTelegramConfig(telegramConfig);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: "Konfigurasi Telegram disimpan" }));
+        res.end(JSON.stringify({
+          success: true,
+          message: "Konfigurasi Telegram disimpan",
+          is_dummy_mode: telegramConfig.is_dummy_mode !== false,
+          has_token: !!telegramConfig.bot_token
+        }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // 7b. API: POST /api/telegram/test (Tes kirim sinkron ke Telegram API)
+  if (pathname === '/api/telegram/test' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const payload = body ? JSON.parse(body) : {};
+        const token = (payload.bot_token || telegramConfig.bot_token || '').trim();
+        const chatId = (payload.chat_id || telegramConfig.chat_id || '').trim();
+        if (!token || !chatId) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: 'Bot Token dan Chat ID wajib diisi terlebih dahulu.' }));
+          return;
+        }
+        const testMsg =
+          `✅ <b>TES KONEKSI OPENAKSARA ↔ TELEGRAM BERHASIL!</b>\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+          `🔗 <b>Sumber:</b> Firebase Firestore (<code>${loadFirebaseConfigForWatcher().projectId || 'aksarabuddy-edu'}</code>)\n` +
+          `📡 <b>Status Bridge:</b> Aktif memantau data baru (submissions, assessments, feedbacks)\n` +
+          `🕒 <b>Waktu Tes:</b> ${formatLocalDateTimeWita(new Date())}`;
+
+        sendActualTelegramMessage(token, chatId, testMsg, (err) => {
+          const logEntry = {
+            id: "TG-" + Date.now().toString().slice(-6),
+            timestamp: new Date().toISOString(),
+            type: 'test_connection',
+            title: 'Tes Koneksi Telegram Bot',
+            recipient: chatId,
+            status: err ? 'Failed' : 'Delivered',
+            is_dummy: false,
+            content: testMsg
+          };
+          telegramLogs.unshift(logEntry);
+          if (telegramLogs.length > 30) telegramLogs.pop();
+          broadcastEvent('telegram_message_sent', logEntry);
+
+          if (err) {
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: err.message }));
+          } else {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, message: 'Pesan tes berhasil terkirim ke Telegram!', log: logEntry }));
+          }
+        });
       } catch (e) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: e.message }));
@@ -772,6 +860,243 @@ const server = http.createServer((req, res) => {
   });
 });
 
+function escapeTelegramHtml(str) {
+  return String(str === undefined || str === null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function formatLocalDateTimeWita(dateInput) {
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput || Date.now());
+  if (isNaN(d.getTime())) return '-';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}, ${hh}:${mm}`;
+}
+
+function loadFirebaseConfigForWatcher() {
+  let projectId = (process.env.FIREBASE_PROJECT_ID || '').trim();
+  let apiKey = (process.env.FIREBASE_API_KEY || '').trim();
+
+  if (!projectId || !apiKey) {
+    const keysPath = path.join(__dirname, 'firebase-keys.js');
+    if (fs.existsSync(keysPath)) {
+      try {
+        const raw = fs.readFileSync(keysPath, 'utf8');
+        const pidMatch = raw.match(/projectId\s*:\s*["']([^"']+)["']/);
+        const keyMatch = raw.match(/apiKey\s*:\s*["']([^"']+)["']/);
+        if (!projectId && pidMatch) projectId = pidMatch[1].trim();
+        if (!apiKey && keyMatch) apiKey = keyMatch[1].trim();
+      } catch (_) {}
+    }
+  }
+  return { projectId, apiKey };
+}
+
+function decodeFirestoreFields(fields) {
+  const out = {};
+  if (!fields || typeof fields !== 'object') return out;
+  for (const [k, v] of Object.entries(fields)) {
+    if (!v || typeof v !== 'object') continue;
+    if (v.stringValue !== undefined) out[k] = v.stringValue;
+    else if (v.integerValue !== undefined) out[k] = Number(v.integerValue);
+    else if (v.doubleValue !== undefined) out[k] = Number(v.doubleValue);
+    else if (v.booleanValue !== undefined) out[k] = Boolean(v.booleanValue);
+    else if (v.timestampValue !== undefined) out[k] = v.timestampValue;
+  }
+  return out;
+}
+
+function formatFirestoreDocForTelegram(collectionName, doc) {
+  const d = decodeFirestoreFields(doc.fields);
+  const rawTime = d.createdAt || d.updatedAt || d.timestamp || d.completedAt || doc.createTime;
+  const timeLabel = formatLocalDateTimeWita(rawTime);
+
+  if (collectionName === 'submissions') {
+    const score = Number(d.score ?? 0);
+    const status = d.status || (score >= 90 ? 'Sempurna' : (score >= 75 ? 'Lulus' : 'Remedial'));
+    const emoji = score >= 90 ? '🌟' : (score >= 75 ? '✅' : '⚠️');
+    return {
+      type: 'firebase_submission',
+      title: `Latihan Baru: ${d.name || 'Siswa'} (${d.aksara || 'Aksara'})`,
+      content:
+        `${emoji} <b>DATA BARU FIRESTORE • LATIHAN AKSARA</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `👤 <b>Siswa:</b> ${escapeTelegramHtml(d.name || 'Siswa')} (Kelas ${escapeTelegramHtml(d.class || '-')})\n` +
+        `✍️ <b>Aksara:</b> ${escapeTelegramHtml(d.aksara || '-')} (${escapeTelegramHtml(d.script || 'Nusantara')})\n` +
+        `🎯 <b>Presisi Goresan:</b> ${escapeTelegramHtml(d.precision ?? '-')}% \n` +
+        `🏆 <b>Skor:</b> <b>${escapeTelegramHtml(score)} / 100</b> (${escapeTelegramHtml(status)})\n` +
+        `🕒 <b>Waktu:</b> ${escapeTelegramHtml(timeLabel)}\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `📡 <i>Otomatis dari Firebase OpenAksara ESP32</i>`
+    };
+  }
+
+  if (collectionName === 'assessments') {
+    return {
+      type: 'firebase_assessment',
+      title: `Rapor Materi: ${d.studentName || 'Siswa'}`,
+      content:
+        `🏅 <b>DATA BARU FIRESTORE • PENILAIAN MATERI</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `👤 <b>Siswa:</b> ${escapeTelegramHtml(d.studentName || 'Siswa')} (Kelas ${escapeTelegramHtml(d.class || '-')})\n` +
+        `📚 <b>Materi:</b> ${escapeTelegramHtml(d.materiTitle || 'Aksara Nusantara')}\n` +
+        `🏆 <b>Nilai Akhir:</b> <b>${escapeTelegramHtml(d.finalScore ?? '-')}</b> (${escapeTelegramHtml(d.grade || '-')})\n` +
+        `⚡ <b>XP Didapat:</b> +${escapeTelegramHtml(d.totalXp ?? 0)} XP\n` +
+        `💡 <b>Catatan:</b> <i>${escapeTelegramHtml(d.feedback || '-')}</i>\n` +
+        `🕒 <b>Waktu:</b> ${escapeTelegramHtml(timeLabel)}\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `📡 <i>Otomatis dari Firebase OpenAksara EduCloud</i>`
+    };
+  }
+
+  // feedbacks
+  return {
+    type: 'firebase_feedback',
+    title: `Pesan / Feedback Baru: ${d.target || 'Sabak Siswa'}`,
+    content:
+      `💬 <b>DATA BARU FIRESTORE • PESAN & FEEDBACK</b>\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `📱 <b>Target:</b> ${escapeTelegramHtml(d.target || 'Sabak Siswa')}\n` +
+      `📝 <b>Pesan:</b> "${escapeTelegramHtml(d.text || '-')}"\n` +
+      `📌 <b>Status:</b> ${escapeTelegramHtml(d.status || 'Terkirim')}\n` +
+      `🕒 <b>Waktu:</b> ${escapeTelegramHtml(timeLabel)}\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `📡 <i>Otomatis dari Firebase OpenAksara EduCloud</i>`
+  };
+}
+
+function fetchFirestorePage(projectId, apiKey, collectionName, pageToken) {
+  return new Promise((resolve, reject) => {
+    let qs = `pageSize=100&key=${encodeURIComponent(apiKey)}`;
+    if (pageToken) qs += `&pageToken=${encodeURIComponent(pageToken)}`;
+    const options = {
+      hostname: 'firestore.googleapis.com',
+      port: 443,
+      path: `/v1/projects/${encodeURIComponent(projectId)}/databases/(default)/documents/${encodeURIComponent(collectionName)}?${qs}`,
+      method: 'GET'
+    };
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(body || '{}');
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(json);
+          } else {
+            reject(new Error((json.error && json.error.message) || `Firestore HTTP ${res.statusCode}`));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(8000, () => req.destroy(new Error('Firestore request timeout')));
+    req.end();
+  });
+}
+
+async function fetchAllFirestoreDocs(projectId, apiKey, collectionName) {
+  const docs = [];
+  let pageToken = null;
+  for (let page = 0; page < 5; page++) {
+    const res = await fetchFirestorePage(projectId, apiKey, collectionName, pageToken);
+    if (Array.isArray(res.documents)) docs.push(...res.documents);
+    if (!res.nextPageToken) break;
+    pageToken = res.nextPageToken;
+  }
+  return docs;
+}
+
+const WATCHED_FIRESTORE_COLLECTIONS = ['submissions', 'assessments', 'feedbacks'];
+const firestoreBaselineDone = {};
+const seenFirestoreDocNames = new Set();
+let firestorePollInFlight = false;
+
+async function pollFirestoreToTelegram() {
+  if (firestorePollInFlight) return;
+  const fb = loadFirebaseConfigForWatcher();
+  if (!fb.projectId || !fb.apiKey) return;
+
+  firestorePollInFlight = true;
+  try {
+    for (const col of WATCHED_FIRESTORE_COLLECTIONS) {
+      const docs = await fetchAllFirestoreDocs(fb.projectId, fb.apiKey, col);
+      if (!firestoreBaselineDone[col]) {
+        // Scan awal: catat semua dokumen yang sudah ada agar data lama tidak membanjiri Telegram
+        docs.forEach(doc => { if (doc.name) seenFirestoreDocNames.add(doc.name); });
+        firestoreBaselineDone[col] = true;
+        continue;
+      }
+
+      const newDocs = docs
+        .filter(doc => doc.name && !seenFirestoreDocNames.has(doc.name))
+        .sort((a, b) => Date.parse(a.createTime || 0) - Date.parse(b.createTime || 0));
+
+      for (const doc of newDocs) {
+        seenFirestoreDocNames.add(doc.name);
+        if (seenFirestoreDocNames.size > 3000) {
+          const first = seenFirestoreDocNames.values().next().value;
+          if (first) seenFirestoreDocNames.delete(first);
+        }
+
+        if (telegramConfig.firebase_auto_forward === false) continue;
+
+        const formatted = formatFirestoreDocForTelegram(col, doc);
+        const isLive = !telegramConfig.is_dummy_mode && !!telegramConfig.bot_token && !!telegramConfig.chat_id;
+        const logEntry = {
+          id: 'TG-' + Date.now().toString().slice(-6),
+          timestamp: new Date().toISOString(),
+          type: formatted.type,
+          title: formatted.title,
+          recipient: telegramConfig.chat_id || 'Mode Simulasi (Token belum diisi)',
+          status: isLive ? 'Sending...' : 'Dummy Preview',
+          is_dummy: !isLive,
+          content: formatted.content
+        };
+
+        telegramLogs.unshift(logEntry);
+        if (telegramLogs.length > 30) telegramLogs.pop();
+
+        if (isLive) {
+          sendActualTelegramMessage(telegramConfig.bot_token, telegramConfig.chat_id, formatted.content, (err) => {
+            if (err) {
+              console.error(`[Firebase -> Telegram] ❌ Gagal kirim (${col}):`, err.message);
+              logEntry.status = 'Failed: ' + err.message;
+            } else {
+              console.log(`[Firebase -> Telegram] ✅ Terkirim (${col}): ${formatted.title}`);
+              logEntry.status = 'Delivered';
+            }
+            broadcastEvent('telegram_message_sent', logEntry);
+          });
+        } else {
+          broadcastEvent('telegram_message_sent', logEntry);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Firebase Watcher] Gagal polling Firestore:', err.message);
+  } finally {
+    firestorePollInFlight = false;
+  }
+}
+
+function startFirebaseTelegramWatcher() {
+  if (process.env.DISABLE_FIREBASE_WATCHER === '1') return;
+  const fb = loadFirebaseConfigForWatcher();
+  if (!fb.projectId || !fb.apiKey) {
+    console.log('⚠️  [Firebase Watcher] FIREBASE_PROJECT_ID / FIREBASE_API_KEY belum tersedia.');
+    return;
+  }
+  console.log(`🔥 [Firebase -> Telegram] Memantau Firestore "${fb.projectId}" (interval 6 detik)...`);
+  pollFirestoreToTelegram();
+  setInterval(pollFirestoreToTelegram, 6000);
+}
+
 function sendActualTelegramMessage(botToken, chatId, text, callback) {
   const postData = JSON.stringify({
     chat_id: chatId,
@@ -817,6 +1142,8 @@ server.listen(PORT, () => {
   console.log('🚀 OpenAksara EduCloud - IoT Monitoring Server AKTIF!');
   console.log(`🌐 Dashboard Guru   : http://localhost:${PORT}`);
   console.log(`📡 ESP32 Telemetry  : http://localhost:${PORT}/api/telemetry`);
+  console.log(`🤖 Bridge Telegram  : ${(!telegramConfig.is_dummy_mode && telegramConfig.bot_token && telegramConfig.chat_id) ? 'LIVE AKTIF (Chat ID: ' + telegramConfig.chat_id + ')' : 'Menunggu Bot Token & Chat ID di Setelan Web / .env'}`);
   console.log('================================================================');
+  startFirebaseTelegramWatcher();
 });
 

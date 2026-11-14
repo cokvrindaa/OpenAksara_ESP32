@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/config", "destination": "/api/config.js" },
+    { "source": "/api/telegram/:path*", "destination": "/api/telegram.js" },
+    { "source": "/", "destination": "/web/index.html" },
+    { "source": "/3d", "destination": "/3d_viewer/index.html" },
+    { "source": "/waypoint", "destination": "/waypoint_editor/index.html" },
+    { "source": "/assets/(.*)", "destination": "/web/assets/$1" },
+    { "source": "/fonts/(.*)", "destination": "/web/fonts/$1" },
+    { "source": "/screenshots/(.*)", "destination": "/web/screenshots/$1" },
+    { "source": "/(firebase-.*)", "destination": "/web/$1" },
+    { "source": "/(students_data.json)", "destination": "/web/$1" },
+    { "source": "/(.*\\.png)", "destination": "/web/$1" },
+    { "source": "/(.*\\.jpg)", "destination": "/web/$1" },
+    { "source": "/(.*\\.svg)", "destination": "/web/$1" },
+    { "source": "/(.*\\.ttf)", "destination": "/web/fonts/$1" },
+    { "source": "/(.*\\.js)", "destination": "/web/$1" },
+    { "source": "/(.*\\.css)", "destination": "/web/$1" }
+  ]
+}
