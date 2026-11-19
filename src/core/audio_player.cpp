@@ -35,7 +35,7 @@ static void send_df_cmd(uint8_t cmd, uint16_t param) {
 
 static unsigned long last_init_retry = 0;
 static bool vol_initialized = false;
-static uint8_t current_volume = 22; // Volume 22 (sweet spot: kencang, adem, dan MicroSD card stabil)
+static uint8_t current_volume = 30; // Volume maksimal (30/30)
 static uint8_t boot_0x3f_count = 0;
 
 static void apply_df_volume_only() {
