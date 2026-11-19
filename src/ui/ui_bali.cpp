@@ -906,10 +906,10 @@ static void build_settings_view(lv_obj_t* parent) {
   lv_obj_t* sTitle = ui_make_label(cardSet, "Setelan Pembelajaran Bali", &lv_font_montserrat_20, C_TEXT);
   lv_obj_set_pos(sTitle, 16, 12);
 
-  lv_obj_t* btnDevSet = ui_make_card(cardSet, 308, 10, 124, 28, C_BALI_1, C_BALI_2, 8);
+  lv_obj_t* btnDevSet = ui_make_card(cardSet, 300, 10, 132, 28, C_BALI_1, C_BALI_2, 8);
   ui_set_pressed(btnDevSet, C_BALI_2, C_BALI_2);
   lv_obj_add_event_cb(btnDevSet, on_open_device_settings, LV_EVENT_CLICKED, NULL);
-  lv_obj_t* devSetLbl = ui_make_label(btnDevSet, LV_SYMBOL_WIFI " Wi-Fi & Daya", &lv_font_montserrat_12, lv_color_hex(0xFFFFFF));
+  lv_obj_t* devSetLbl = ui_make_label(btnDevSet, LV_SYMBOL_WIFI " Wi-Fi & Daya", &lv_font_montserrat_14, lv_color_hex(0xFFFFFF));
   lv_obj_center(devSetLbl);
 
   // Baris 1: Panduan Goresan
@@ -991,9 +991,9 @@ static void switch_tab(int tab_index) {
   }
 }
 
-// Inisialisasi Layar Aksara Bali
-void ui_bali_init(const AppCallbacks* callbacks) {
-  bali_cbs = callbacks;
+// Bangun Layar Aksara Bali secara Lazy (hemat RAM heap saat belum dibuka)
+static void build_bali_screen() {
+  if (scr_bali) return;
 
   scr_bali = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(scr_bali, C_BG, 0);
@@ -1057,7 +1057,14 @@ void ui_bali_init(const AppCallbacks* callbacks) {
   lv_obj_center(tab_lbl_settings);
 }
 
+void ui_bali_init(const AppCallbacks* callbacks) {
+  bali_cbs = callbacks;
+}
+
 void ui_bali_show() {
+  if (!scr_bali) {
+    build_bali_screen();
+  }
   if (scr_bali) {
     switch_tab(0); // Buka tab Belajar secara default
     if (lv_screen_active() != scr_bali) {

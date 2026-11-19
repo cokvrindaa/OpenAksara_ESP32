@@ -953,10 +953,10 @@ static void build_settings_view(lv_obj_t* parent) {
   lv_obj_t* sTitle = ui_make_label(cardSet, "Setelan Pembelajaran Jawa", &lv_font_montserrat_20, C_TEXT);
   lv_obj_set_pos(sTitle, 16, 12);
 
-  lv_obj_t* btnDevSet = ui_make_card(cardSet, 308, 10, 124, 28, C_JAWA_1, C_JAWA_2, 8);
+  lv_obj_t* btnDevSet = ui_make_card(cardSet, 300, 10, 132, 28, C_JAWA_1, C_JAWA_2, 8);
   ui_set_pressed(btnDevSet, C_JAWA_2, C_JAWA_2);
   lv_obj_add_event_cb(btnDevSet, on_open_device_settings, LV_EVENT_CLICKED, NULL);
-  lv_obj_t* devSetLbl = ui_make_label(btnDevSet, LV_SYMBOL_WIFI " Wi-Fi & Daya", &lv_font_montserrat_12, lv_color_hex(0xFFFFFF));
+  lv_obj_t* devSetLbl = ui_make_label(btnDevSet, LV_SYMBOL_WIFI " Wi-Fi & Daya", &lv_font_montserrat_14, lv_color_hex(0xFFFFFF));
   lv_obj_center(devSetLbl);
 
   // Baris 1: Panduan Goresan
@@ -1038,9 +1038,9 @@ static void switch_tab(int tab_index) {
   }
 }
 
-// Inisialisasi Layar Aksara Jawa
-void ui_jawa_init(const AppCallbacks* callbacks) {
-  jawa_cbs = callbacks;
+// Bangun Layar Aksara Jawa secara Lazy (hemat RAM heap saat belum dibuka)
+static void build_jawa_screen() {
+  if (scr_jawa) return;
 
   scr_jawa = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(scr_jawa, C_BG, 0);
@@ -1104,7 +1104,14 @@ void ui_jawa_init(const AppCallbacks* callbacks) {
   lv_obj_center(tab_lbl_settings);
 }
 
+void ui_jawa_init(const AppCallbacks* callbacks) {
+  jawa_cbs = callbacks;
+}
+
 void ui_jawa_show() {
+  if (!scr_jawa) {
+    build_jawa_screen();
+  }
   if (scr_jawa) {
     switch_tab(0); // Buka tab Belajar secara default
     if (lv_screen_active() != scr_jawa) {

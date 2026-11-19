@@ -156,6 +156,9 @@ struct TraceState
   uint16_t pt_counts[MAX_TRACE_STROKES];
   uint8_t stroke_count;
   bool is_drawing;
+  lv_obj_t *active_seg_line;
+  uint16_t active_seg_start;
+  bool active_seg_is_red;
 
   // Sequential Checkpoints & Corridor Guard Engine
   TraceCheckpoint checkpoints[MAX_CHECKPOINTS];
@@ -498,6 +501,12 @@ inline void ui_trace_clear(TraceState *st)
   }
   st->stroke_count = 0;
   st->is_drawing = false;
+  st->active_seg_line = nullptr;
+  st->active_seg_start = 0;
+  st->active_seg_is_red = false;
+  st->active_seg_line = nullptr;
+  st->active_seg_start = 0;
+  st->active_seg_is_red = false;
   ui_trace_reset_checkpoints(st);
 }
 
@@ -909,6 +918,9 @@ inline void ui_trace_event_cb(lv_event_t *e)
       st->points[s][0].x = rx;
       st->points[s][0].y = ry;
       st->is_drawing = true;
+      st->active_seg_line = nullptr;
+      st->active_seg_start = 0;
+      st->active_seg_is_red = false;
       ui_trace_process_point(st, rx, ry, rx, ry, false);
     }
   }
@@ -935,19 +947,25 @@ inline void ui_trace_event_cb(lv_event_t *e)
           // Proses posisi stylus & periksa koridor batas garis
           ui_trace_process_point(st, rx, ry, prev_x, prev_y, true);
 
-          // Render segmen: warna PUTIH jika di dalam garis, warna MERAH jika keluar garis atau gagal!
+          // Render segmen: gabungkan titik berurutan dengan warna sama ke 1 lv_line agar hemat RAM
+          st->pt_counts[s]++;
           if (st->draw_layer)
           {
-            lv_obj_t *seg = lv_line_create(st->draw_layer);
-            lv_obj_clear_flag(seg, LV_OBJ_FLAG_CLICKABLE);
-            lv_line_set_points(seg, &st->points[s][count - 1], 2);
-            lv_color_t line_col = (st->segment_out_of_bounds || st->is_failed) ? lv_color_hex(0xEF4444) : lv_color_hex(0xFFFFFF);
-            lv_obj_set_style_line_color(seg, line_col, 0);
-            lv_obj_set_style_line_width(seg, 5, 0);
-            lv_obj_set_style_line_rounded(seg, true, 0);
+            bool is_red = (st->segment_out_of_bounds || st->is_failed);
+            if (!st->active_seg_line || st->active_seg_is_red != is_red)
+            {
+              st->active_seg_start = count - 1;
+              st->active_seg_is_red = is_red;
+              st->active_seg_line = lv_line_create(st->draw_layer);
+              lv_obj_clear_flag(st->active_seg_line, LV_OBJ_FLAG_CLICKABLE);
+              lv_obj_set_style_line_color(st->active_seg_line,
+                                          is_red ? lv_color_hex(0xEF4444) : lv_color_hex(0xFFFFFF), 0);
+              lv_obj_set_style_line_width(st->active_seg_line, 5, 0);
+              lv_obj_set_style_line_rounded(st->active_seg_line, true, 0);
+            }
+            lv_line_set_points(st->active_seg_line, &st->points[s][st->active_seg_start],
+                               (count + 1) - st->active_seg_start);
           }
-
-          st->pt_counts[s]++;
         }
       }
     }
@@ -975,6 +993,8 @@ inline void ui_trace_event_cb(lv_event_t *e)
       }
       st->stroke_count++;
       st->is_drawing = false;
+      st->active_seg_line = nullptr;
+      st->active_seg_start = 0;
 
       // Evaluasi otomatis saat jari/stylus diangkat:
       // Jika goresan mencapai minimal 75% titik tanpa coretan liar berlebihan, otomatis sukses!

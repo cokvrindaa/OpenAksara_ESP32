@@ -23,5 +23,6 @@ update_waypoint.bat
 .gitignore
 .env
 .env.local
+web/firebase-keys.js
 telegram_config.json
 web/telegram_config.json

@@ -189,92 +189,94 @@ static void build_settings_screen() {
   lv_obj_clear_flag(scr_settings, LV_OBJ_FLAG_SCROLLABLE);
 
   // ===== HEADER =====
-  lv_obj_t* btnBack = ui_make_card(scr_settings, 14, 10, 92, 34, C_CARD, C_CARD, 12);
+  lv_obj_t* btnBack = ui_make_card(scr_settings, 14, 10, 98, 34, C_CARD, C_CARD, 12);
   ui_set_pressed(btnBack, C_CARD_PR, C_CARD_PR);
   lv_obj_add_event_cb(btnBack, on_back_click, LV_EVENT_CLICKED, NULL);
-  lv_obj_t* lblBack = ui_make_label(btnBack, LV_SYMBOL_LEFT " Kembali", &lv_font_montserrat_12, C_TEXT);
+  lv_obj_t* lblBack = ui_make_label(btnBack, LV_SYMBOL_LEFT " Kembali", &lv_font_montserrat_14, C_TEXT);
   lv_obj_center(lblBack);
 
   lv_obj_t* title = ui_make_label(scr_settings, "Setelan Perangkat", &lv_font_montserrat_20, C_TEXT);
-  lv_obj_set_pos(title, 118, 8);
+  lv_obj_set_pos(title, 122, 6);
 
-  lv_obj_t* sub = ui_make_label(scr_settings, "Wi-Fi, Sesi Sementara & Baterai", &lv_font_montserrat_12, C_SUB);
-  lv_obj_set_pos(sub, 118, 31);
+  lv_obj_t* sub = ui_make_label(scr_settings, "Wi-Fi, Sesi & Baterai", &lv_font_montserrat_14, C_SUB);
+  lv_obj_set_pos(sub, 122, 29);
 
   lv_obj_t* btnRef = ui_make_card(scr_settings, 386, 10, 80, 34, C_CARD, C_CARD, 12);
   ui_set_pressed(btnRef, C_CARD_PR, C_CARD_PR);
   lv_obj_add_event_cb(btnRef, on_refresh_click, LV_EVENT_CLICKED, NULL);
-  lv_obj_t* lblRef = ui_make_label(btnRef, LV_SYMBOL_REFRESH " Cek", &lv_font_montserrat_12, C_TEXT);
+  lv_obj_t* lblRef = ui_make_label(btnRef, LV_SYMBOL_REFRESH " Cek", &lv_font_montserrat_14, C_TEXT);
   lv_obj_center(lblRef);
 
   // ===== KARTU KIRI: STATUS WIFI & SESI SEMENTARA =====
   lv_obj_t* cardWifi = ui_make_card(scr_settings, 14, 54, 224, 252, C_CARD, C_CARD, 18);
 
   lv_obj_t* wTitle = ui_make_label(cardWifi, LV_SYMBOL_WIFI "  Koneksi Wi-Fi", &lv_font_montserrat_16, C_TEXT);
-  lv_obj_set_pos(wTitle, 14, 12);
+  lv_obj_set_pos(wTitle, 14, 10);
 
-  pill_wifi_status = ui_make_card(cardWifi, 12, 38, 200, 26, lv_color_hex(0x3B151E), lv_color_hex(0x3B151E), 8);
+  pill_wifi_status = ui_make_card(cardWifi, 12, 34, 200, 26, lv_color_hex(0x3B151E), lv_color_hex(0x3B151E), 8);
   lv_obj_clear_flag(pill_wifi_status, LV_OBJ_FLAG_CLICKABLE);
-  lbl_wifi_status = ui_make_label(pill_wifi_status, "MEMERIKSA...", &lv_font_montserrat_12, lv_color_hex(0xFB7185));
+  lbl_wifi_status = ui_make_label(pill_wifi_status, "MEMERIKSA...", &lv_font_montserrat_14, lv_color_hex(0xFB7185));
   lv_obj_center(lbl_wifi_status);
 
-  lbl_wifi_ssid = ui_make_label(cardWifi, "SSID   : -", &lv_font_montserrat_12, C_TEXT);
-  lv_obj_set_pos(lbl_wifi_ssid, 14, 72);
+  lbl_wifi_ssid = ui_make_label(cardWifi, "SSID   : -", &lv_font_montserrat_14, C_TEXT);
+  lv_obj_set_pos(lbl_wifi_ssid, 14, 66);
   lv_obj_set_width(lbl_wifi_ssid, 196);
   lv_label_set_long_mode(lbl_wifi_ssid, LV_LABEL_LONG_CLIP);
 
-  lbl_wifi_ip = ui_make_label(cardWifi, "IP     : -", &lv_font_montserrat_12, C_SUB);
-  lv_obj_set_pos(lbl_wifi_ip, 14, 90);
+  lbl_wifi_ip = ui_make_label(cardWifi, "IP     : -", &lv_font_montserrat_14, C_SUB);
+  lv_obj_set_pos(lbl_wifi_ip, 14, 86);
   lv_obj_set_width(lbl_wifi_ip, 196);
+  lv_label_set_long_mode(lbl_wifi_ip, LV_LABEL_LONG_CLIP);
 
-  lbl_wifi_rssi = ui_make_label(cardWifi, "Sinyal : -", &lv_font_montserrat_12, C_SUB);
-  lv_obj_set_pos(lbl_wifi_rssi, 14, 108);
+  lbl_wifi_rssi = ui_make_label(cardWifi, "Sinyal : -", &lv_font_montserrat_14, C_SUB);
+  lv_obj_set_pos(lbl_wifi_rssi, 14, 106);
   lv_obj_set_width(lbl_wifi_rssi, 196);
+  lv_label_set_long_mode(lbl_wifi_rssi, LV_LABEL_LONG_CLIP);
 
   // Kotak Sesi Sementara (Offline Buffer)
-  lv_obj_t* boxQueue = ui_make_card(cardWifi, 12, 132, 200, 64, C_CARD_PR, C_CARD_PR, 12);
+  lv_obj_t* boxQueue = ui_make_card(cardWifi, 12, 130, 200, 68, C_CARD_PR, C_CARD_PR, 12);
   lv_obj_clear_flag(boxQueue, LV_OBJ_FLAG_CLICKABLE);
 
-  lv_obj_t* qHdr = ui_make_label(boxQueue, "Sesi Sementara (Offline):", &lv_font_montserrat_12, C_SUB);
-  lv_obj_set_pos(qHdr, 10, 7);
+  lv_obj_t* qHdr = ui_make_label(boxQueue, "Sesi Sementara:", &lv_font_montserrat_14, C_SUB);
+  lv_obj_set_pos(qHdr, 10, 6);
 
-  lbl_offline_queue = ui_make_label(boxQueue, "0 / 10 data menunggu", &lv_font_montserrat_14, lv_color_hex(0x34D399));
-  lv_obj_set_pos(lbl_offline_queue, 10, 25);
+  lbl_offline_queue = ui_make_label(boxQueue, "0 / 10 menunggu", &lv_font_montserrat_14, lv_color_hex(0x34D399));
+  lv_obj_set_pos(lbl_offline_queue, 10, 26);
 
-  lbl_offline_synced = ui_make_label(boxQueue, "Terkirim dari sesi sementara: 0", &lv_font_montserrat_10, C_MUTED);
-  lv_obj_set_pos(lbl_offline_synced, 10, 45);
+  lbl_offline_synced = ui_make_label(boxQueue, "Terkirim: 0", &lv_font_montserrat_14, C_MUTED);
+  lv_obj_set_pos(lbl_offline_synced, 10, 46);
 
   // Tombol Aksi Wi-Fi & Sync
-  lv_obj_t* btnReconn = ui_make_card(cardWifi, 12, 204, 96, 36, C_JAWA_1, C_JAWA_2, 10);
+  lv_obj_t* btnReconn = ui_make_card(cardWifi, 12, 206, 96, 36, C_JAWA_1, C_JAWA_2, 10);
   ui_set_pressed(btnReconn, C_JAWA_2, C_JAWA_2);
   lv_obj_add_event_cb(btnReconn, on_reconnect_wifi_click, LV_EVENT_CLICKED, NULL);
-  lv_obj_t* lblReconn = ui_make_label(btnReconn, LV_SYMBOL_REFRESH " Wi-Fi", &lv_font_montserrat_12, lv_color_hex(0xFFFFFF));
+  lv_obj_t* lblReconn = ui_make_label(btnReconn, LV_SYMBOL_REFRESH " Wi-Fi", &lv_font_montserrat_14, lv_color_hex(0xFFFFFF));
   lv_obj_center(lblReconn);
 
-  lv_obj_t* btnSync = ui_make_card(cardWifi, 116, 204, 96, 36, C_BALI_1, C_BALI_2, 10);
+  lv_obj_t* btnSync = ui_make_card(cardWifi, 116, 206, 96, 36, C_BALI_1, C_BALI_2, 10);
   ui_set_pressed(btnSync, C_BALI_2, C_BALI_2);
   lv_obj_add_event_cb(btnSync, on_sync_offline_click, LV_EVENT_CLICKED, NULL);
-  lv_obj_t* lblSync = ui_make_label(btnSync, LV_SYMBOL_UPLOAD " Kirim", &lv_font_montserrat_12, lv_color_hex(0xFFFFFF));
+  lv_obj_t* lblSync = ui_make_label(btnSync, LV_SYMBOL_UPLOAD " Kirim", &lv_font_montserrat_14, lv_color_hex(0xFFFFFF));
   lv_obj_center(lblSync);
 
   // ===== KARTU KANAN: BATERAI & SISTEM =====
   lv_obj_t* cardBatt = ui_make_card(scr_settings, 246, 54, 220, 252, C_CARD, C_CARD, 18);
 
   lv_obj_t* bTitle = ui_make_label(cardBatt, LV_SYMBOL_BATTERY_FULL "  Baterai & Daya", &lv_font_montserrat_16, C_TEXT);
-  lv_obj_set_pos(bTitle, 14, 12);
+  lv_obj_set_pos(bTitle, 14, 10);
 
   // Kotak Pembacaan Persentase + Voltase
-  lv_obj_t* boxBatt = ui_make_card(cardBatt, 12, 40, 196, 98, C_CARD_PR, C_CARD_PR, 14);
+  lv_obj_t* boxBatt = ui_make_card(cardBatt, 12, 36, 196, 102, C_CARD_PR, C_CARD_PR, 14);
   lv_obj_clear_flag(boxBatt, LV_OBJ_FLAG_CLICKABLE);
 
   lbl_batt_pct = ui_make_label(boxBatt, "--%", &lv_font_montserrat_28, lv_color_hex(0x34D399));
-  lv_obj_set_pos(lbl_batt_pct, 12, 12);
+  lv_obj_set_pos(lbl_batt_pct, 12, 10);
 
   lbl_batt_volt = ui_make_label(boxBatt, "0.00 V", &lv_font_montserrat_20, C_TEXT);
-  lv_obj_set_pos(lbl_batt_volt, 104, 14);
+  lv_obj_set_pos(lbl_batt_volt, 104, 12);
 
-  lbl_batt_pin = ui_make_label(boxBatt, "Pin ADC: 0.00V", &lv_font_montserrat_10, C_MUTED);
-  lv_obj_set_pos(lbl_batt_pin, 104, 40);
+  lbl_batt_pin = ui_make_label(boxBatt, "ADC: 0.00V", &lv_font_montserrat_14, C_MUTED);
+  lv_obj_set_pos(lbl_batt_pin, 104, 36);
 
   bar_batt = lv_bar_create(boxBatt);
   lv_obj_set_pos(bar_batt, 12, 60);
@@ -287,29 +289,30 @@ static void build_settings_screen() {
   lv_obj_set_style_bg_opa(bar_batt, LV_OPA_COVER, 0);
   lv_obj_set_style_bg_color(bar_batt, lv_color_hex(0x34D399), LV_PART_INDICATOR);
 
-  lbl_batt_state = ui_make_label(boxBatt, "Status: Memeriksa...", &lv_font_montserrat_10, C_SUB);
+  lbl_batt_state = ui_make_label(boxBatt, "Status: Cek...", &lv_font_montserrat_14, C_SUB);
   lv_obj_set_pos(lbl_batt_state, 12, 78);
+  lv_obj_set_width(lbl_batt_state, 174);
+  lv_label_set_long_mode(lbl_batt_state, LV_LABEL_LONG_CLIP);
 
   // Kotak Info Pin Sensor Baterai
-  lv_obj_t* boxPin = ui_make_card(cardBatt, 12, 146, 196, 54, lv_color_hex(0x11151E), lv_color_hex(0x11151E), 10);
+  lv_obj_t* boxPin = ui_make_card(cardBatt, 12, 144, 196, 54, lv_color_hex(0x11151E), lv_color_hex(0x11151E), 10);
   lv_obj_clear_flag(boxPin, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_t* lblHint = ui_make_label(
       boxPin,
-      "Sensor ADC1: GPIO34 (Pembagi 1:1)\nVBAT -> 100k -> GPIO34 -> 100k -> GND",
-      &lv_font_montserrat_10,
+      "Sensor GPIO34 (ADC1)\nPembagi 100k + 100k",
+      &lv_font_montserrat_14,
       C_SUB
   );
-  lv_obj_set_pos(lblHint, 8, 10);
-  lv_obj_set_width(lblHint, 180);
-  lv_label_set_long_mode(lblHint, LV_LABEL_LONG_WRAP);
+  lv_obj_set_pos(lblHint, 10, 8);
+  lv_obj_set_width(lblHint, 176);
 
   // Footer Info Device
   char dev_buf[40];
-  snprintf(dev_buf, sizeof(dev_buf), "Device: %s", DEVICE_ID);
-  lv_obj_t* lblDev = ui_make_label(cardBatt, dev_buf, &lv_font_montserrat_12, C_SUB);
-  lv_obj_set_pos(lblDev, 14, 208);
+  snprintf(dev_buf, sizeof(dev_buf), "ID: %s", DEVICE_ID);
+  lv_obj_t* lblDev = ui_make_label(cardBatt, dev_buf, &lv_font_montserrat_14, C_SUB);
+  lv_obj_set_pos(lblDev, 14, 206);
 
-  lbl_heap = ui_make_label(cardBatt, "Heap Bebas: -- KB", &lv_font_montserrat_12, C_MUTED);
+  lbl_heap = ui_make_label(cardBatt, "Heap: -- KB", &lv_font_montserrat_14, C_MUTED);
   lv_obj_set_pos(lbl_heap, 14, 226);
 }
 

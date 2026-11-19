@@ -2621,9 +2621,9 @@ static void show_stage(int stage) {
   }
 }
 
-// ---------- Inisialisasi Layar Pembelajaran ----------
-void ui_learn_init(const AppCallbacks* callbacks) {
-  learn_cbs = callbacks;
+// ---------- Bangun Layar Pembelajaran secara Lazy (hemat RAM heap) ----------
+static void build_learn_screen() {
+  if (scr_learn) return;
 
   scr_learn = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(scr_learn, C_BG, 0);
@@ -2683,9 +2683,16 @@ void ui_learn_init(const AppCallbacks* callbacks) {
   lv_obj_clear_flag(content_cont, LV_OBJ_FLAG_SCROLLABLE);
 }
 
+void ui_learn_init(const AppCallbacks* callbacks) {
+  learn_cbs = callbacks;
+}
+
 void ui_learn_start(AksaraType script, int level_index) {
   cancel_all_card_anims();
   cancel_all_learn_timers();
+  if (!scr_learn) {
+    build_learn_screen();
+  }
 
   current_script = script;
   current_level_idx = level_index;
@@ -2709,6 +2716,9 @@ void ui_learn_start(AksaraType script, int level_index) {
 }
 
 void ui_learn_show() {
+  if (!scr_learn) {
+    build_learn_screen();
+  }
   if (scr_learn && lv_screen_active() != scr_learn) {
     lv_scr_load_anim(scr_learn, LV_SCR_LOAD_ANIM_MOVE_LEFT, 250, 0, false);
   }
