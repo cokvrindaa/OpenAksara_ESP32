@@ -55,98 +55,95 @@ static bool ensure_ntp_synced() {
   return false;
 }
 
+// Buffer statis terisolasi untuk Core 0 worker (mencegah fragmentasi heap sebelum TLS)
+static char worker_url[256];
+static char worker_body[768];
+
 // Helper format timestamp ISO-8601 UTC standar Cloud Firestore (hanya valid jika NTP synced)
-static String get_iso_timestamp(bool& has_ntp) {
+static bool get_iso_timestamp(bool& has_ntp, char* buf, size_t buf_sz) {
   has_ntp = ensure_ntp_synced();
-  if (has_ntp) {
+  if (has_ntp && buf && buf_sz > 0) {
     time_t now = time(nullptr);
-    char buf[32];
-    struct tm* t = gmtime(&now);
-    strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%SZ", t);
-    return String(buf);
+    struct tm* tm_info = gmtime(&now);
+    if (tm_info) {
+      strftime(buf, buf_sz, "%Y-%m-%dT%H:%M:%SZ", tm_info);
+      return true;
+    }
   }
-  return String("");
+  if (buf && buf_sz > 0) buf[0] = '\0';
+  return false;
 }
 
 // Helper format label waktu lokal terbaca ("13 Nov, 09:15") bila NTP tersedia
-static String get_display_time_label(bool has_ntp, const char* fallback_label) {
-  if (!has_ntp) return String(fallback_label);
+static void get_display_time_label(bool has_ntp, const char* fallback_label, char* buf, size_t buf_sz) {
+  if (!buf || buf_sz == 0) return;
+  if (!has_ntp) {
+    snprintf(buf, buf_sz, "%s", fallback_label);
+    return;
+  }
   static const char* BULAN[] = {"Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"};
   time_t now = time(nullptr);
-  struct tm* t = localtime(&now);
-  if (!t || t->tm_mon < 0 || t->tm_mon > 11) return String(fallback_label);
-  char buf[24];
-  snprintf(buf, sizeof(buf), "%d %s, %02d:%02d", t->tm_mday, BULAN[t->tm_mon], t->tm_hour, t->tm_min);
-  return String(buf);
+  struct tm* tm_info = localtime(&now);
+  if (!tm_info || tm_info->tm_mon < 0 || tm_info->tm_mon > 11) {
+    snprintf(buf, buf_sz, "%s", fallback_label);
+    return;
+  }
+  snprintf(buf, buf_sz, "%d %s, %02d:%02d", tm_info->tm_mday, BULAN[tm_info->tm_mon], tm_info->tm_hour, tm_info->tm_min);
 }
 
-// Helper eksekusi HTTP POST Submission (Hanya dieksekusi di Core 0 background worker)
-static void send_submission_http(const SyncQueueItem& item) {
+// Shared HTTPS sender untuk Cloud Firestore REST API (Core 0 worker only, zero heap churn)
+static int firestore_send_json(const char* doc_subpath, const char* method, const char* json_body, size_t body_len, bool log_diag) {
   // Tunggu sejenak jika Core 1 sedang merender frame LVGL agar heap tidak tabrakan
   vTaskDelay(pdMS_TO_TICKS(60));
 
-  // ===== DIAGNOSTIK =====
-  Serial.printf("[Diag] RSSI: %d dBm | FreeHeap: %u B | MaxBlock: %u B\n",
-                WiFi.RSSI(), (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
+  if (log_diag) {
+    Serial.printf("[Diag] RSSI: %d dBm | FreeHeap: %u B | MaxBlock: %u B\n",
+                  WiFi.RSSI(), (unsigned)ESP.getFreeHeap(), (unsigned)ESP.getMaxAllocHeap());
+  }
 
   if (ESP.getMaxAllocHeap() < 28000) {
-    Serial.println(F("[Firebase Cloud] ⚠️ Heap terlalu rendah untuk TLS, menunda 200ms..."));
+    if (log_diag) {
+      Serial.println(F("[Firebase Cloud] ⚠️ Heap terlalu rendah untuk TLS, menunda 200ms..."));
+    }
     vTaskDelay(pdMS_TO_TICKS(200));
+    if (!log_diag && ESP.getMaxAllocHeap() < 28000) {
+      return -1;
+    }
   }
 
-  // 1. DNS
   IPAddress targetIP;
   if (!WiFi.hostByName(FIRESTORE_HOST, targetIP)) {
-    Serial.printf("[Diag] ❌ DNS GAGAL resolve '%s' (Gateway: %s, DNS: %s)\n",
-                  FIRESTORE_HOST, WiFi.gatewayIP().toString().c_str(), WiFi.dnsIP().toString().c_str());
-    return;
+    if (log_diag) {
+      Serial.printf("[Diag] ❌ DNS GAGAL resolve '%s' (Gateway: %s, DNS: %s)\n",
+                    FIRESTORE_HOST, WiFi.gatewayIP().toString().c_str(), WiFi.dnsIP().toString().c_str());
+    }
+    return -2;
   }
-  Serial.printf("[Diag] ✅ DNS OK -> %s\n", targetIP.toString().c_str());
+  if (log_diag) {
+    Serial.printf("[Diag] ✅ DNS OK -> %s\n", targetIP.toString().c_str());
+  }
 
   WiFiClientSecure client;
   client.setInsecure();
-  client.setTimeout(12000); // 12 detik timeout
+  client.setTimeout(12000);
 
   HTTPClient https;
   https.setTimeout(12000);
   https.setConnectTimeout(12000);
   https.setReuse(false);
 
-  String url;
-  url.reserve(180);
-  url = String("https://") + FIRESTORE_HOST + "/v1/projects/" + FIREBASE_PROJECT_ID +
-        "/databases/(default)/documents/submissions?key=" + FIREBASE_API_KEY;
+  snprintf(worker_url, sizeof(worker_url),
+           "https://%s/v1/projects/%s/databases/(default)/documents/%s?key=%s",
+           FIRESTORE_HOST, FIREBASE_PROJECT_ID, doc_subpath, FIREBASE_API_KEY);
 
-  if (https.begin(client, url)) {
+  int httpCode = -3;
+  if (https.begin(client, worker_url)) {
     https.addHeader("Content-Type", "application/json");
     https.addHeader("User-Agent", "OpenAksara-ESP32");
     https.addHeader("Connection", "close");
 
-    bool has_ntp = false;
-    String isoTime = get_iso_timestamp(has_ntp);
-    String displayTime = get_display_time_label(has_ntp, "Baru saja");
-    String body;
-    body.reserve(440);
-    body = "{";
-    body += "\"fields\":{";
-    body += "\"name\":{\"stringValue\":\"" + String(item.str1) + "\"},";
-    body += "\"class\":{\"stringValue\":\"" + String(item.str2) + "\"},";
-    body += "\"script\":{\"stringValue\":\"" + String(item.str3) + "\"},";
-    body += "\"aksara\":{\"stringValue\":\"" + String(item.str4) + "\"},";
-    body += "\"precision\":{\"integerValue\":" + String(item.num1) + "},";
-    body += "\"score\":{\"integerValue\":" + String(item.num2) + "},";
-    body += "\"status\":{\"stringValue\":\"" + String(item.str5) + "\"},";
-    body += "\"time\":{\"stringValue\":\"" + displayTime + "\"}";
-    if (has_ntp && isoTime.length() > 0) {
-      body += ",\"createdAt\":{\"timestampValue\":\"" + isoTime + "\"}";
-    }
-    body += "}}";
-
-    int httpCode = https.POST(body);
-    if (httpCode == 200 || httpCode == 201) {
-      Serial.printf("[Firebase Cloud] 🟢 Submission %s (%s) BERHASIL tersimpan di Firestore!\n", item.str1, item.str4);
-    } else {
-      Serial.printf("[Firebase Cloud] ⚠️ Gagal POST submission, HTTP Code: %d (%s)\n", httpCode, https.errorToString(httpCode).c_str());
+    httpCode = https.sendRequest(method, (uint8_t*)json_body, body_len);
+    if (log_diag && httpCode != 200 && httpCode != 201) {
       char tls_err[128] = {0};
       int tls_code = client.lastError(tls_err, sizeof(tls_err));
       Serial.printf("[Diag] TLS lastError: %d (%s) | FreeHeap: %u | MaxBlock: %u\n",
@@ -154,123 +151,95 @@ static void send_submission_http(const SyncQueueItem& item) {
     }
     https.end();
   } else {
-    Serial.println(F("[Firebase Cloud] ⚠️ Gagal https.begin() untuk submission"));
+    Serial.printf("[Firebase Cloud] ⚠️ Gagal https.begin() untuk %s\n", doc_subpath);
+  }
+  return httpCode;
+}
+
+// Helper eksekusi HTTP POST Submission (Hanya dieksekusi di Core 0 background worker)
+static void send_submission_http(const SyncQueueItem& item) {
+  bool has_ntp = false;
+  char iso_time[32];
+  char disp_time[24];
+  get_iso_timestamp(has_ntp, iso_time, sizeof(iso_time));
+  get_display_time_label(has_ntp, "Baru saja", disp_time, sizeof(disp_time));
+
+  int n = 0;
+  if (has_ntp && iso_time[0] != '\0') {
+    n = snprintf(worker_body, sizeof(worker_body),
+                 "{\"fields\":{\"name\":{\"stringValue\":\"%s\"},\"class\":{\"stringValue\":\"%s\"},"
+                 "\"script\":{\"stringValue\":\"%s\"},\"aksara\":{\"stringValue\":\"%s\"},"
+                 "\"precision\":{\"integerValue\":%d},\"score\":{\"integerValue\":%d},"
+                 "\"status\":{\"stringValue\":\"%s\"},\"time\":{\"stringValue\":\"%s\"},"
+                 "\"createdAt\":{\"timestampValue\":\"%s\"}}}",
+                 item.str1, item.str2, item.str3, item.str4, item.num1, item.num2, item.str5, disp_time, iso_time);
+  } else {
+    n = snprintf(worker_body, sizeof(worker_body),
+                 "{\"fields\":{\"name\":{\"stringValue\":\"%s\"},\"class\":{\"stringValue\":\"%s\"},"
+                 "\"script\":{\"stringValue\":\"%s\"},\"aksara\":{\"stringValue\":\"%s\"},"
+                 "\"precision\":{\"integerValue\":%d},\"score\":{\"integerValue\":%d},"
+                 "\"status\":{\"stringValue\":\"%s\"},\"time\":{\"stringValue\":\"%s\"}}}",
+                 item.str1, item.str2, item.str3, item.str4, item.num1, item.num2, item.str5, disp_time);
+  }
+
+  size_t len = (n > 0 && (size_t)n < sizeof(worker_body)) ? (size_t)n : strlen(worker_body);
+  int httpCode = firestore_send_json("submissions", "POST", worker_body, len, true);
+  if (httpCode == 200 || httpCode == 201) {
+    Serial.printf("[Firebase Cloud] 🟢 Submission %s (%s) BERHASIL tersimpan di Firestore!\n", item.str1, item.str4);
+  } else if (httpCode > -2) {
+    Serial.printf("[Firebase Cloud] ⚠️ Gagal POST submission, HTTP Code: %d\n", httpCode);
   }
 }
 
 // Helper eksekusi HTTP POST Assessment (Hanya dieksekusi di Core 0 background worker)
 static void send_assessment_http(const SyncQueueItem& item) {
-  vTaskDelay(pdMS_TO_TICKS(60));
-  if (ESP.getMaxAllocHeap() < 28000) {
-    vTaskDelay(pdMS_TO_TICKS(200));
-  }
+  bool has_ntp = false;
+  char iso_time[32];
+  char disp_date[24];
+  get_iso_timestamp(has_ntp, iso_time, sizeof(iso_time));
+  get_display_time_label(has_ntp, "Hari ini", disp_date, sizeof(disp_date));
 
-  IPAddress targetIP;
-  if (!WiFi.hostByName(FIRESTORE_HOST, targetIP)) {
-    return;
-  }
-
-  WiFiClientSecure client;
-  client.setInsecure();
-  client.setTimeout(12000);
-
-  HTTPClient https;
-  https.setTimeout(12000);
-  https.setConnectTimeout(12000);
-  https.setReuse(false);
-
-  String url;
-  url.reserve(180);
-  url = String("https://") + FIRESTORE_HOST + "/v1/projects/" + FIREBASE_PROJECT_ID +
-        "/databases/(default)/documents/assessments?key=" + FIREBASE_API_KEY;
-
-  if (https.begin(client, url)) {
-    https.addHeader("Content-Type", "application/json");
-    https.addHeader("User-Agent", "OpenAksara-ESP32");
-    https.addHeader("Connection", "close");
-
-    bool has_ntp = false;
-    String isoTime = get_iso_timestamp(has_ntp);
-    String displayDate = get_display_time_label(has_ntp, "Hari ini");
-    String body;
-    body.reserve(540);
-    body = "{";
-    body += "\"fields\":{";
-    body += "\"studentName\":{\"stringValue\":\"" + String(item.str1) + "\"},";
-    body += "\"class\":{\"stringValue\":\"" + String(item.str2) + "\"},";
-    body += "\"materiTitle\":{\"stringValue\":\"" + String(item.str4) + "\"},";
-    body += "\"script\":{\"stringValue\":\"" + String(item.str3) + "\"},";
-    body += "\"finalScore\":{\"integerValue\":" + String(item.num1) + "},";
-    body += "\"grade\":{\"stringValue\":\"" + String(item.str5) + "\"},";
-    body += "\"totalXp\":{\"integerValue\":" + String(item.num2) + "},";
-    body += "\"status\":{\"stringValue\":\"TUNTAS\"},";
-    body += "\"feedback\":{\"stringValue\":\"" + String(item.str6) + "\"},";
-    body += "\"completedDate\":{\"stringValue\":\"" + displayDate + "\"}";
-    if (has_ntp && isoTime.length() > 0) {
-      body += ",\"createdAt\":{\"timestampValue\":\"" + isoTime + "\"}";
-    }
-    body += "}}";
-
-    int httpCode = https.POST(body);
-    if (httpCode == 200 || httpCode == 201) {
-      Serial.printf("[Firebase Cloud] 🟢 Rapor Materi %s (+%d XP) tersimpan di Firestore!\n", item.str4, item.num2);
-    } else {
-      Serial.printf("[Firebase Cloud] ⚠️ Gagal POST assessment, HTTP Code: %d (%s)\n", httpCode, https.errorToString(httpCode).c_str());
-    }
-    https.end();
+  int n = 0;
+  if (has_ntp && iso_time[0] != '\0') {
+    n = snprintf(worker_body, sizeof(worker_body),
+                 "{\"fields\":{\"studentName\":{\"stringValue\":\"%s\"},\"class\":{\"stringValue\":\"%s\"},"
+                 "\"materiTitle\":{\"stringValue\":\"%s\"},\"script\":{\"stringValue\":\"%s\"},"
+                 "\"finalScore\":{\"integerValue\":%d},\"grade\":{\"stringValue\":\"%s\"},"
+                 "\"totalXp\":{\"integerValue\":%d},\"status\":{\"stringValue\":\"TUNTAS\"},"
+                 "\"feedback\":{\"stringValue\":\"%s\"},\"completedDate\":{\"stringValue\":\"%s\"},"
+                 "\"createdAt\":{\"timestampValue\":\"%s\"}}}",
+                 item.str1, item.str2, item.str4, item.str3, item.num1, item.str5, item.num2, item.str6, disp_date, iso_time);
   } else {
-    Serial.println(F("[Firebase Cloud] ⚠️ Gagal https.begin() untuk assessment"));
+    n = snprintf(worker_body, sizeof(worker_body),
+                 "{\"fields\":{\"studentName\":{\"stringValue\":\"%s\"},\"class\":{\"stringValue\":\"%s\"},"
+                 "\"materiTitle\":{\"stringValue\":\"%s\"},\"script\":{\"stringValue\":\"%s\"},"
+                 "\"finalScore\":{\"integerValue\":%d},\"grade\":{\"stringValue\":\"%s\"},"
+                 "\"totalXp\":{\"integerValue\":%d},\"status\":{\"stringValue\":\"TUNTAS\"},"
+                 "\"feedback\":{\"stringValue\":\"%s\"},\"completedDate\":{\"stringValue\":\"%s\"}}}",
+                 item.str1, item.str2, item.str4, item.str3, item.num1, item.str5, item.num2, item.str6, disp_date);
+  }
+
+  size_t len = (n > 0 && (size_t)n < sizeof(worker_body)) ? (size_t)n : strlen(worker_body);
+  int httpCode = firestore_send_json("assessments", "POST", worker_body, len, false);
+  if (httpCode == 200 || httpCode == 201) {
+    Serial.printf("[Firebase Cloud] 🟢 Rapor Materi %s (+%d XP) tersimpan di Firestore!\n", item.str4, item.num2);
+  } else if (httpCode > -2) {
+    Serial.printf("[Firebase Cloud] ⚠️ Gagal POST assessment, HTTP Code: %d\n", httpCode);
   }
 }
 
 // Helper eksekusi HTTP PATCH Telemetry (Hanya dieksekusi di Core 0 background worker)
 static void send_telemetry_http(float voltage, int tolerance_px, int volume) {
-  vTaskDelay(pdMS_TO_TICKS(60));
-  if (ESP.getMaxAllocHeap() < 28000) {
-    return;
-  }
+  int n = snprintf(worker_body, sizeof(worker_body),
+                   "{\"fields\":{\"device\":{\"stringValue\":\"%s\"},\"voltage\":{\"doubleValue\":%.2f},"
+                   "\"tolerancePx\":{\"integerValue\":%d},\"volume\":{\"integerValue\":%d},"
+                   "\"status\":{\"stringValue\":\"online\"},\"freeHeap\":{\"integerValue\":%u}}}",
+                   DEVICE_ID, voltage, tolerance_px, volume, (unsigned)ESP.getFreeHeap());
 
-  IPAddress targetIP;
-  if (!WiFi.hostByName(FIRESTORE_HOST, targetIP)) {
-    return;
-  }
-
-  WiFiClientSecure client;
-  client.setInsecure();
-  client.setTimeout(12000);
-
-  HTTPClient https;
-  https.setTimeout(12000);
-  https.setConnectTimeout(12000);
-  https.setReuse(false);
-
-  String url;
-  url.reserve(190);
-  url = String("https://") + FIRESTORE_HOST + "/v1/projects/" + FIREBASE_PROJECT_ID +
-        "/databases/(default)/documents/telemetry/esp32_status?key=" + FIREBASE_API_KEY;
-
-  if (https.begin(client, url)) {
-    https.addHeader("Content-Type", "application/json");
-    https.addHeader("User-Agent", "OpenAksara-ESP32");
-    https.addHeader("Connection", "close");
-
-    String body;
-    body.reserve(320);
-    body = "{";
-    body += "\"fields\":{";
-    body += "\"device\":{\"stringValue\":\"" + String(DEVICE_ID) + "\"},";
-    body += "\"voltage\":{\"doubleValue\":" + String(voltage, 2) + "},";
-    body += "\"tolerancePx\":{\"integerValue\":" + String(tolerance_px) + "},";
-    body += "\"volume\":{\"integerValue\":" + String(volume) + "},";
-    body += "\"status\":{\"stringValue\":\"online\"},";
-    body += "\"freeHeap\":{\"integerValue\":" + String(ESP.getFreeHeap()) + "}";
-    body += "}}";
-
-    int httpCode = https.sendRequest("PATCH", body);
-    if (httpCode == 200 || httpCode == 201) {
-      Serial.printf("[Firebase Cloud] 📡 Telemetri hardware tersinkronisasi (Heap: %u B)\n", (unsigned int)ESP.getFreeHeap());
-    }
-    https.end();
+  size_t len = (n > 0 && (size_t)n < sizeof(worker_body)) ? (size_t)n : strlen(worker_body);
+  int httpCode = firestore_send_json("telemetry/esp32_status", "PATCH", worker_body, len, false);
+  if (httpCode == 200 || httpCode == 201) {
+    Serial.printf("[Firebase Cloud] 📡 Telemetri hardware tersinkronisasi (Heap: %u B)\n", (unsigned int)ESP.getFreeHeap());
   }
 }
 

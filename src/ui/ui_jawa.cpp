@@ -1022,9 +1022,9 @@ static void switch_tab(int tab_index) {
   }
 }
 
-// Inisialisasi Layar Aksara Jawa
-void ui_jawa_init(const AppCallbacks* callbacks) {
-  jawa_cbs = callbacks;
+// Bangun Layar Aksara Jawa secara Lazy (hemat RAM heap saat belum dibuka)
+static void build_jawa_screen() {
+  if (scr_jawa) return;
 
   scr_jawa = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(scr_jawa, C_BG, 0);
@@ -1088,7 +1088,14 @@ void ui_jawa_init(const AppCallbacks* callbacks) {
   lv_obj_center(tab_lbl_settings);
 }
 
+void ui_jawa_init(const AppCallbacks* callbacks) {
+  jawa_cbs = callbacks;
+}
+
 void ui_jawa_show() {
+  if (!scr_jawa) {
+    build_jawa_screen();
+  }
   if (scr_jawa) {
     switch_tab(0); // Buka tab Belajar secara default
     if (lv_screen_active() != scr_jawa) {

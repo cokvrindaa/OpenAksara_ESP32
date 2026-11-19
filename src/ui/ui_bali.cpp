@@ -975,9 +975,9 @@ static void switch_tab(int tab_index) {
   }
 }
 
-// Inisialisasi Layar Aksara Bali
-void ui_bali_init(const AppCallbacks* callbacks) {
-  bali_cbs = callbacks;
+// Bangun Layar Aksara Bali secara Lazy (hemat RAM heap saat belum dibuka)
+static void build_bali_screen() {
+  if (scr_bali) return;
 
   scr_bali = lv_obj_create(NULL);
   lv_obj_set_style_bg_color(scr_bali, C_BG, 0);
@@ -1041,7 +1041,14 @@ void ui_bali_init(const AppCallbacks* callbacks) {
   lv_obj_center(tab_lbl_settings);
 }
 
+void ui_bali_init(const AppCallbacks* callbacks) {
+  bali_cbs = callbacks;
+}
+
 void ui_bali_show() {
+  if (!scr_bali) {
+    build_bali_screen();
+  }
   if (scr_bali) {
     switch_tab(0); // Buka tab Belajar secara default
     if (lv_screen_active() != scr_bali) {
